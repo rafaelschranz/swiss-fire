@@ -105,6 +105,15 @@ npm run lint       # ESLint
 
 ## Status
 
-**Phase 0/1 complete**: project scaffolded, engine types, constants, and
-canton table seeded. Phase 2 (tax/accumulation/decumulation functions +
-golden tests) is next, pending review.
+**Phase 0/1/2 complete**: project scaffolded, engine types/constants/
+canton table seeded, and `tax.ts` / `accumulation.ts` / `decumulation.ts`
+implemented with golden tests (`lib/engine/__tests__`) covering 3a capping,
+coordinated salary, PK projection, non-employed AHV brackets, the Schwyz
+lump-sum tax curve, bridge-depletion failure, and tax-optimal withdrawal
+staggering. Phase 3 (Monte Carlo + UI) is next, pending review.
+
+Note: the cantonal lump-sum tax figures for ZG/ZH/LU (and all 22 unseeded
+cantons) are still placeholders — the official ESTV tax calculator
+(swisstaxcalculator.estv.admin.ch) couldn't be reached from this sandbox's
+network allowlist. Swap in real reference points there before relying on
+those curves.

@@ -91,6 +91,14 @@ export const AHV = {
     maxAdminSurchargeRate: 0.05,
     /** Wealth (+ 20x annual pension/replacement income) bracket where contributions start scaling up from the minimum. */
     firstBracketThreshold: 350_000,
+    /**
+     * Wealth (+ 20x annual pension/replacement income) bracket at and
+     * above which the contribution reaches the maximum (CHF 26,500).
+     * The real official table is a stepwise schedule of ~50,000 CHF
+     * brackets between these two anchors; this engine linearly
+     * interpolates between them as a documented smoothing approximation.
+     */
+    upperBracketThreshold: 8_800_000,
     /** Multiplier applied to annual pension/replacement income when computing the contribution basis. */
     pensionIncomeMultiplier: 20,
     /** A non-employed spouse is exempt if the working spouse pays at least this multiple of the minimum. */
@@ -121,4 +129,21 @@ export const DEFAULTS = {
   healthInsuranceAnnualPremium: 5_000,
   monteCarloPaths: 2_000,
   bootstrapBlockYears: { min: 3, max: 5 },
+  /**
+   * ASSUMPTION (not given in the project brief): share of the taxable
+   * portfolio's total real return paid out as dividends/distributions
+   * each year, which is the only part of the taxable account taxed as
+   * ordinary income (capital gains are untaxed for private investors in
+   * Switzerland). A typical global equity/bond ETF mix yields roughly
+   * 1.5-2.5% in dividends; 2% is used as a documented placeholder.
+   */
+  dividendYield: 0.02,
+  /**
+   * APPROXIMATION: number of contribution years for a "full" AHV
+   * pension. Used only by the optional estimateAhvPension() helper when
+   * a user has no better estimate; the official AHV scale-44 table also
+   * depends on average lifetime income, which this simplification does
+   * not model in detail.
+   */
+  fullAhvContributionYears: 44,
 } as const;
