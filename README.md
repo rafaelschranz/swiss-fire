@@ -105,6 +105,36 @@ npm run lint       # ESLint
 
 ## Status
 
-**Phase 0/1 complete**: project scaffolded, engine types, constants, and
-canton table seeded. Phase 2 (tax/accumulation/decumulation functions +
-golden tests) is next, pending review.
+**Phase 0/1/2/3/4 complete**: project scaffolded, engine types/constants/
+canton table seeded, `tax.ts` / `accumulation.ts` / `decumulation.ts`
+implemented, and `montecarlo.ts` (parametric lognormal + block-bootstrap)
+added on top of the same deterministic decumulation engine via an
+injectable per-year `returnsPath`. 28 Vitest golden/sanity tests cover §5:
+3a capping, coordinated salary, PK projection, non-employed AHV brackets,
+the Schwyz lump-sum tax curve, bridge-depletion failure, tax-optimal
+withdrawal staggering, and Monte Carlo success-rate monotonicity in
+starting capital and expected return.
+
+Phase 4 (UI) is built: a single-page client-side calculator
+(`app/page.tsx`) wiring `InputsPanel`, `Lifeline`, `ResultsHeadline`,
+`BalanceChart`, an optional `MonteCarloFan` (parametric/bootstrap toggle),
+`AssumptionsPanel`, the FINSA/FIDLEG `Disclaimer`, and disclosed
+`AffiliateSlot`s together with the engine. All computation runs in the
+browser; no inputs are sent to a server. German-language UI by default.
+`tsc --noEmit`, `eslint`, and `vitest run` all pass, and the page has been
+verified rendering real computed figures via a local dev server.
+
+Not yet done: SEO content pages, i18n beyond German, and
+accessibility/mobile polish.
+
+Notes on data still needing real grounding:
+- The cantonal lump-sum tax figures for ZG/ZH/LU (and all 22 unseeded
+  cantons) are placeholders — the official ESTV tax calculator
+  (swisstaxcalculator.estv.admin.ch) couldn't be reached from this
+  sandbox's network allowlist. Swap in real reference points there
+  before relying on those curves.
+- `data/returns/proxy-returns.ts` is an explicitly-flagged SYNTHETIC
+  placeholder return series for the Monte Carlo bootstrap mode — not real
+  historical data. Replace with a cited CHF real-return series (e.g. a
+  Global Investment Returns Yearbook-style series) before relying on
+  bootstrap results.
