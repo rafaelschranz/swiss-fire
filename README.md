@@ -168,7 +168,11 @@ the annual-outflow chart to **nominal** francs so rising costs are visible.
 Couples can be modelled as a **household** (`hasPartner` + a `partner`
 profile). The partner gets their own salary, savings, Säule 3a, Pensionskasse
 and AHV, and their own retirement age — so each person can stop working on a
-different timeline. This runs a dedicated calendar-timeline simulator
+different timeline. When a partner is added, the wizard's "Vermögen &
+Einkommen" and "Ruhestand" steps switch to a **two-column Sie / Partner:in
+layout** (with a combined household net-worth banner) so both people's inputs
+sit side by side; the single-person layout is unchanged when there is no
+partner. This runs a dedicated calendar-timeline simulator
 (`lib/engine/household.ts`) instead of the single-person accumulation +
 decumulation split: every year, each person is either working (earning,
 contributing to their own pillars, adding savings to the shared taxable pot)

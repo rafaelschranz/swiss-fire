@@ -10,6 +10,7 @@ import { OneOffInflowsEditor } from "@/components/wizard/OneOffInflowsEditor";
 import { CANTONS } from "@/lib/engine/cantons";
 import type { CantonCode } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
+import { formatChf } from "@/lib/format";
 import type { CalculatorInputs, PartnerInputs } from "@/lib/inputs";
 
 export interface StepProps {
@@ -48,6 +49,132 @@ const Grid = ({ children }: { children: ReactNode }) => (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">{children}</div>
 );
 
+/** Two side-by-side person columns (Sie / Partner:in) on wide screens. */
+const TwoCol = ({ children }: { children: ReactNode }) => (
+  <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">{children}</div>
+);
+
+const ColHeading = ({ children }: { children: ReactNode }) => (
+  <p className="eyebrow border-b border-line pb-2 text-brass">{children}</p>
+);
+
+/** Fields a person needs in the "Vermögen & Einkommen" step. */
+interface WealthVals {
+  currentTaxableBalance: number;
+  currentPillar3aBalance: number;
+  currentPillar2Balance: number;
+  currentSalary: number;
+  salaryGrowth: number;
+  annualTaxableSavings: number;
+  annualPillar3aContribution: number;
+  pillar2Model: "bvg" | "rate";
+  pillar2SavingsRate: number;
+  pillar2InsuredCeiling: number;
+}
+
+type FieldSetter<T> = (key: keyof T, value: number | string) => void;
+
+/** One person's wealth/income column, shared by the primary and the partner. */
+function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<WealthVals>): ReactNode {
+  return (
+    <div className="space-y-4">
+      <ColHeading>{title}</ColHeading>
+      <Field label="Steuerbares Vermögen heute" value={v.currentTaxableBalance} onChange={(x) => setField("currentTaxableBalance", x)} prefix="CHF" step={1000} min={0} />
+      <Field label="Säule-3a-Guthaben heute" value={v.currentPillar3aBalance} onChange={(x) => setField("currentPillar3aBalance", x)} prefix="CHF" step={1000} min={0} />
+      <Field label="Pensionskasse-Guthaben heute" value={v.currentPillar2Balance} onChange={(x) => setField("currentPillar2Balance", x)} prefix="CHF" step={1000} min={0} />
+      <Field label="Bruttosalär" value={v.currentSalary} onChange={(x) => setField("currentSalary", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+      <Field label="Salärwachstum (real)" value={v.salaryGrowth} onChange={(x) => setField("salaryGrowth", x)} percent />
+      <Field label="Sparbetrag (steuerbar)" value={v.annualTaxableSavings} onChange={(x) => setField("annualTaxableSavings", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+      <Field label="3a-Einzahlung" value={v.annualPillar3aContribution} onChange={(x) => setField("annualPillar3aContribution", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+      <div className="border-t border-line pt-4">
+        <SegmentedControl
+          label="PK-Aufbau"
+          ariaLabel={`Pensionskassen-Modell ${title}`}
+          value={v.pillar2Model}
+          onChange={(x) => setField("pillar2Model", x)}
+          options={[
+            { value: "bvg", label: "BVG-Minimum" },
+            { value: "rate", label: "Ø Sparbeitrag" },
+          ]}
+        />
+        {v.pillar2Model === "rate" && (
+          <div className="mt-4 space-y-4">
+            <Field label="Ø PK-Sparbeitrag" value={v.pillar2SavingsRate} onChange={(x) => setField("pillar2SavingsRate", x)} percent hint="Anteil des versicherten Lohns pro Jahr." />
+            <Field label="Versicherter Lohn bis" value={v.pillar2InsuredCeiling} onChange={(x) => setField("pillar2InsuredCeiling", x)} prefix="CHF" step={5000} min={0} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Fields a person needs in the "Ruhestand" step. */
+interface RetVals {
+  healthInsuranceAnnualPremium: number;
+  ahvAnnualPension: number;
+  ahvClaimAge: number;
+  ahvReferenceAge: number;
+  pillar3aUnlockAge: number;
+  pillar3aTranches: number;
+  earliestPkAge: number;
+  pillar2PayoutMode: "capital" | "pension" | "mix";
+  pillar2ConversionRate: number;
+  pillar2CapitalShare: number;
+}
+
+/** Returns auto-estimate props for a field, or {} for a person without estimates. */
+type EstProvider = (key: EstimableKey, hint?: string) => Record<string, unknown>;
+
+/** One person's retirement column, shared by the primary and the partner. */
+function retirementColumn(title: string, v: RetVals, setField: FieldSetter<RetVals>, est: EstProvider): ReactNode {
+  return (
+    <div className="space-y-4">
+      <ColHeading>{title}</ColHeading>
+      <Field label="Krankenkassenprämie" value={v.healthInsuranceAnnualPremium} onChange={(x) => setField("healthInsuranceAnnualPremium", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...est("healthInsuranceAnnualPremium")} />
+      <Field label="Erwartete AHV-Rente" value={v.ahvAnnualPension} onChange={(x) => setField("ahvAnnualPension", x)} prefix="CHF" suffix="/Jahr" step={500} min={0} hint="Bei Ehepaaren ist die Summe beider Renten auf 150 % der Maximalrente plafoniert." {...est("ahvAnnualPension")} />
+      <Field label="AHV-Bezug ab" value={v.ahvClaimAge} onChange={(x) => setField("ahvClaimAge", x)} suffix="Jahre" min={63} max={70} {...est("ahvClaimAge")} />
+      <Field label="AHV-Referenzalter" value={v.ahvReferenceAge} onChange={(x) => setField("ahvReferenceAge", x)} suffix="Jahre" min={64} max={66} {...est("ahvReferenceAge")} />
+      <Field label="Säule 3a verfügbar ab" value={v.pillar3aUnlockAge} onChange={(x) => setField("pillar3aUnlockAge", x)} suffix="Jahre" min={58} max={70} {...est("pillar3aUnlockAge")} />
+      <Field label="Säule-3a-Konten (gestaffelt)" value={v.pillar3aTranches} onChange={(x) => setField("pillar3aTranches", x)} suffix="Konten" min={1} max={5} step={1} hint="Mehrere 3a-Konten in getrennten Jahren beziehen bricht die Progression der Kapitalauszahlungssteuer." />
+      <Field label="Pensionskasse verfügbar ab" value={v.earliestPkAge} onChange={(x) => setField("earliestPkAge", x)} suffix="Jahre" min={55} max={70} {...est("earliestPkAge")} />
+      <div className="border-t border-line pt-4">
+        <SegmentedControl
+          label="Pensionskasse-Bezug"
+          ariaLabel={`Pensionskassen-Bezugsart ${title}`}
+          value={v.pillar2PayoutMode}
+          onChange={(x) => setField("pillar2PayoutMode", x)}
+          options={[
+            { value: "capital", label: "Kapital" },
+            { value: "pension", label: "Rente" },
+            { value: "mix", label: "Gemischt" },
+          ]}
+        />
+        {v.pillar2PayoutMode !== "capital" && (
+          <div className="mt-4 space-y-4">
+            <Field label="Umwandlungssatz" value={v.pillar2ConversionRate} onChange={(x) => setField("pillar2ConversionRate", x)} percent hint="BVG-Minimum 6,8 %; überobligatorisch oft tiefer." {...est("pillar2ConversionRate")} />
+            {v.pillar2PayoutMode === "mix" && (
+              <Field label="Kapitalanteil" value={v.pillar2CapitalShare} onChange={(x) => setField("pillar2CapitalShare", x)} percent hint="Anteil als Kapital; Rest wird verrentet." />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Combined household net worth (both partners' liquid + 3a + PK). */
+function netWorthBanner(inputs: CalculatorInputs): ReactNode {
+  const sum = (a: { currentTaxableBalance: number; currentPillar3aBalance: number; currentPillar2Balance: number }) =>
+    a.currentTaxableBalance + a.currentPillar3aBalance + a.currentPillar2Balance;
+  const total = sum(inputs) + sum(inputs.partner);
+  return (
+    <div className="flex items-baseline justify-between gap-4 bg-ink p-4 text-paper">
+      <p className="eyebrow text-brass-soft">Haushaltsvermögen heute</p>
+      <p className="num text-lg font-semibold">{formatChf(total)}</p>
+    </div>
+  );
+}
+
 export const STEPS: StepDef[] = [
   {
     id: "you",
@@ -55,6 +182,8 @@ export const STEPS: StepDef[] = [
     subtitle: "Wann steigen Sie aus und wo wohnen Sie?",
     render: (props) => {
       const { inputs, set } = props;
+      const p = inputs.partner;
+      const setP = <K extends keyof PartnerInputs>(k: K, val: PartnerInputs[K]) => set("partner", { ...p, [k]: val });
       return (
       <div className="space-y-5">
         <Grid>
@@ -78,6 +207,29 @@ export const STEPS: StepDef[] = [
           options={cantonOptions}
           hint="„Näherung“ = Steuerkurve noch nicht verifiziert."
         />
+        <div className="border-t border-line pt-5">
+          <SegmentedControl
+            label="Gemeinsam planen"
+            ariaLabel="Haushalt mit Partner:in"
+            value={inputs.hasPartner ? "yes" : "no"}
+            onChange={(v) => set("hasPartner", v === "yes")}
+            options={[
+              { value: "no", label: "Alleine" },
+              { value: "yes", label: "Mit Partner:in" },
+            ]}
+          />
+          {inputs.hasPartner ? (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Alter Partner:in" value={p.currentAge} onChange={(v) => setP("currentAge", v)} suffix="Jahre" min={18} max={75} />
+              <Field label="FIRE-Alter Partner:in" value={p.fireAge} onChange={(v) => setP("fireAge", v)} suffix="Jahre" min={30} max={75} />
+            </div>
+          ) : (
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Beziehen Sie eine zweite Person mit eigenem Salär, eigenen Säulen und eigenem Ausstiegsalter ein.
+              Vermögen und Lebenshaltungskosten werden dann als Haushalt gerechnet.
+            </p>
+          )}
+        </div>
       </div>
       );
     },
@@ -88,6 +240,37 @@ export const STEPS: StepDef[] = [
     subtitle: "Aktuelle Guthaben sowie Salär und Sparrate bis zum Ausstieg.",
     render: (props) => {
       const { inputs, set } = props;
+      if (inputs.hasPartner) {
+        const p = inputs.partner;
+        const setPrimaryW: FieldSetter<WealthVals> = (k, val) => set(k as keyof CalculatorInputs, val as never);
+        const setPartnerW: FieldSetter<WealthVals> = (k, val) => set("partner", { ...p, [k]: val } as PartnerInputs);
+        return (
+          <div className="space-y-6">
+            {netWorthBanner(inputs)}
+            <TwoCol>
+              {wealthColumn("Sie", inputs, setPrimaryW)}
+              {wealthColumn("Partner:in", p, setPartnerW)}
+            </TwoCol>
+            <p className="text-xs leading-relaxed text-muted">
+              Im Haushaltsmodus wird für beide ein konstantes Salär mit realem Wachstum angenommen — die
+              Altersphasen-Eingabe ist hier nicht verfügbar.
+            </p>
+            <div className="border-t border-line pt-5">
+              <p className="text-sm font-medium text-ink">Einmalige Zuflüsse (z. B. Erbschaft)</p>
+              <p className="mt-1 mb-4 text-xs leading-relaxed text-muted">
+                Optionale Einmalbeträge, die in einem bestimmten Alter dem gemeinsamen steuerbaren Vermögen
+                gutgeschrieben werden (auf der Alters-Zeitachse der ersten Person).
+              </p>
+              <OneOffInflowsEditor
+                inflows={inputs.oneOffInflows}
+                currentAge={inputs.currentAge}
+                horizonAge={inputs.horizonAge}
+                onChange={(next) => set("oneOffInflows", next)}
+              />
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="space-y-6">
           <Grid>
@@ -180,105 +363,27 @@ export const STEPS: StepDef[] = [
     },
   },
   {
-    id: "partner",
-    title: "Partner:in",
-    subtitle: "Gemeinsam planen — mit eigenem Ausstiegsalter und eigenen Säulen.",
-    render: ({ inputs, set }) => {
-      const p = inputs.partner;
-      const setP = <K extends keyof PartnerInputs>(k: K, v: PartnerInputs[K]) =>
-        set("partner", { ...p, [k]: v });
-      return (
-        <div className="space-y-6">
-          <SegmentedControl
-            label="Mit Partner:in rechnen"
-            ariaLabel="Haushalt mit Partner:in"
-            value={inputs.hasPartner ? "yes" : "no"}
-            onChange={(v) => set("hasPartner", v === "yes")}
-            options={[
-              { value: "no", label: "Alleine" },
-              { value: "yes", label: "Mit Partner:in" },
-            ]}
-          />
-          {!inputs.hasPartner ? (
-            <p className="max-w-prose text-sm leading-relaxed text-muted">
-              Aktivieren Sie diese Option, um eine zweite Person mit eigenem Salär, eigener Säule 3a,
-              Pensionskasse und AHV einzubeziehen. Beide können zu unterschiedlichen Zeitpunkten in Pension
-              gehen; das gemeinsame steuerbare Vermögen und die Lebenshaltungskosten werden als Haushalt
-              gerechnet. Renditeannahmen und Kanton gelten für beide.
-            </p>
-          ) : (
-            <div className="space-y-6">
-              <Grid>
-                <Field label="Aktuelles Alter" value={p.currentAge} onChange={(v) => setP("currentAge", v)} suffix="Jahre" min={18} max={75} />
-                <Field label="FIRE-Alter (Ausstieg)" value={p.fireAge} onChange={(v) => setP("fireAge", v)} suffix="Jahre" min={30} max={75} />
-                <Field label="Bruttosalär" value={p.currentSalary} onChange={(v) => setP("currentSalary", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-                <Field label="Salärwachstum (real)" value={p.salaryGrowth} onChange={(v) => setP("salaryGrowth", v)} percent />
-                <Field label="Sparbetrag (steuerbar)" value={p.annualTaxableSavings} onChange={(v) => setP("annualTaxableSavings", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-                <Field label="3a-Einzahlung" value={p.annualPillar3aContribution} onChange={(v) => setP("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
-                <Field label="Steuerbares Vermögen heute" value={p.currentTaxableBalance} onChange={(v) => setP("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} hint="Wird mit Ihrem zum Haushaltsvermögen addiert." />
-                <Field label="Säule-3a-Guthaben heute" value={p.currentPillar3aBalance} onChange={(v) => setP("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
-                <Field label="Pensionskasse-Guthaben heute" value={p.currentPillar2Balance} onChange={(v) => setP("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
-                <Field label="Erwartete AHV-Rente" value={p.ahvAnnualPension} onChange={(v) => setP("ahvAnnualPension", v)} prefix="CHF" suffix="/Jahr" step={500} min={0} hint="Bei Ehepaaren ist die Summe beider Renten auf 150 % der Maximalrente plafoniert." />
-                <Field label="Krankenkassenprämie" value={p.healthInsuranceAnnualPremium} onChange={(v) => setP("healthInsuranceAnnualPremium", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
-                <Field label="AHV-Bezug ab" value={p.ahvClaimAge} onChange={(v) => setP("ahvClaimAge", v)} suffix="Jahre" min={63} max={70} />
-                <Field label="AHV-Referenzalter" value={p.ahvReferenceAge} onChange={(v) => setP("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} />
-                <Field label="Säule 3a verfügbar ab" value={p.pillar3aUnlockAge} onChange={(v) => setP("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} />
-                <Field label="Säule-3a-Konten (gestaffelt)" value={p.pillar3aTranches} onChange={(v) => setP("pillar3aTranches", v)} suffix="Konten" min={1} max={5} step={1} />
-                <Field label="Pensionskasse verfügbar ab" value={p.earliestPkAge} onChange={(v) => setP("earliestPkAge", v)} suffix="Jahre" min={55} max={70} />
-              </Grid>
-
-              <div className="border-t border-line pt-5">
-                <SegmentedControl
-                  label="PK-Aufbau"
-                  ariaLabel="Pensionskassen-Modell Partner:in"
-                  value={p.pillar2Model}
-                  onChange={(v) => setP("pillar2Model", v)}
-                  options={[
-                    { value: "bvg", label: "BVG-Minimum" },
-                    { value: "rate", label: "Ø Sparbeitrag" },
-                  ]}
-                />
-                {p.pillar2Model === "rate" && (
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label="Ø PK-Sparbeitrag" value={p.pillar2SavingsRate} onChange={(v) => setP("pillar2SavingsRate", v)} percent hint="Anteil des versicherten Lohns pro Jahr." />
-                    <Field label="Versicherter Lohn bis" value={p.pillar2InsuredCeiling} onChange={(v) => setP("pillar2InsuredCeiling", v)} prefix="CHF" step={5000} min={0} />
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-line pt-5">
-                <SegmentedControl
-                  label="Pensionskasse-Bezug"
-                  ariaLabel="Pensionskassen-Bezugsart Partner:in"
-                  value={p.pillar2PayoutMode}
-                  onChange={(v) => setP("pillar2PayoutMode", v)}
-                  options={[
-                    { value: "capital", label: "Kapital" },
-                    { value: "pension", label: "Rente" },
-                    { value: "mix", label: "Gemischt" },
-                  ]}
-                />
-                {p.pillar2PayoutMode !== "capital" && (
-                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label="Umwandlungssatz" value={p.pillar2ConversionRate} onChange={(v) => setP("pillar2ConversionRate", v)} percent hint="BVG-Minimum 6,8 %." />
-                    {p.pillar2PayoutMode === "mix" && (
-                      <Field label="Kapitalanteil" value={p.pillar2CapitalShare} onChange={(v) => setP("pillar2CapitalShare", v)} percent />
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    },
-  },
-  {
     id: "retirement",
     title: "Ruhestand",
     subtitle: "Ausgaben, Renten und ab wann die Säulen verfügbar sind.",
     render: (props) => {
       const { inputs, set } = props;
+      if (inputs.hasPartner) {
+        const p = inputs.partner;
+        const setPrimaryR: FieldSetter<RetVals> = (k, val) => set(k as keyof CalculatorInputs, val as never);
+        const setPartnerR: FieldSetter<RetVals> = (k, val) => set("partner", { ...p, [k]: val } as PartnerInputs);
+        const estPrimary: EstProvider = (key, hint) => estimable(props, key, hint);
+        const estNone: EstProvider = () => ({});
+        return (
+          <div className="space-y-6">
+            <Field label="Lebenshaltungskosten (Haushalt)" value={inputs.annualRealSpending} onChange={(v) => set("annualRealSpending", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} hint="Gemeinsame Ausgaben in heutiger Kaufkraft (Krankenkasse je Person separat unten)." />
+            <TwoCol>
+              {retirementColumn("Sie", inputs, setPrimaryR, estPrimary)}
+              {retirementColumn("Partner:in", p, setPartnerR, estNone)}
+            </TwoCol>
+          </div>
+        );
+      }
       return (
       <Grid>
         <Field label="Lebenshaltungskosten" value={inputs.annualRealSpending} onChange={(v) => set("annualRealSpending", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} hint="In heutiger Kaufkraft." />
