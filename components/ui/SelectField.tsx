@@ -23,14 +23,14 @@ export function SelectField({
   const id = useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
       </label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-base text-zinc-900 shadow-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        className="border border-line-2 bg-paper px-3 py-2.5 text-base text-ink outline-none transition focus:border-ink"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -38,7 +38,7 @@ export function SelectField({
           </option>
         ))}
       </select>
-      {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
+      {hint && <p className="text-xs leading-relaxed text-muted">{hint}</p>}
     </div>
   );
 }

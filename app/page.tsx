@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AffiliateSlot } from "@/components/AffiliateSlot";
@@ -10,6 +9,8 @@ import { Disclaimer } from "@/components/Disclaimer";
 import { Lifeline } from "@/components/Lifeline";
 import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
 import { ResultsHeadline } from "@/components/ResultsHeadline";
+import { LedgerBar } from "@/components/ui/LedgerBar";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StepProgress } from "@/components/wizard/StepProgress";
 import { STEPS } from "@/components/wizard/steps";
 import { AFFILIATE_SLOTS } from "@/lib/affiliates";
@@ -163,152 +164,171 @@ export default function Home() {
       type="button"
       aria-pressed={mcMode === mode}
       onClick={() => setMcMode(mode)}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+      className={`-ml-px border px-3 py-1.5 text-sm font-medium transition first:ml-0 ${
         mcMode === mode
-          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-          : "border border-zinc-300 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300"
+          ? "border-ink bg-ink text-paper"
+          : "border-line-2 bg-paper text-muted hover:border-ink hover:text-ink"
       }`}
     >
       {label}
     </button>
   );
 
-  return (
-    <>
-      <header className="sticky top-0 z-20 border-b border-zinc-200/60 bg-white/70 backdrop-blur dark:border-zinc-800/60 dark:bg-zinc-950/60">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
-          <span className="flex items-center gap-2 font-semibold text-zinc-900 dark:text-zinc-100">
-            <span aria-hidden="true">🇨🇭</span> Swiss FIRE
-          </span>
-          <Link
-            href="/ratgeber"
-            className="text-sm font-medium text-sky-700 underline-offset-4 hover:underline dark:text-sky-400"
-          >
-            Ratgeber →
-          </Link>
-        </div>
-      </header>
-
-      <main id="hauptinhalt" className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        {!showResults ? (
-          <div className="mx-auto max-w-2xl">
-            <div className="mb-8 text-center">
-              <h1 className="bg-gradient-to-br from-sky-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent sm:text-4xl">
-                Reicht Ihr Kapital bis zur Pension?
-              </h1>
-              <p className="mx-auto mt-2 max-w-md text-zinc-600 dark:text-zinc-400">
-                In vier Schritten zur Brückenrechnung zwischen Frühpensionierung und dem Zugriff auf
-                Säule 3a, Pensionskasse und AHV.
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none sm:p-8">
-              <StepProgress steps={STEPS} current={step} onJump={setStep} />
-
-              <div key={activeStep.id} className="animate-step mt-8">
-                <div className="mb-6">
-                  <p className="text-3xl" aria-hidden="true">
-                    {activeStep.icon}
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-zinc-900 dark:text-zinc-100">{activeStep.title}</h2>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeStep.subtitle}</p>
-                </div>
-
-                {activeStep.render({ inputs: eff, set, isAuto, toggleAuto })}
-              </div>
-
-              <div className="mt-8 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={back}
-                  disabled={step === 0}
-                  className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 disabled:invisible dark:text-zinc-300 dark:hover:bg-zinc-800"
-                >
-                  ← Zurück
-                </button>
-                <button
-                  type="button"
-                  onClick={next}
-                  className="rounded-xl bg-gradient-to-br from-sky-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/20 transition hover:brightness-110 active:scale-[0.98]"
-                >
-                  {isLastStep ? "Ergebnis berechnen →" : "Weiter →"}
-                </button>
-              </div>
-            </div>
-
-            <p className="mt-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
-              Bildungstool, keine Finanzberatung. Alle Berechnungen laufen lokal in Ihrem Browser.
+  if (!showResults) {
+    return (
+      <main id="hauptinhalt">
+        {/* Ink hero band */}
+        <section className="bg-ink text-paper">
+          <div className="col pt-12 pb-24 sm:pt-16">
+            <p className="eyebrow text-brass-soft">Schweizer Frühpensionierung · Brückenrechnung</p>
+            <h1 className="display mt-4 text-[clamp(34px,6vw,60px)] text-paper">
+              Reicht Ihr Kapital bis zur Pension?
+            </h1>
+            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-paper/70">
+              In vier Schritten zur Brückenrechnung zwischen Frühpensionierung und dem Zugriff auf
+              Säule 3a, Pensionskasse und AHV — inklusive Steuerschätzung pro Kanton.
             </p>
           </div>
-        ) : (
-          <div className="animate-step space-y-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Ihre Brückenrechnung</h1>
-              <button
-                type="button"
-                onClick={editInputs}
-                className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-              >
-                ✎ Eingaben anpassen
-              </button>
-            </div>
+        </section>
 
-            <ResultsHeadline
-              bridgeCapitalRequired={bridgeCapitalRequired}
-              taxableAtFire={accumulation.taxableAtFire}
-              feasible={!decumulation.failed}
-              failedDuringBridge={decumulation.failedDuringBridge}
-              monteCarloSuccessRate={monteCarlo?.successRate}
-            />
+        {/* The instrument: form card overlapping the masthead */}
+        <div className="col -mt-16 pb-20">
+          <div className="instrument p-6 sm:p-8">
+            <StepProgress steps={STEPS} current={step} onJump={setStep} />
 
-            <Lifeline
-              currentAge={eff.currentAge}
-              fireAge={eff.fireAge}
-              pillar3aUnlockAge={eff.pillar3aUnlockAge}
-              earliestPkAge={eff.earliestPkAge}
-              ahvClaimAge={eff.ahvClaimAge}
-              horizonAge={eff.horizonAge}
-            />
-
-            <BalanceChart data={balanceData} fireAge={eff.fireAge} />
-
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <div key={activeStep.id} className="animate-rise mt-8">
+              <div className="mb-6 flex items-baseline gap-3 border-b border-line pb-4">
+                <span className="eyebrow text-brass">{String(step + 1).padStart(2, "0")}</span>
                 <div>
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Monte-Carlo-Simulation</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Wie robust ist der Plan gegenüber schwankenden Renditen?
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2" role="group" aria-label="Monte-Carlo-Modus">
-                  {mcButton("off", "Aus")}
-                  {mcButton("parametric", "Parametrisch")}
-                  {mcButton("bootstrap", "Bootstrap")}
+                  <h2 className="serif text-xl text-ink">{activeStep.title}</h2>
+                  <p className="mt-0.5 text-sm text-muted">{activeStep.subtitle}</p>
                 </div>
               </div>
-              {mcMode === "bootstrap" && (
-                <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-                  Verwendet eine synthetische Platzhalter-Renditeserie (noch keine echten historischen Daten).
-                </p>
-              )}
-              {monteCarlo && (
-                <div className="mt-4">
-                  <MonteCarloFan data={fanData} />
-                </div>
-              )}
+
+              {activeStep.render({ inputs: eff, set, isAuto, toggleAuto })}
             </div>
 
-            <AssumptionsPanel canton={getCanton(eff.canton)} />
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
-              <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
+            <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6">
+              <button
+                type="button"
+                onClick={back}
+                disabled={step === 0}
+                className="eyebrow text-muted transition hover:text-ink disabled:invisible"
+              >
+                ← Zurück
+              </button>
+              <button
+                type="button"
+                onClick={next}
+                className="bg-brass px-6 py-3 text-sm font-semibold text-[#1a1205] transition hover:bg-brass-soft"
+              >
+                {isLastStep ? "Ergebnis berechnen →" : "Weiter →"}
+              </button>
             </div>
-
-            <Disclaimer />
           </div>
-        )}
+
+          <p className="mt-6 text-center text-xs text-muted">
+            Bildungstool, keine Finanzberatung. Alle Berechnungen laufen lokal in Ihrem Browser.
+          </p>
+        </div>
       </main>
-    </>
+    );
+  }
+
+  const capitalSegments = [
+    { label: "Steuerbar", value: accumulation.taxableAtFire, color: "bg-petrol" },
+    { label: "Säule 3a", value: accumulation.pillar3aAtFire, color: "bg-brass" },
+    { label: "Pensionskasse", value: accumulation.pillar2AtFire, color: "bg-steel" },
+  ];
+
+  return (
+    <main id="hauptinhalt">
+      <section className="bg-ink text-paper">
+        <div className="col flex flex-wrap items-end justify-between gap-4 pt-12 pb-20 sm:pt-14">
+          <div>
+            <p className="eyebrow text-brass-soft">Dossier · Ergebnis</p>
+            <h1 className="display mt-3 text-[clamp(30px,5vw,48px)] text-paper">Ihre Brückenrechnung</h1>
+          </div>
+          <button
+            type="button"
+            onClick={editInputs}
+            className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
+          >
+            Eingaben anpassen
+          </button>
+        </div>
+      </section>
+
+      <div className="col-wide animate-rise -mt-12 space-y-14 pb-20">
+        <ResultsHeadline
+          bridgeCapitalRequired={bridgeCapitalRequired}
+          taxableAtFire={accumulation.taxableAtFire}
+          feasible={!decumulation.failed}
+          failedDuringBridge={decumulation.failedDuringBridge}
+          monteCarloSuccessRate={monteCarlo?.successRate}
+        />
+
+        <section className="space-y-5">
+          <SectionHeader index="02" title="Vermögen bei FIRE" />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">
+            Zusammensetzung des projizierten Vermögens zum Ausstieg. In der Brückenphase steht nur das
+            steuerbare Vermögen zur Verfügung — Säule 3a und Pensionskasse sind bis zum Bezugsalter gesperrt.
+          </p>
+          <LedgerBar segments={capitalSegments} />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="03" title="Zeitlinie" />
+          <Lifeline
+            currentAge={eff.currentAge}
+            fireAge={eff.fireAge}
+            pillar3aUnlockAge={eff.pillar3aUnlockAge}
+            earliestPkAge={eff.earliestPkAge}
+            ahvClaimAge={eff.ahvClaimAge}
+            horizonAge={eff.horizonAge}
+          />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="04" title="Vermögensverlauf" />
+          <BalanceChart data={balanceData} fireAge={eff.fireAge} />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader
+            index="05"
+            title="Monte-Carlo"
+            action={
+              <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
+                {mcButton("off", "Aus")}
+                {mcButton("parametric", "Parametrisch")}
+                {mcButton("bootstrap", "Bootstrap")}
+              </div>
+            }
+          />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">
+            Wie robust ist der Plan gegenüber schwankenden Renditen?
+            {mcMode === "bootstrap" &&
+              " Der Bootstrap-Modus verwendet eine synthetische Platzhalter-Renditeserie (noch keine echten historischen Daten)."}
+          </p>
+          {monteCarlo && <MonteCarloFan data={fanData} />}
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="06" title="Annahmen & Quellen" />
+          <AssumptionsPanel canton={getCanton(eff.canton)} />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="07" title="Anbieter" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
+            <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
+          </div>
+        </section>
+
+        <Disclaimer />
+      </div>
+    </main>
   );
 }

@@ -61,85 +61,93 @@ export default function RatgeberPage() {
   };
 
   return (
-    <main id="hauptinhalt" className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10 sm:px-6">
+    <main id="hauptinhalt">
       <JsonLd data={faqJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
 
-      <nav aria-label="Brotkrümel" className="text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/" className="underline-offset-2 hover:underline">
-          Rechner
-        </Link>{" "}
-        / <span className="text-zinc-700 dark:text-zinc-300">Ratgeber</span>
-      </nav>
-
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Frühpensionierung in der Schweiz: die Brückenphase verstehen
-        </h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Ein kompakter Überblick über die Mechanik zwischen FIRE-Ausstieg und dem Zugriff auf
-          Säule 3a, Pensionskasse und AHV — die Grundlage hinter dem Rechner.
-        </p>
-      </header>
-
-      <Disclaimer />
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Die drei Säulen auf einen Blick</h2>
-        <p className="leading-7 text-zinc-700 dark:text-zinc-300">
-          Das Schweizer Vorsorgesystem ruht auf drei Säulen: der staatlichen AHV (Säule 1), der
-          beruflichen Vorsorge / Pensionskasse (Säule 2, BVG) und der gebundenen privaten Vorsorge
-          (Säule 3a). Für eine Frühpensionierung ist entscheidend, dass alle drei erst ab einem
-          bestimmten Alter Geld ausschütten — die Lücke davor muss aus eigenem, frei verfügbarem
-          Vermögen überbrückt werden.
-        </p>
-        <ul className="ml-5 list-disc space-y-2 leading-7 text-zinc-700 dark:text-zinc-300">
-          <li>
-            <strong>Säule 1 (AHV):</strong> Bezug flexibel ab 63, regulär ab Referenzalter 65. Ein
-            Vorbezug reduziert die lebenslange Rente.
-          </li>
-          <li>
-            <strong>Säule 2 (Pensionskasse):</strong> Kapital- oder Rentenbezug je nach Reglement
-            oft ab 58–60. Ein Kapitalbezug wird einmalig besteuert.
-          </li>
-          <li>
-            <strong>Säule 3a:</strong> Bezug frühestens fünf Jahre vor dem Referenzalter, also
-            typischerweise ab rund 60. Mehrere 3a-Konten erlauben gestaffelte Bezüge.
-          </li>
-        </ul>
+      {/* Ink masthead for the document */}
+      <section className="bg-ink text-paper">
+        <div className="col pt-10 pb-14">
+          <nav aria-label="Brotkrümel" className="eyebrow text-brass-soft">
+            <Link href="/" className="no-underline transition hover:text-paper">
+              Rechner
+            </Link>
+            <span className="text-paper/40"> / Ratgeber</span>
+          </nav>
+          <h1 className="display mt-5 text-[clamp(30px,5vw,48px)] text-paper">
+            Frühpensionierung in der Schweiz: die Brückenphase verstehen
+          </h1>
+          <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-paper/70">
+            Ein kompakter Überblick über die Mechanik zwischen FIRE-Ausstieg und dem Zugriff auf
+            Säule 3a, Pensionskasse und AHV — die Grundlage hinter dem Rechner.
+          </p>
+        </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Warum die Staffelung beim Bezug zählt</h2>
-        <p className="leading-7 text-zinc-700 dark:text-zinc-300">
-          Kapitalbezüge aus Vorsorgegeldern werden im Bezugsjahr zusammengezählt und progressiv
-          besteuert. Wer Säule 3a und Pensionskasse im selben Jahr bezieht, landet schnell in einer
-          höheren Progressionsstufe. Eine Verteilung über mehrere Steuerjahre kann die gesamte
-          Kapitalauszahlungssteuer spürbar senken. Der Rechner bildet diese Heuristik nach, indem er
-          pro Jahr höchstens aus einer Säule bezieht.
+      <article className="col space-y-12 py-14">
+        <Disclaimer />
+
+        <section className="space-y-4">
+          <div className="flex items-baseline gap-3 border-b border-line pb-3">
+            <span className="eyebrow text-brass">01</span>
+            <h2 className="serif text-2xl text-ink">Die drei Säulen auf einen Blick</h2>
+          </div>
+          <p className="max-w-prose leading-relaxed text-ink">
+            Das Schweizer Vorsorgesystem ruht auf drei Säulen: der staatlichen AHV (Säule 1), der
+            beruflichen Vorsorge / Pensionskasse (Säule 2, BVG) und der gebundenen privaten Vorsorge
+            (Säule 3a). Für eine Frühpensionierung ist entscheidend, dass alle drei erst ab einem
+            bestimmten Alter Geld ausschütten — die Lücke davor muss aus eigenem, frei verfügbarem
+            Vermögen überbrückt werden.
+          </p>
+          <dl className="border border-line">
+            {[
+              ["Säule 1 — AHV", "Bezug flexibel ab 63, regulär ab Referenzalter 65. Ein Vorbezug reduziert die lebenslange Rente."],
+              ["Säule 2 — Pensionskasse", "Kapital- oder Rentenbezug je nach Reglement oft ab 58–60. Ein Kapitalbezug wird einmalig besteuert."],
+              ["Säule 3a", "Bezug frühestens fünf Jahre vor dem Referenzalter, also typischerweise ab rund 60. Mehrere 3a-Konten erlauben gestaffelte Bezüge."],
+            ].map(([term, def]) => (
+              <div key={term} className="flex flex-col gap-1 border-t border-line p-4 first:border-t-0 sm:flex-row sm:gap-6">
+                <dt className="eyebrow shrink-0 pt-0.5 text-muted sm:w-48">{term}</dt>
+                <dd className="leading-relaxed text-ink">{def}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-baseline gap-3 border-b border-line pb-3">
+            <span className="eyebrow text-brass">02</span>
+            <h2 className="serif text-2xl text-ink">Warum die Staffelung beim Bezug zählt</h2>
+          </div>
+          <p className="max-w-prose leading-relaxed text-ink">
+            Kapitalbezüge aus Vorsorgegeldern werden im Bezugsjahr zusammengezählt und progressiv
+            besteuert. Wer Säule 3a und Pensionskasse im selben Jahr bezieht, landet schnell in einer
+            höheren Progressionsstufe. Eine Verteilung über mehrere Steuerjahre kann die gesamte
+            Kapitalauszahlungssteuer spürbar senken. Der Rechner bildet diese Heuristik nach, indem er
+            pro Jahr höchstens aus einer Säule bezieht.
+          </p>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-baseline gap-3 border-b border-line pb-3">
+            <span className="eyebrow text-brass">03</span>
+            <h2 className="serif text-2xl text-ink">Häufige Fragen</h2>
+          </div>
+          <dl className="border border-line">
+            {FAQ.map((item) => (
+              <div key={item.q} className="border-t border-line p-4 first:border-t-0">
+                <dt className="font-medium text-ink">{item.q}</dt>
+                <dd className="mt-1.5 max-w-prose leading-relaxed text-muted">{item.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <p>
+          <Link href="/" className="bg-brass px-5 py-3 text-sm font-semibold text-[#1a1205] transition hover:bg-brass-soft">
+            ← Zum Rechner
+          </Link>
         </p>
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Häufige Fragen</h2>
-        <dl className="space-y-4">
-          {FAQ.map((item) => (
-            <div key={item.q} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-              <dt className="font-semibold text-zinc-900 dark:text-zinc-100">{item.q}</dt>
-              <dd className="mt-1 leading-7 text-zinc-700 dark:text-zinc-300">{item.a}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <p>
-        <Link
-          href="/"
-          className="inline-block rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          ← Zum Rechner
-        </Link>
-      </p>
+      </article>
     </main>
   );
 }

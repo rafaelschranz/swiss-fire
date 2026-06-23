@@ -12,34 +12,30 @@ export function StepProgress({
   onJump: (index: number) => void;
 }) {
   return (
-    <ol className="flex items-center gap-2" aria-label="Fortschritt">
+    <ol className="flex items-center" aria-label="Fortschritt">
       {steps.map((step, i) => {
         const state = i === current ? "current" : i < current ? "done" : "upcoming";
         const reachable = i <= current;
         return (
-          <li key={step.id} className="flex flex-1 items-center gap-2">
+          <li key={step.id} className="flex flex-1 items-center">
             <button
               type="button"
               disabled={!reachable}
               onClick={() => reachable && onJump(i)}
               aria-current={state === "current" ? "step" : undefined}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition ${
+              className={`num flex h-8 w-8 shrink-0 items-center justify-center border text-xs font-medium transition ${
                 state === "current"
-                  ? "bg-sky-600 text-white ring-4 ring-sky-600/20"
+                  ? "border-ink bg-ink text-paper"
                   : state === "done"
-                    ? "bg-sky-600 text-white hover:bg-sky-700"
-                    : "bg-zinc-200 text-zinc-400 dark:bg-zinc-800"
+                    ? "border-ink bg-ink text-paper hover:opacity-80"
+                    : "border-line-2 bg-transparent text-muted"
               } ${reachable ? "cursor-pointer" : "cursor-not-allowed"}`}
               title={step.title}
             >
-              {state === "done" ? "✓" : i + 1}
+              {state === "done" ? "✓" : String(i + 1).padStart(2, "0")}
             </button>
             {i < steps.length - 1 && (
-              <span
-                className={`h-0.5 flex-1 rounded-full transition ${
-                  i < current ? "bg-sky-600" : "bg-zinc-200 dark:bg-zinc-800"
-                }`}
-              />
+              <span className={`mx-2 h-px flex-1 transition ${i < current ? "bg-ink" : "bg-line-2"}`} />
             )}
           </li>
         );

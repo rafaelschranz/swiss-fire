@@ -34,8 +34,6 @@ export interface StepDef {
   id: string;
   title: string;
   subtitle: string;
-  /** Emoji/icon shown in the progress indicator and step header. */
-  icon: string;
   render: (props: StepProps) => ReactNode;
 }
 
@@ -53,7 +51,6 @@ export const STEPS: StepDef[] = [
     id: "you",
     title: "Über Sie",
     subtitle: "Wann steigen Sie aus und wo wohnen Sie?",
-    icon: "🧭",
     render: (props) => {
       const { inputs, set } = props;
       return (
@@ -87,7 +84,6 @@ export const STEPS: StepDef[] = [
     id: "wealth",
     title: "Vermögen heute",
     subtitle: "Ihre aktuellen Ersparnisse und Vorsorgeguthaben.",
-    icon: "💰",
     render: (props) => {
       const { inputs, set } = props;
       return (
@@ -106,7 +102,6 @@ export const STEPS: StepDef[] = [
     id: "retirement",
     title: "Ruhestand",
     subtitle: "Ausgaben, Renten und ab wann die Säulen verfügbar sind.",
-    icon: "🌅",
     render: (props) => {
       const { inputs, set } = props;
       return (
@@ -126,7 +121,6 @@ export const STEPS: StepDef[] = [
     id: "assumptions",
     title: "Feinabstimmung",
     subtitle: "Optional — sinnvolle Standardwerte sind bereits gesetzt.",
-    icon: "⚙️",
     render: ({ inputs, set }) => (
       <Grid>
         <Field label="Erwartete reale Rendite" value={inputs.expectedReturn} onChange={(v) => set("expectedReturn", v)} percent />

@@ -130,8 +130,23 @@ pension, statutory ages, 3a max contribution, health premium, horizon)
 start **auto-estimated** from the entered figures + verified constants via
 `lib/estimates.ts`, with a per-field "Schätzen" toggle to switch to manual
 entry. All computation runs in the browser; no inputs are sent to a
-server. German-language UI by default. `tsc --noEmit`, `eslint`,
-`vitest run`, and `next build` all pass.
+server. German-language UI by default.
+
+Phase 7 applies the **"Private Dossier"** design system — a restrained,
+editorial private-bank aesthetic. Design tokens (ink / porcelain / paper /
+brass + petrol/steel/stone data palette, hairline rules) live as a Tailwind
+v4 `@theme` block in `app/globals.css`; type roles are Spectral (serif
+headlines), Inter (body/UI), and IBM Plex Mono (all numbers, eyebrows,
+labels) loaded via `next/font`. The layout frames the page in an ink
+masthead and ink2 footer; the wizard sits in an "instrument" card
+overlapping the masthead; results lead with mono KPI tiles (one inverted to
+ink) plus a stacked `LedgerBar` of capital composition. Charts are themed
+end-to-end (mono ticks, horizontal hairlines only, a custom ink tooltip).
+Brass is used sparingly as the single accent; semantic color (petrol =
+positive, brass = caution) replaces generic green/red. Swiss currency
+formatting (`CHF 50’000`) is centralised in `lib/format.ts`. Motion is one
+orchestrated entrance per screen, disabled under `prefers-reduced-motion`.
+`tsc --noEmit`, `eslint`, `vitest run` (29 tests), and `next build` all pass.
 
 Phase 5 (SEO + a11y) is built: `app/robots.ts`, `app/sitemap.ts`,
 canonical/OpenGraph/Twitter metadata and `WebApplication` JSON-LD in the

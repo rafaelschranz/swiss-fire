@@ -23,8 +23,9 @@ export interface FieldProps {
 }
 
 /**
- * A single polished numeric input. Handles the real-terms decimal <-> percent
- * conversion so the user types "4" while the engine receives 0.04.
+ * A single dossier numeric input. Mono tabular figures; hairline frame that
+ * darkens on focus. Handles the real-terms decimal <-> percent conversion so
+ * the user types "4" while the engine receives 0.04.
  */
 export function Field({ label, value, onChange, percent, prefix, suffix, step, min, max, hint, onToggleAuto, auto }: FieldProps) {
   const id = useId();
@@ -40,8 +41,8 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <div className="flex items-baseline justify-between gap-2">
+        <label htmlFor={id} className="text-sm font-medium text-ink">
           {label}
         </label>
         {onToggleAuto && (
@@ -51,25 +52,21 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
             aria-checked={!!auto}
             aria-label={`${label} automatisch schätzen`}
             onClick={onToggleAuto}
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium transition ${
-              auto
-                ? "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300"
-                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            className={`eyebrow shrink-0 transition ${
+              auto ? "text-brass" : "text-muted hover:text-ink"
             }`}
           >
-            {auto ? "✨ Geschätzt" : "Schätzen"}
+            {auto ? "Geschätzt ●" : "Schätzen ○"}
           </button>
         )}
       </div>
       <div
-        className={`group flex items-stretch overflow-hidden rounded-xl border shadow-sm transition focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30 ${
-          auto
-            ? "border-dashed border-sky-300 bg-sky-50/50 dark:border-sky-500/30 dark:bg-sky-500/5"
-            : "border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900"
+        className={`flex items-stretch border bg-paper transition focus-within:border-ink ${
+          auto ? "border-dashed border-line-2" : "border-line-2"
         }`}
       >
         {prefix && (
-          <span className="flex items-center bg-zinc-100 px-3 text-sm font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          <span className="eyebrow flex items-center border-r border-line px-3 text-muted">
             {prefix}
           </span>
         )}
@@ -80,8 +77,8 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
           aria-label={unit ? `${label} (${unit})` : label}
           readOnly={auto}
           tabIndex={auto ? -1 : undefined}
-          className={`w-full bg-transparent px-3 py-2.5 text-base tabular-nums outline-none placeholder:text-zinc-400 ${
-            auto ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-900 dark:text-zinc-100"
+          className={`num w-full bg-transparent px-3 py-2.5 text-base outline-none ${
+            auto ? "text-muted" : "text-ink"
           }`}
           value={display}
           step={effectiveStep}
@@ -90,12 +87,12 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
           onChange={(e) => handle(e.target.value)}
         />
         {unit && (
-          <span className="flex items-center pr-3 text-sm text-zinc-400" aria-hidden="true">
+          <span className="num flex items-center pr-3 text-sm text-muted" aria-hidden="true">
             {unit}
           </span>
         )}
       </div>
-      {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
+      {hint && <p className="text-xs leading-relaxed text-muted">{hint}</p>}
     </div>
   );
 }

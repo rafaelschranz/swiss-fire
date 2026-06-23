@@ -12,6 +12,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { axisTick, CHART, DossierTooltip, tickFormatterChf } from "@/components/ui/ChartTokens";
+
 export interface BalancePoint {
   age: number;
   taxable: number;
@@ -19,34 +21,33 @@ export interface BalancePoint {
   pillar2: number;
 }
 
-function formatChfShort(value: number): string {
-  if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(value) >= 1_000) return `${Math.round(value / 1_000)}k`;
-  return `${Math.round(value)}`;
-}
-
 export function BalanceChart({ data, fireAge }: { data: BalancePoint[]; fireAge: number }) {
   return (
-    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-        Vermögensverlauf (steuerbar, 3a, PK)
-      </p>
+    <div className="card p-5">
       <div
         className="h-72 w-full"
         role="img"
         aria-label="Flächendiagramm des steuerbaren Vermögens, der Säule 3a und der Pensionskasse über die Zeit, mit Markierung des FIRE-Alters."
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-800" />
-            <XAxis dataKey="age" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={formatChfShort} tick={{ fontSize: 12 }} width={56} />
-            <Tooltip formatter={(value) => `CHF ${formatChfShort(Number(value))}`} labelFormatter={(age) => `Alter ${age}`} />
-            <Legend />
-            <ReferenceLine x={fireAge} stroke="#3b82f6" strokeDasharray="4 4" label={{ value: "FIRE", fontSize: 12 }} />
-            <Area type="monotone" dataKey="taxable" name="Steuerbar" stackId="1" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.5} />
-            <Area type="monotone" dataKey="pillar3a" name="Säule 3a" stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.5} />
-            <Area type="monotone" dataKey="pillar2" name="Pensionskasse" stackId="1" stroke="#a855f7" fill="#a855f7" fillOpacity={0.5} />
+          <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={CHART.grid} vertical={false} />
+            <XAxis dataKey="age" tick={axisTick} tickLine={false} axisLine={{ stroke: CHART.grid }} />
+            <YAxis tickFormatter={tickFormatterChf} tick={axisTick} tickLine={false} axisLine={false} width={48} />
+            <Tooltip content={<DossierTooltip />} cursor={{ stroke: CHART.muted, strokeDasharray: "3 3" }} />
+            <Legend
+              iconType="square"
+              wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}
+            />
+            <ReferenceLine
+              x={fireAge}
+              stroke={CHART.brass}
+              strokeDasharray="3 3"
+              label={{ value: "FIRE", fontSize: 11, fill: CHART.brass, fontFamily: "var(--font-mono)" }}
+            />
+            <Area type="monotone" dataKey="taxable" name="Steuerbar" stackId="1" stroke={CHART.petrol} fill={CHART.petrol} fillOpacity={0.85} />
+            <Area type="monotone" dataKey="pillar3a" name="Säule 3a" stackId="1" stroke={CHART.brass} fill={CHART.brass} fillOpacity={0.85} />
+            <Area type="monotone" dataKey="pillar2" name="Pensionskasse" stackId="1" stroke={CHART.steel} fill={CHART.steel} fillOpacity={0.85} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

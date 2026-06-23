@@ -1,18 +1,27 @@
-function formatChf(value: number): string {
-  return new Intl.NumberFormat("de-CH", { maximumFractionDigits: 0 }).format(Math.round(value));
-}
+import { formatChf, formatPercent } from "@/lib/format";
 
-function Stat({ label, value, tone = "neutral" }: { label: string; value: string; tone?: "neutral" | "good" | "bad" }) {
-  const toneClass =
-    tone === "good"
-      ? "text-emerald-600 dark:text-emerald-400"
-      : tone === "bad"
-        ? "text-rose-600 dark:text-rose-400"
-        : "text-zinc-900 dark:text-zinc-50";
+function Tile({
+  caption,
+  value,
+  inverted,
+  accent,
+}: {
+  caption: string;
+  value: string;
+  inverted?: boolean;
+  accent?: "petrol" | "brass";
+}) {
+  const valueTone = inverted
+    ? "text-paper"
+    : accent === "petrol"
+      ? "text-petrol"
+      : accent === "brass"
+        ? "text-brass"
+        : "text-ink";
   return (
-    <div className="rounded-2xl border border-zinc-200/70 bg-white/70 p-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/60">
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
-      <p className={`mt-1 text-2xl font-bold tabular-nums ${toneClass}`}>{value}</p>
+    <div className={`p-5 ${inverted ? "bg-ink" : "bg-paper"}`}>
+      <p className={`eyebrow ${inverted ? "text-brass-soft" : "text-muted"}`}>{caption}</p>
+      <p className={`num mt-2 text-xl font-semibold sm:text-[22px] ${valueTone}`}>{value}</p>
     </div>
   );
 }
@@ -32,48 +41,53 @@ export function ResultsHeadline({
 }) {
   const coverage = bridgeCapitalRequired > 0 ? taxableAtFire / bridgeCapitalRequired : Infinity;
 
-  const verdict = feasible
-    ? { label: "Plan trägt", emoji: "✅", grad: "from-emerald-500 to-teal-600" }
+  const statusLabel = feasible
+    ? "Tragfähig"
     : failedDuringBridge
-      ? { label: "Lücke in der Brückenphase", emoji: "⚠️", grad: "from-amber-500 to-rose-600" }
-      : { label: "Vermögen reicht nicht bis zum Horizont", emoji: "⚠️", grad: "from-amber-500 to-rose-600" };
+      ? "Lücke in Brückenphase"
+      : "Nicht tragfähig bis Horizont";
 
   return (
     <div className="space-y-4">
-      <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${verdict.grad} p-6 text-white shadow-lg sm:p-8`}>
-        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" aria-hidden="true" />
-        <div className="absolute -bottom-12 -left-6 h-48 w-48 rounded-full bg-black/10" aria-hidden="true" />
-        <div className="relative">
-          <p className="text-sm font-medium uppercase tracking-wide text-white/80">Benötigtes Brücken-Kapital</p>
-          <p className="mt-1 text-4xl font-extrabold tabular-nums sm:text-5xl">CHF {formatChf(bridgeCapitalRequired)}</p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm font-semibold backdrop-blur">
-            <span aria-hidden="true">{verdict.emoji}</span>
-            {verdict.label}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Stat
-          label="Steuerbares Vermögen bei FIRE"
-          value={`CHF ${formatChf(taxableAtFire)}`}
-          tone={coverage >= 1 ? "good" : "bad"}
+      {/* KPI tiles separated by hairline gridlines; headline tile inverts to ink */}
+      <div className="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
+        <Tile caption="Brücken-Kapitalbedarf" value={formatChf(bridgeCapitalRequired)} inverted />
+        <Tile
+          caption="Vermögen bei FIRE"
+          value={formatChf(taxableAtFire)}
+          accent={coverage >= 1 ? "petrol" : "brass"}
         />
-        <Stat
-          label="Deckung des Brückenbedarfs"
-          value={Number.isFinite(coverage) ? `${Math.round(coverage * 100)}%` : "—"}
-          tone={coverage >= 1 ? "good" : "bad"}
+        <Tile
+          caption="Deckung Brückenbedarf"
+          value={Number.isFinite(coverage) ? formatPercent(coverage) : "—"}
+          accent={coverage >= 1 ? "petrol" : "brass"}
         />
         {monteCarloSuccessRate !== undefined ? (
-          <Stat
-            label="Monte-Carlo Erfolgsquote"
-            value={`${Math.round(monteCarloSuccessRate * 100)}%`}
-            tone={monteCarloSuccessRate >= 0.8 ? "good" : monteCarloSuccessRate >= 0.5 ? "neutral" : "bad"}
+          <Tile
+            caption="Monte-Carlo Erfolg"
+            value={formatPercent(monteCarloSuccessRate)}
+            accent={monteCarloSuccessRate >= 0.8 ? "petrol" : "brass"}
           />
         ) : (
-          <Stat label="Status bis Horizont" value={feasible ? "Tragfähig" : "Nicht tragfähig"} tone={feasible ? "good" : "bad"} />
+          <Tile caption="Status bis Horizont" value={statusLabel} accent={feasible ? "petrol" : "brass"} />
         )}
       </div>
+
+      {/* Quiet verdict line — petrol for positive, brass for caution; never green/red */}
+      <p className="flex items-center gap-2 text-sm">
+        <span
+          className={`inline-block h-2 w-2 ${feasible ? "bg-petrol" : "bg-brass"}`}
+          aria-hidden="true"
+        />
+        <span className={feasible ? "text-petrol" : "text-brass"}>{statusLabel}</span>
+        <span className="text-muted">
+          {feasible
+            ? "— das projizierte steuerbare Vermögen deckt die Brückenphase."
+            : failedDuringBridge
+              ? "— das steuerbare Vermögen reicht nicht durch die Brückenphase."
+              : "— das Vermögen ist vor dem Planungshorizont aufgebraucht."}
+        </span>
+      </p>
     </div>
   );
 }
