@@ -43,6 +43,26 @@ describe("Decumulation bridge failure", () => {
     const result = simulateDecumulation(baseParams());
     expect(result.failed).toBe(false);
   });
+
+  it("reports failure when an unlocked pillar only partially covers the shortfall", () => {
+    // No bridge (FIRE at/after first unlock), tiny taxable, and a pillar
+    // balance smaller than a single year's grossed-up shortfall: the draw
+    // is capped by the balance, so the shortfall is only partially met.
+    const result = simulateDecumulation(
+      baseParams({
+        fireAge: 60,
+        pillar3aUnlockAge: 60,
+        earliestPkAge: 58,
+        startingTaxable: 10_000,
+        startingPillar3a: 0,
+        startingPillar2: 30_000,
+        annualRealSpending: 40_000,
+      }),
+    );
+
+    expect(result.failed).toBe(true);
+    expect(result.failedDuringBridge).toBe(false); // failure happens after unlock, not in the bridge
+  });
 });
 
 describe("Bridge capital required", () => {

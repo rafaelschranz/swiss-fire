@@ -57,6 +57,29 @@ function grossUpLumpSum(canton: CantonTaxData, netNeeded: number): { gross: numb
 }
 
 /**
+ * Net annual cash need (real terms) for a decumulation year, plus the
+ * non-employed AHV contribution component (broken out because the main
+ * simulator reports it per year). Shared by both `simulateDecumulation`
+ * and `computeBridgeCapitalRequired` so the spending / AHV-contribution /
+ * AHV-pension-offset accounting lives in exactly one place.
+ */
+function annualCashNeed(
+  params: DecumulationParams,
+  age: number,
+  taxableEstimate: number,
+  ahvPension: number,
+): { nonEmployedContribution: number; netCashNeed: number } {
+  const replacementIncomeBasis = ahvPension > 0 ? ahvPension : params.annualRealSpending;
+  const nonEmployedContribution =
+    age < params.ahvReferenceAge
+      ? nonEmployedAhvContribution(taxableEstimate, replacementIncomeBasis, params.maritalStatus)
+      : 0;
+  const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
+  const netCashNeed = spend + nonEmployedContribution - ahvPension;
+  return { nonEmployedContribution, netCashNeed };
+}
+
+/**
  * Year-by-year decumulation simulator implementing a documented
  * tax-optimised HEURISTIC (not a global optimiser):
  *   1. Bridge years: fund spending from the taxable account first.
@@ -86,14 +109,8 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
         ? adjustedAhvPension(params.ahvAnnualPension, params.ahvClaimAge, params.ahvReferenceAge)
         : 0;
 
-    const replacementIncomeBasis = ahvPension > 0 ? ahvPension : params.annualRealSpending;
-    const nonEmployedContribution =
-      age < params.ahvReferenceAge
-        ? nonEmployedAhvContribution(taxable, replacementIncomeBasis, params.maritalStatus)
-        : 0;
-
+    const { nonEmployedContribution, netCashNeed } = annualCashNeed(params, age, taxable, ahvPension);
     const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
-    const netCashNeed = spend + nonEmployedContribution - ahvPension;
 
     let lumpSumTaxPaid = 0;
     taxable -= netCashNeed;
@@ -101,6 +118,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     if (taxable < 0) {
       const shortfall = -taxable;
       taxable = 0;
+      let covered = false;
 
       const pillar3aUnlocked = age >= params.pillar3aUnlockAge && pillar3a > 0;
       const pillar2Unlocked = age >= params.earliestPkAge && pillar2 > 0;
@@ -110,26 +128,25 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
         // each pillar down across fewer, larger, separate tax years
         // rather than thin slices from both.
         const usePillar3a = pillar3aUnlocked && (!pillar2Unlocked || pillar3a >= pillar2);
-        const { gross, tax } = grossUpLumpSum(params.canton, shortfall);
+        const { gross } = grossUpLumpSum(params.canton, shortfall);
 
-        if (usePillar3a) {
-          const drawn = Math.min(gross, pillar3a);
-          pillar3a -= drawn;
-          const actualTax = lumpSumTax(params.canton, drawn);
-          taxable += Math.max(0, drawn - actualTax);
-          lumpSumTaxPaid = actualTax;
-        } else {
-          const drawn = Math.min(gross, pillar2);
-          pillar2 -= drawn;
-          const actualTax = lumpSumTax(params.canton, drawn);
-          taxable += Math.max(0, drawn - actualTax);
-          lumpSumTaxPaid = actualTax;
-        }
-        void tax;
+        const sourceBalance = usePillar3a ? pillar3a : pillar2;
+        const drawn = Math.min(gross, sourceBalance);
+        if (usePillar3a) pillar3a -= drawn;
+        else pillar2 -= drawn;
+
+        const actualTax = lumpSumTax(params.canton, drawn);
+        taxable += Math.max(0, drawn - actualTax);
+        lumpSumTaxPaid = actualTax;
+
+        // Covered iff the chosen pillar's balance was large enough to
+        // supply the full grossed-up draw. A balance-capped draw
+        // (drawn < gross) means the shortfall was only partially met —
+        // the case the previous `taxable === 0` guard silently missed.
+        covered = drawn >= gross - 1e-6;
       }
 
-      if (taxable < shortfall - 1e-6 && taxable === 0) {
-        // Could not fully cover the shortfall even after drawing a pillar.
+      if (!covered) {
         depleted = true;
         if (age < firstUnlockAge) failedDuringBridge = true;
       }
@@ -194,13 +211,7 @@ export function computeBridgeCapitalRequired(params: DecumulationParams): number
   for (let i = 0; i < bridgeYears; i++) {
     const age = params.fireAge + i;
     const ahvPension = age >= params.ahvClaimAge ? params.ahvAnnualPension : 0;
-    const replacementIncomeBasis = ahvPension > 0 ? ahvPension : params.annualRealSpending;
-    const nonEmployedContribution =
-      age < params.ahvReferenceAge
-        ? nonEmployedAhvContribution(taxableEstimate, replacementIncomeBasis, params.maritalStatus)
-        : 0;
-    const netCashNeed =
-      params.annualRealSpending + params.healthInsuranceAnnualPremium + nonEmployedContribution - ahvPension;
+    const { netCashNeed } = annualCashNeed(params, age, taxableEstimate, ahvPension);
 
     pv += netCashNeed / Math.pow(1 + params.expectedReturn, i);
     taxableEstimate = Math.max(0, taxableEstimate - netCashNeed) * (1 + params.expectedReturn);

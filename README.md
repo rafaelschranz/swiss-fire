@@ -124,9 +124,8 @@ browser; no inputs are sent to a server. German-language UI by default.
 `tsc --noEmit`, `eslint`, and `vitest run` all pass, and the page has been
 verified rendering real computed figures via a local dev server.
 
-Not yet done: a known depletion-flag edge case and minor duplication in
-`decumulation.ts` (flagged in code review, not yet fixed), SEO content
-pages, i18n beyond German, and accessibility/mobile polish.
+Not yet done: SEO content pages, i18n beyond German, and
+accessibility/mobile polish.
 
 Notes on data still needing real grounding:
 - The cantonal lump-sum tax figures for ZG/ZH/LU (and all 22 unseeded
