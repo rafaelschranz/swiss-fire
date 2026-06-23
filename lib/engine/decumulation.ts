@@ -18,6 +18,16 @@ export interface DecumulationParams {
   startingTaxable: number;
   startingPillar3a: number;
   startingPillar2: number;
+  /**
+   * Optional per-year real return sequence for the taxable portfolio,
+   * indexed by years since `fireAge` (returnsPath[0] applies to the
+   * fireAge -> fireAge+1 transition, etc). When supplied, overrides
+   * `expectedReturn` for that year — this is what lets montecarlo.ts
+   * reuse this exact deterministic engine across many stochastic paths.
+   * Falls back to the constant `expectedReturn` for any year beyond the
+   * supplied path's length.
+   */
+  returnsPath?: number[];
 }
 
 /**
@@ -136,7 +146,9 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       taxable = 0;
     }
 
-    taxable *= 1 + params.expectedReturn;
+    const yearIndex = age - params.fireAge;
+    const yearReturn = params.returnsPath?.[yearIndex] ?? params.expectedReturn;
+    taxable *= 1 + yearReturn;
 
     lifetimeTaxPaid += divTax + wTax + lumpSumTaxPaid;
 
