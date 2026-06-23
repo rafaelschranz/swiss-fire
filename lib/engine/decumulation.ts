@@ -1,7 +1,10 @@
 import { inflowAt } from "./accumulation";
-import { AHV, DEFAULTS } from "./constants";
+import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
 import { dividendIncomeTax, lumpSumTax, nonEmployedAhvContribution, wealthTax } from "./tax";
 import type { CantonTaxData, DecumulationResult, DecumulationYearResult, OneOffInflow } from "./types";
+
+/** How the occupational pension (Pillar 2) is taken at retirement. */
+export type Pillar2PayoutMode = "capital" | "pension" | "mix";
 
 export interface DecumulationParams {
   fireAge: number;
@@ -46,6 +49,19 @@ export interface DecumulationParams {
    * already reflected in `startingTaxable` by the accumulation phase.
    */
   oneOffInflows?: OneOffInflow[];
+  /**
+   * How the Pillar 2 capital is taken at the (earliest) PK retirement age:
+   *   - "capital": the whole balance is withdrawn as a lump sum (taxed once).
+   *   - "pension": the whole balance is annuitised into a lifelong pension
+   *     of capital × `pillar2ConversionRate` per year.
+   *   - "mix": `pillar2CapitalShare` is taken as capital, the rest annuitised.
+   * Defaults to "capital".
+   */
+  pillar2PayoutMode?: Pillar2PayoutMode;
+  /** Capital fraction (0..1) for the "mix" payout mode. */
+  pillar2CapitalShare?: number;
+  /** Conversion rate (Umwandlungssatz) applied to the annuitised portion. */
+  pillar2ConversionRate?: number;
 }
 
 /**
@@ -61,25 +77,11 @@ function adjustedAhvPension(basePension: number, claimAge: number, referenceAge:
 }
 
 /**
- * Solves for the gross lump-sum withdrawal whose net-of-tax proceeds
- * cover `netNeeded`, by fixed-point iteration on the (non-linear,
- * piecewise-linear) lump-sum tax curve.
- */
-function grossUpLumpSum(canton: CantonTaxData, netNeeded: number): { gross: number; tax: number } {
-  let gross = netNeeded;
-  for (let i = 0; i < 5; i++) {
-    const tax = lumpSumTax(canton, gross);
-    gross = netNeeded + tax;
-  }
-  return { gross, tax: lumpSumTax(canton, gross) };
-}
-
-/**
  * Net annual cash need (real terms) for a decumulation year, plus the
  * non-employed AHV contribution component (broken out because the main
- * simulator reports it per year). Shared by both `simulateDecumulation`
- * and `computeBridgeCapitalRequired` so the spending / AHV-contribution /
- * AHV-pension-offset accounting lives in exactly one place.
+ * simulator reports it per year). `pensionIncome` is the total recurring
+ * pension income that year (AHV + any Pillar 2 Rente). Shared by both
+ * `simulateDecumulation` and `computeBridgeCapitalRequired`.
  */
 function annualCashNeed(
   params: DecumulationParams,
@@ -119,6 +121,16 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
   let failedDuringBridge = false;
   let lifetimeTaxPaid = 0;
 
+  // Pillar 2 payout configuration (Rente / Kapital / Mix).
+  const payoutMode = params.pillar2PayoutMode ?? "capital";
+  const capitalShare =
+    payoutMode === "capital" ? 1 : payoutMode === "pension" ? 0 : (params.pillar2CapitalShare ?? 0.5);
+  const conversionRate = params.pillar2ConversionRate ?? PILLAR_2.minConversionRate;
+
+  let pillar2Settled = false; // PK taken (capital and/or annuitised) — one-off event
+  let pillar3aWithdrawn = false; // 3a taken as capital — one-off event
+  let pillar2Pension = 0; // lifelong annual PK Rente once settled
+
   const firstUnlockAge = Math.min(params.pillar3aUnlockAge, params.earliestPkAge);
 
   for (let age = params.fireAge; age < params.horizonAge; age++) {
@@ -131,47 +143,42 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     // (Inflows at/before fireAge are already baked into startingTaxable.)
     if (age > params.fireAge) taxable += inflowAt(params.oneOffInflows, age);
 
-    const { nonEmployedContribution, netCashNeed } = annualCashNeed(params, age, taxable, ahvPension);
-    const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
+    // --- Regulated pillar settlement at the planned ages -------------------
+    // Capital withdrawals (3a is always capital; PK capital portion) are
+    // aggregated into the same tax year so a same-year combination is taxed
+    // on the higher total — staggering across years is what lowers the bill.
+    let capitalThisYear = 0;
+    if (!pillar2Settled && age >= params.earliestPkAge && pillar2 > 0) {
+      const pkCapital = pillar2 * capitalShare;
+      pillar2Pension = (pillar2 - pkCapital) * conversionRate;
+      capitalThisYear += pkCapital;
+      pillar2 = 0;
+      pillar2Settled = true;
+    }
+    if (!pillar3aWithdrawn && age >= params.pillar3aUnlockAge && pillar3a > 0) {
+      capitalThisYear += pillar3a;
+      pillar3a = 0;
+      pillar3aWithdrawn = true;
+    }
 
     let lumpSumTaxPaid = 0;
+    if (capitalThisYear > 0) {
+      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear);
+      taxable += capitalThisYear - lumpSumTaxPaid;
+    }
+
+    // --- Spending, funded from the taxable account -------------------------
+    const pensionIncome = ahvPension + pillar2Pension;
+    const { nonEmployedContribution, netCashNeed } = annualCashNeed(params, age, taxable, pensionIncome);
+    const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
+
     taxable -= netCashNeed;
-
     if (taxable < 0) {
-      const shortfall = -taxable;
+      // No pots left to draw on — they are settled at their fixed ages — so a
+      // negative taxable balance is a genuine depletion.
+      depleted = true;
+      if (age < firstUnlockAge) failedDuringBridge = true;
       taxable = 0;
-      let covered = false;
-
-      const pillar3aUnlocked = age >= params.pillar3aUnlockAge && pillar3a > 0;
-      const pillar2Unlocked = age >= params.earliestPkAge && pillar2 > 0;
-
-      if (pillar3aUnlocked || pillar2Unlocked) {
-        // Prefer whichever pillar has more remaining balance, to draw
-        // each pillar down across fewer, larger, separate tax years
-        // rather than thin slices from both.
-        const usePillar3a = pillar3aUnlocked && (!pillar2Unlocked || pillar3a >= pillar2);
-        const { gross } = grossUpLumpSum(params.canton, shortfall);
-
-        const sourceBalance = usePillar3a ? pillar3a : pillar2;
-        const drawn = Math.min(gross, sourceBalance);
-        if (usePillar3a) pillar3a -= drawn;
-        else pillar2 -= drawn;
-
-        const actualTax = lumpSumTax(params.canton, drawn);
-        taxable += Math.max(0, drawn - actualTax);
-        lumpSumTaxPaid = actualTax;
-
-        // Covered iff the chosen pillar's balance was large enough to
-        // supply the full grossed-up draw. A balance-capped draw
-        // (drawn < gross) means the shortfall was only partially met —
-        // the case the previous `taxable === 0` guard silently missed.
-        covered = drawn >= gross - 1e-6;
-      }
-
-      if (!covered) {
-        depleted = true;
-        if (age < firstUnlockAge) failedDuringBridge = true;
-      }
     }
 
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
@@ -206,6 +213,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       wealthTax: wTax,
       lumpSumTax: lumpSumTaxPaid,
       ahvPension,
+      pillar2Pension,
       depleted,
     });
 

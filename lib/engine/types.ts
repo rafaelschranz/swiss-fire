@@ -180,6 +180,8 @@ export interface DecumulationYearResult {
   wealthTax: number;
   lumpSumTax: number;
   ahvPension: number;
+  /** Annual Pillar 2 Rente once the PK is annuitised (0 in capital mode). */
+  pillar2Pension: number;
   depleted: boolean;
 }
 
