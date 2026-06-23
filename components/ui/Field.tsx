@@ -29,7 +29,11 @@ export interface FieldProps {
  */
 export function Field({ label, value, onChange, percent, prefix, suffix, step, min, max, hint, onToggleAuto, auto }: FieldProps) {
   const id = useId();
-  const display = percent ? Math.round(value * 1000) / 10 : value;
+  // Guard against a transiently-undefined/NaN value (e.g. a newly-added input
+  // key during HMR) so the input never flips between uncontrolled and
+  // controlled.
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const display = percent ? Math.round(safeValue * 1000) / 10 : safeValue;
   const effectiveStep = step ?? (percent ? 0.5 : 1);
   const unit = suffix ?? (percent ? "%" : undefined);
 
