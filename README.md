@@ -125,8 +125,12 @@ a results dashboard — a gradient verdict hero (`ResultsHeadline`),
 (parametric/bootstrap toggle), `AssumptionsPanel`, the FINSA/FIDLEG
 `Disclaimer`, and disclosed `AffiliateSlot`s — with an "Eingaben anpassen"
 button back into the wizard. Shared input state/defaults live in
-`lib/inputs.ts`. All computation runs in the browser; no inputs are sent
-to a server. German-language UI by default. `tsc --noEmit`, `eslint`,
+`lib/inputs.ts`. Fields a user often can't fill in confidently (AHV
+pension, statutory ages, 3a max contribution, health premium, horizon)
+start **auto-estimated** from the entered figures + verified constants via
+`lib/estimates.ts`, with a per-field "Schätzen" toggle to switch to manual
+entry. All computation runs in the browser; no inputs are sent to a
+server. German-language UI by default. `tsc --noEmit`, `eslint`,
 `vitest run`, and `next build` all pass.
 
 Phase 5 (SEO + a11y) is built: `app/robots.ts`, `app/sitemap.ts`,

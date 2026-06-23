@@ -17,6 +17,7 @@ import { simulateAccumulation } from "@/lib/engine/accumulation";
 import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
 import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
+import { applyEstimates, ESTIMABLE_ORDER, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs } from "@/lib/inputs";
 
 function buildDecumulationParams(
@@ -46,32 +47,56 @@ function buildDecumulationParams(
 
 export default function Home() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
+  // Fields that are auto-estimated rather than user-entered. Estimable
+  // fields start estimated so the form is usable without lookups.
+  const [autoKeys, setAutoKeys] = useState<Set<EstimableKey>>(() => new Set(ESTIMABLE_ORDER));
   const [step, setStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [mcMode, setMcMode] = useState<MonteCarloMode | "off">("off");
 
+  // Effective inputs: manual values, with estimated fields resolved. This
+  // is what both the engine and the displayed field values use.
+  const eff = useMemo(() => applyEstimates(inputs, autoKeys), [inputs, autoKeys]);
+
   const set = <K extends keyof CalculatorInputs>(key: K, value: CalculatorInputs[K]) =>
     setInputs((prev) => ({ ...prev, [key]: value }));
 
+  const isAuto = (key: EstimableKey) => autoKeys.has(key);
+
+  const toggleAuto = (key: EstimableKey) => {
+    const wasAuto = autoKeys.has(key);
+    if (wasAuto) {
+      // Switching to manual: seed the editable value with the current estimate.
+      const seeded = eff[key];
+      setInputs((prev) => ({ ...prev, [key]: seeded }));
+    }
+    setAutoKeys((prev) => {
+      const nextKeys = new Set(prev);
+      if (wasAuto) nextKeys.delete(key);
+      else nextKeys.add(key);
+      return nextKeys;
+    });
+  };
+
   const accumulation = useMemo(
     () =>
-      simulateAccumulation(inputs.currentAge, inputs.fireAge, {
-        currentSalary: inputs.currentSalary,
-        salaryGrowth: inputs.salaryGrowth,
-        currentTaxableBalance: inputs.currentTaxableBalance,
-        annualTaxableSavings: inputs.annualTaxableSavings,
-        currentPillar3aBalance: inputs.currentPillar3aBalance,
-        annualPillar3aContribution: inputs.annualPillar3aContribution,
-        pillar3aReturn: inputs.pillar3aReturn,
-        currentPillar2Balance: inputs.currentPillar2Balance,
-        expectedReturn: inputs.expectedReturn,
+      simulateAccumulation(eff.currentAge, eff.fireAge, {
+        currentSalary: eff.currentSalary,
+        salaryGrowth: eff.salaryGrowth,
+        currentTaxableBalance: eff.currentTaxableBalance,
+        annualTaxableSavings: eff.annualTaxableSavings,
+        currentPillar3aBalance: eff.currentPillar3aBalance,
+        annualPillar3aContribution: eff.annualPillar3aContribution,
+        pillar3aReturn: eff.pillar3aReturn,
+        currentPillar2Balance: eff.currentPillar2Balance,
+        expectedReturn: eff.expectedReturn,
       }),
-    [inputs],
+    [eff],
   );
 
   const decumulationParams = useMemo(
-    () => buildDecumulationParams(inputs, accumulation.taxableAtFire, accumulation.pillar3aAtFire, accumulation.pillar2AtFire),
-    [inputs, accumulation],
+    () => buildDecumulationParams(eff, accumulation.taxableAtFire, accumulation.pillar3aAtFire, accumulation.pillar2AtFire),
+    [eff, accumulation],
   );
 
   const decumulation = useMemo(() => simulateDecumulation(decumulationParams), [decumulationParams]);
@@ -81,12 +106,12 @@ export default function Home() {
     if (mcMode === "off") return null;
     return simulateMonteCarlo({
       decumulationParams,
-      volatility: inputs.volatility,
-      equityShare: inputs.equityShare,
+      volatility: eff.volatility,
+      equityShare: eff.equityShare,
       mode: mcMode,
       paths: 500,
     });
-  }, [mcMode, decumulationParams, inputs.volatility, inputs.equityShare]);
+  }, [mcMode, decumulationParams, eff.volatility, eff.equityShare]);
 
   const balanceData: BalancePoint[] = useMemo(() => {
     const accPoints = accumulation.years.map((y) => ({
@@ -107,12 +132,12 @@ export default function Home() {
   const fanData: FanPoint[] = useMemo(() => {
     if (!monteCarlo) return [];
     return monteCarlo.percentile50.map((p50, i) => ({
-      age: inputs.fireAge + i,
+      age: eff.fireAge + i,
       p10: monteCarlo.percentile10[i],
       p50,
       p90: monteCarlo.percentile90[i],
     }));
-  }, [monteCarlo, inputs.fireAge]);
+  }, [monteCarlo, eff.fireAge]);
 
   const isLastStep = step === STEPS.length - 1;
   const activeStep = STEPS[step];
@@ -189,7 +214,7 @@ export default function Home() {
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeStep.subtitle}</p>
                 </div>
 
-                {activeStep.render({ inputs, set })}
+                {activeStep.render({ inputs: eff, set, isAuto, toggleAuto })}
               </div>
 
               <div className="mt-8 flex items-center justify-between gap-3">
@@ -237,15 +262,15 @@ export default function Home() {
             />
 
             <Lifeline
-              currentAge={inputs.currentAge}
-              fireAge={inputs.fireAge}
-              pillar3aUnlockAge={inputs.pillar3aUnlockAge}
-              earliestPkAge={inputs.earliestPkAge}
-              ahvClaimAge={inputs.ahvClaimAge}
-              horizonAge={inputs.horizonAge}
+              currentAge={eff.currentAge}
+              fireAge={eff.fireAge}
+              pillar3aUnlockAge={eff.pillar3aUnlockAge}
+              earliestPkAge={eff.earliestPkAge}
+              ahvClaimAge={eff.ahvClaimAge}
+              horizonAge={eff.horizonAge}
             />
 
-            <BalanceChart data={balanceData} fireAge={inputs.fireAge} />
+            <BalanceChart data={balanceData} fireAge={eff.fireAge} />
 
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -273,7 +298,7 @@ export default function Home() {
               )}
             </div>
 
-            <AssumptionsPanel canton={getCanton(inputs.canton)} />
+            <AssumptionsPanel canton={getCanton(eff.canton)} />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />

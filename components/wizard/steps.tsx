@@ -7,11 +7,27 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectField } from "@/components/ui/SelectField";
 import { CANTONS } from "@/lib/engine/cantons";
 import type { CantonCode } from "@/lib/engine/types";
+import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
 import type { CalculatorInputs } from "@/lib/inputs";
 
 export interface StepProps {
   inputs: CalculatorInputs;
   set: <K extends keyof CalculatorInputs>(key: K, value: CalculatorInputs[K]) => void;
+  isAuto: (key: EstimableKey) => boolean;
+  toggleAuto: (key: EstimableKey) => void;
+}
+
+/**
+ * Builds the props that turn a Field into an estimable one: the auto flag,
+ * the toggle handler, and (while auto) the rationale hint.
+ */
+function estimable(props: StepProps, key: EstimableKey, baseHint?: string) {
+  const auto = props.isAuto(key);
+  return {
+    auto,
+    onToggleAuto: () => props.toggleAuto(key),
+    hint: auto ? ESTIMATE_LABELS[key] : baseHint,
+  };
 }
 
 export interface StepDef {
@@ -38,12 +54,14 @@ export const STEPS: StepDef[] = [
     title: "Über Sie",
     subtitle: "Wann steigen Sie aus und wo wohnen Sie?",
     icon: "🧭",
-    render: ({ inputs, set }) => (
+    render: (props) => {
+      const { inputs, set } = props;
+      return (
       <div className="space-y-5">
         <Grid>
           <Field label="Aktuelles Alter" value={inputs.currentAge} onChange={(v) => set("currentAge", v)} suffix="Jahre" min={18} max={70} />
           <Field label="FIRE-Alter (Ausstieg)" value={inputs.fireAge} onChange={(v) => set("fireAge", v)} suffix="Jahre" min={30} max={75} />
-          <Field label="Planungshorizont" value={inputs.horizonAge} onChange={(v) => set("horizonAge", v)} suffix="Jahre" min={70} max={110} hint="Bis zu welchem Alter soll das Geld reichen?" />
+          <Field label="Planungshorizont" value={inputs.horizonAge} onChange={(v) => set("horizonAge", v)} suffix="Jahre" min={70} max={110} {...estimable(props, "horizonAge", "Bis zu welchem Alter soll das Geld reichen?")} />
         </Grid>
         <SegmentedControl
           label="Zivilstand"
@@ -62,40 +80,47 @@ export const STEPS: StepDef[] = [
           hint="„Näherung“ = Steuerkurve noch nicht verifiziert."
         />
       </div>
-    ),
+      );
+    },
   },
   {
     id: "wealth",
     title: "Vermögen heute",
     subtitle: "Ihre aktuellen Ersparnisse und Vorsorgeguthaben.",
     icon: "💰",
-    render: ({ inputs, set }) => (
+    render: (props) => {
+      const { inputs, set } = props;
+      return (
       <Grid>
         <Field label="Bruttosalär" value={inputs.currentSalary} onChange={(v) => set("currentSalary", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
         <Field label="Sparbetrag (steuerbar)" value={inputs.annualTaxableSavings} onChange={(v) => set("annualTaxableSavings", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
         <Field label="Steuerbares Vermögen" value={inputs.currentTaxableBalance} onChange={(v) => set("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} />
         <Field label="Säule-3a-Guthaben" value={inputs.currentPillar3aBalance} onChange={(v) => set("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
-        <Field label="3a-Einzahlung" value={inputs.annualPillar3aContribution} onChange={(v) => set("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+        <Field label="3a-Einzahlung" value={inputs.annualPillar3aContribution} onChange={(v) => set("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...estimable(props, "annualPillar3aContribution")} />
         <Field label="Pensionskasse-Guthaben" value={inputs.currentPillar2Balance} onChange={(v) => set("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
       </Grid>
-    ),
+      );
+    },
   },
   {
     id: "retirement",
     title: "Ruhestand",
     subtitle: "Ausgaben, Renten und ab wann die Säulen verfügbar sind.",
     icon: "🌅",
-    render: ({ inputs, set }) => (
+    render: (props) => {
+      const { inputs, set } = props;
+      return (
       <Grid>
         <Field label="Lebenshaltungskosten" value={inputs.annualRealSpending} onChange={(v) => set("annualRealSpending", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} hint="In heutiger Kaufkraft." />
-        <Field label="Krankenkassenprämie" value={inputs.healthInsuranceAnnualPremium} onChange={(v) => set("healthInsuranceAnnualPremium", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
-        <Field label="Erwartete AHV-Rente" value={inputs.ahvAnnualPension} onChange={(v) => set("ahvAnnualPension", v)} prefix="CHF" suffix="/Jahr" step={500} min={0} />
-        <Field label="AHV-Bezug ab" value={inputs.ahvClaimAge} onChange={(v) => set("ahvClaimAge", v)} suffix="Jahre" min={63} max={70} />
-        <Field label="Säule 3a verfügbar ab" value={inputs.pillar3aUnlockAge} onChange={(v) => set("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} />
-        <Field label="Pensionskasse verfügbar ab" value={inputs.earliestPkAge} onChange={(v) => set("earliestPkAge", v)} suffix="Jahre" min={55} max={70} />
-        <Field label="AHV-Referenzalter" value={inputs.ahvReferenceAge} onChange={(v) => set("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} />
+        <Field label="Krankenkassenprämie" value={inputs.healthInsuranceAnnualPremium} onChange={(v) => set("healthInsuranceAnnualPremium", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...estimable(props, "healthInsuranceAnnualPremium")} />
+        <Field label="Erwartete AHV-Rente" value={inputs.ahvAnnualPension} onChange={(v) => set("ahvAnnualPension", v)} prefix="CHF" suffix="/Jahr" step={500} min={0} {...estimable(props, "ahvAnnualPension")} />
+        <Field label="AHV-Bezug ab" value={inputs.ahvClaimAge} onChange={(v) => set("ahvClaimAge", v)} suffix="Jahre" min={63} max={70} {...estimable(props, "ahvClaimAge")} />
+        <Field label="Säule 3a verfügbar ab" value={inputs.pillar3aUnlockAge} onChange={(v) => set("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} {...estimable(props, "pillar3aUnlockAge")} />
+        <Field label="Pensionskasse verfügbar ab" value={inputs.earliestPkAge} onChange={(v) => set("earliestPkAge", v)} suffix="Jahre" min={55} max={70} {...estimable(props, "earliestPkAge")} />
+        <Field label="AHV-Referenzalter" value={inputs.ahvReferenceAge} onChange={(v) => set("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} {...estimable(props, "ahvReferenceAge")} />
       </Grid>
-    ),
+      );
+    },
   },
   {
     id: "assumptions",
