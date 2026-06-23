@@ -48,19 +48,26 @@ function NumberField({
   min?: number;
   suffix?: string;
 }) {
+  const suffixLabel = suffix ? `${label} (${suffix})` : label;
   return (
     <label className="flex flex-col gap-1 text-sm">
       <span className="text-zinc-700 dark:text-zinc-300">{label}</span>
       <div className="flex items-center gap-2">
         <input
           type="number"
+          inputMode="decimal"
+          aria-label={suffixLabel}
           className="w-full rounded-md border border-zinc-300 bg-white px-3 py-1.5 tabular-nums text-zinc-900 focus:border-blue-500 focus:outline focus:outline-2 focus:outline-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           value={value}
           step={step}
           min={min}
           onChange={(e) => onChange(Number(e.target.value))}
         />
-        {suffix && <span className="text-zinc-500">{suffix}</span>}
+        {suffix && (
+          <span className="text-zinc-500" aria-hidden="true">
+            {suffix}
+          </span>
+        )}
       </div>
     </label>
   );

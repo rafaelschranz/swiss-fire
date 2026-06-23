@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { JsonLd } from "@/components/JsonLd";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +15,39 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Swiss FIRE Brücken-Rechner | Frühpensionierung & Pensionskasse",
-  description:
-    "Kostenloser Rechner für die FIRE-Brückenphase in der Schweiz: Säule 3a, Pensionskasse, AHV und kantonale Steuern. Bildungszwecke, keine Finanzberatung.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} | Frühpensionierung & Pensionskasse`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "FIRE Schweiz",
+    "Frühpensionierung",
+    "Brückenphase",
+    "Säule 3a",
+    "Pensionskasse",
+    "BVG",
+    "AHV",
+    "Kapitalbezug Steuern",
+    "finanzielle Unabhängigkeit",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "de_CH",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | Frühpensionierung & Pensionskasse`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: `${SITE_NAME} | Frühpensionierung & Pensionskasse`,
+    description: SITE_DESCRIPTION,
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -28,7 +60,28 @@ export default function RootLayout({
       lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-black">{children}</body>
+      <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-black">
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: SITE_NAME,
+            url: SITE_URL,
+            applicationCategory: "FinanceApplication",
+            operatingSystem: "Web",
+            description: SITE_DESCRIPTION,
+            inLanguage: "de-CH",
+            offers: { "@type": "Offer", price: "0", priceCurrency: "CHF" },
+          }}
+        />
+        <a
+          href="#hauptinhalt"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-zinc-900 focus:px-4 focus:py-2 focus:text-white dark:focus:bg-zinc-100 dark:focus:text-zinc-900"
+        >
+          Zum Hauptinhalt springen
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

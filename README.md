@@ -124,8 +124,17 @@ browser; no inputs are sent to a server. German-language UI by default.
 `tsc --noEmit`, `eslint`, and `vitest run` all pass, and the page has been
 verified rendering real computed figures via a local dev server.
 
-Not yet done: SEO content pages, i18n beyond German, and
-accessibility/mobile polish.
+Phase 5 (SEO + a11y) is built: `app/robots.ts`, `app/sitemap.ts`,
+canonical/OpenGraph/Twitter metadata and `WebApplication` JSON-LD in the
+layout, an educational `/ratgeber` content page with `FAQPage` +
+`BreadcrumbList` structured data, a skip link, `role="img"` chart
+descriptions, `aria-pressed` mode toggles, labelled number inputs, and
+`rel="sponsored"` on affiliate links. `next build` prerenders all routes
+statically; `tsc --noEmit`, `eslint`, and `vitest run` (29 tests) pass.
+The canonical base URL comes from `NEXT_PUBLIC_SITE_URL` (localhost
+fallback) — set it to the real domain on deploy.
+
+Not yet done: i18n beyond German (the UI is German-only for now).
 
 Notes on data still needing real grounding:
 - The cantonal lump-sum tax figures for ZG/ZH/LU (and all 22 unseeded

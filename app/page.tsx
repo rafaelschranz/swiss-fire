@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AffiliateSlot } from "@/components/AffiliateSlot";
@@ -132,11 +133,19 @@ export default function Home() {
   }, [monteCarlo, inputs.fireAge]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+    <main id="hauptinhalt" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          Swiss FIRE Brücken-Rechner
-        </h1>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            Swiss FIRE Brücken-Rechner
+          </h1>
+          <Link
+            href="/ratgeber"
+            className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline dark:text-blue-400"
+          >
+            Ratgeber →
+          </Link>
+        </div>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Modelliert die Brückenphase zwischen FIRE-Ausstieg und dem Zugriff auf Säule 3a, Pensionskasse
           und AHV — inklusive Steuerschätzung pro Kanton.
@@ -170,9 +179,10 @@ export default function Home() {
 
           <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
             <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Monte-Carlo-Simulation</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Monte-Carlo-Modus">
               <button
                 type="button"
+                aria-pressed={mcMode === "off"}
                 onClick={() => setMcMode("off")}
                 className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "off" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
               >
@@ -180,6 +190,7 @@ export default function Home() {
               </button>
               <button
                 type="button"
+                aria-pressed={mcMode === "parametric"}
                 onClick={() => setMcMode("parametric")}
                 className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "parametric" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
               >
@@ -187,6 +198,7 @@ export default function Home() {
               </button>
               <button
                 type="button"
+                aria-pressed={mcMode === "bootstrap"}
                 onClick={() => setMcMode("bootstrap")}
                 className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "bootstrap" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
               >
@@ -209,6 +221,6 @@ export default function Home() {
           <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

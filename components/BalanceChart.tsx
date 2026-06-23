@@ -31,7 +31,11 @@ export function BalanceChart({ data, fireAge }: { data: BalancePoint[]; fireAge:
       <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
         Vermögensverlauf (steuerbar, 3a, PK)
       </p>
-      <div className="h-72 w-full">
+      <div
+        className="h-72 w-full"
+        role="img"
+        aria-label="Flächendiagramm des steuerbaren Vermögens, der Säule 3a und der Pensionskasse über die Zeit, mit Markierung des FIRE-Alters."
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-800" />

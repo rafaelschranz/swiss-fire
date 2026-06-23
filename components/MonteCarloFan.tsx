@@ -33,7 +33,11 @@ export function MonteCarloFan({ data }: { data: FanPoint[] }) {
       <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
         Monte-Carlo: steuerbares Vermögen (10./50./90. Perzentil)
       </p>
-      <div className="h-72 w-full">
+      <div
+        className="h-72 w-full"
+        role="img"
+        aria-label="Fächerdiagramm der Monte-Carlo-Simulation mit Median sowie dem Bereich zwischen 10. und 90. Perzentil des steuerbaren Vermögens über die Zeit."
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={bandData}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-800" />

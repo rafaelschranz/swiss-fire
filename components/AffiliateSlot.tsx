@@ -13,6 +13,8 @@ export function AffiliateSlot({ slot }: { slot: AffiliateSlotConfig }) {
       <p className="mb-2 text-zinc-600 dark:text-zinc-400">{slot.description}</p>
       <a
         href={slot.href}
+        rel="sponsored noopener"
+        target="_blank"
         className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline dark:text-blue-400"
       >
         Mehr erfahren →
