@@ -1,5 +1,5 @@
 import { PILLAR_2 } from "./constants";
-import { coordinatedSalary, retirementCreditRate } from "./tax";
+import { insuredSalary, retirementCreditRate } from "./tax";
 import type { AccumulationInputs, AccumulationResult, AccumulationYearResult, IncomePhase } from "./types";
 
 /**
@@ -43,6 +43,10 @@ export function simulateAccumulation(
       ? [...inputs.incomePhases].sort((a, b) => a.fromAge - b.fromAge)
       : null;
 
+  const plan = inputs.pillar2Plan;
+  const pkCeiling = plan?.insuredCeiling ?? PILLAR_2.upperInsuredSalaryLimit;
+  const pkInterest = plan?.interestRate ?? PILLAR_2.minInterestRate;
+
   let taxable = inputs.currentTaxableBalance;
   let pillar3a = inputs.currentPillar3aBalance;
   let pillar2 = inputs.currentPillar2Balance;
@@ -59,9 +63,12 @@ export function simulateAccumulation(
     taxable = taxable * (1 + inputs.expectedReturn) + taxableSavings;
     pillar3a = pillar3a * (1 + inputs.pillar3aReturn) + pillar3aContribution;
 
-    const coordinated = coordinatedSalary(salaryThisYear);
-    const creditRate = retirementCreditRate(age + 1);
-    pillar2 = pillar2 * (1 + PILLAR_2.minInterestRate) + coordinated * creditRate;
+    // PK savings credit: a flat average savings rate (if a "rate" plan is
+    // given) or the statutory age-banded BVG credits, applied to the
+    // insured salary — so the PK scales with the salary trajectory.
+    const insured = insuredSalary(salaryThisYear, pkCeiling);
+    const creditRate = plan?.model === "rate" ? plan.savingsRate : retirementCreditRate(age + 1);
+    pillar2 = pillar2 * (1 + pkInterest) + insured * creditRate;
 
     if (!phases) salary = salary * (1 + inputs.salaryGrowth);
     const recordedSalary = phases ? activeIncomePhase(phases, age + 1).salary : salary;

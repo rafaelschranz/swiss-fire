@@ -14,6 +14,23 @@ export function coordinatedSalary(annualSalary: number): number {
   );
 }
 
+/**
+ * Insured (coordinated) salary for an occupational pension, generalised to a
+ * configurable upper salary ceiling. With the mandatory BVG ceiling
+ * (`upperInsuredSalaryLimit`, 90'720) this reproduces `coordinatedSalary`;
+ * a higher ceiling models a fund that also insures the super-mandatory
+ * (überobligatorische) portion of higher incomes.
+ */
+export function insuredSalary(
+  annualSalary: number,
+  ceiling: number = PILLAR_2.upperInsuredSalaryLimit,
+): number {
+  if (annualSalary < PILLAR_2.entryThreshold) return 0;
+  const capped = Math.min(annualSalary, ceiling);
+  const reduced = capped - PILLAR_2.coordinationDeduction;
+  return Math.max(reduced, PILLAR_2.minCoordinatedSalary);
+}
+
 /** Statutory minimum BVG retirement credit rate (% of coordinated salary) for a given age. */
 export function retirementCreditRate(age: number): number {
   const band = PILLAR_2.retirementCredits.find(

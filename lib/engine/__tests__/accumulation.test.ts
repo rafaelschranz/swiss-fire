@@ -74,6 +74,31 @@ describe("Accumulation simulator", () => {
     expect(result.pillar3aAtFire).toBeCloseTo(5 * 5_000 + 5 * 7_000, 2);
   });
 
+  it("projects the PK from an average savings rate on the insured salary when a rate plan is given", () => {
+    const currentAge = 40;
+    const fireAge = 45;
+    const salary = 150_000; // above the mandatory ceiling
+    const ceiling = 200_000; // insure the super-mandatory portion too
+    const rate = 0.18;
+    const insured = salary - 26_460; // coordination deduction; salary < ceiling
+
+    const result = simulateAccumulation(currentAge, fireAge, {
+      currentSalary: salary,
+      salaryGrowth: 0,
+      currentTaxableBalance: 0,
+      annualTaxableSavings: 0,
+      currentPillar3aBalance: 0,
+      annualPillar3aContribution: 0,
+      pillar3aReturn: 0,
+      currentPillar2Balance: 0,
+      expectedReturn: 0,
+      pillar2Plan: { model: "rate", savingsRate: rate, insuredCeiling: ceiling, interestRate: 0 },
+    });
+
+    // No interest: PK = years * insured salary * rate.
+    expect(result.pillar2AtFire).toBeCloseTo((fireAge - currentAge) * insured * rate, 2);
+  });
+
   it("uses an explicit override for the PK balance at FIRE when provided", () => {
     const result = simulateAccumulation(40, 42, {
       currentSalary: 80_000,

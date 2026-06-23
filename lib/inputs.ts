@@ -1,3 +1,4 @@
+import { PILLAR_2 } from "@/lib/engine/constants";
 import type { CantonCode, IncomePhase } from "@/lib/engine/types";
 
 /**
@@ -24,6 +25,12 @@ export interface CalculatorInputs {
   /** When true, salary/savings come from `incomePhases` rather than the flat fields above. */
   useIncomePhases: boolean;
   incomePhases: IncomePhase[];
+
+  /** Pensionskasse projection: statutory BVG credits or an average savings rate. */
+  pillar2Model: "bvg" | "rate";
+  pillar2SavingsRate: number; // used when pillar2Model === "rate"
+  pillar2InsuredCeiling: number; // salary insured up to this amount
+  pillar2InterestRate: number; // assumed average interest on PK capital
 
   pillar3aUnlockAge: number;
   earliestPkAge: number;
@@ -60,6 +67,11 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
     { fromAge: 35, salary: 110_000, annualTaxableSavings: 25_000, annualPillar3aContribution: 7_258 },
     { fromAge: 45, salary: 140_000, annualTaxableSavings: 40_000, annualPillar3aContribution: 7_258 },
   ],
+
+  pillar2Model: "bvg",
+  pillar2SavingsRate: 0.15,
+  pillar2InsuredCeiling: PILLAR_2.upperInsuredSalaryLimit,
+  pillar2InterestRate: PILLAR_2.minInterestRate,
 
   pillar3aUnlockAge: 60,
   earliestPkAge: 58,

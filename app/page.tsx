@@ -92,6 +92,12 @@ export default function Home() {
         currentPillar2Balance: eff.currentPillar2Balance,
         expectedReturn: eff.expectedReturn,
         incomePhases: eff.useIncomePhases ? eff.incomePhases : undefined,
+        pillar2Plan: {
+          model: eff.pillar2Model,
+          savingsRate: eff.pillar2SavingsRate,
+          insuredCeiling: eff.pillar2InsuredCeiling,
+          interestRate: eff.pillar2InterestRate,
+        },
       }),
     [eff],
   );
@@ -122,14 +128,18 @@ export default function Home() {
       pillar3a: y.pillar3aBalance,
       pillar2: y.pillar2Balance,
     }));
-    const decPoints = decumulation.years.map((y) => ({
-      age: y.age,
-      taxable: y.taxableBalance,
-      pillar3a: y.pillar3aBalance,
-      pillar2: y.pillar2Balance,
-    }));
+    // Accumulation ends at fireAge and decumulation begins at fireAge, so
+    // drop the duplicate fireAge point from decumulation to keep one row per age.
+    const decPoints = decumulation.years
+      .filter((y) => y.age > eff.fireAge)
+      .map((y) => ({
+        age: y.age,
+        taxable: y.taxableBalance,
+        pillar3a: y.pillar3aBalance,
+        pillar2: y.pillar2Balance,
+      }));
     return [...accPoints, ...decPoints];
-  }, [accumulation, decumulation]);
+  }, [accumulation, decumulation, eff.fireAge]);
 
   const fanData: FanPoint[] = useMemo(() => {
     if (!monteCarlo) return [];

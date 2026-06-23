@@ -97,6 +97,38 @@ export const STEPS: StepDef[] = [
 
           <div className="border-t border-line pt-5">
             <SegmentedControl
+              label="Pensionskasse-Aufbau"
+              ariaLabel="Pensionskassen-Modell"
+              value={inputs.pillar2Model}
+              onChange={(v) => set("pillar2Model", v)}
+              options={[
+                { value: "bvg", label: "BVG-Minimum" },
+                { value: "rate", label: "Ø Sparbeitrag" },
+              ]}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              {inputs.pillar2Model === "rate"
+                ? "Ein durchschnittlicher jährlicher Sparbeitrag (Arbeitnehmer + Arbeitgeber) in % des versicherten Lohns — wird mit dem Einkommen mitskaliert."
+                : "Gesetzliche Altersgutschriften (7–18 % je nach Alter) auf dem versicherten Lohn. Für höhere Einkommen mit überobligatorischer Vorsorge „Ø Sparbeitrag“ wählen."}
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {inputs.pillar2Model === "rate" && (
+                <Field label="Ø PK-Sparbeitrag" value={inputs.pillar2SavingsRate} onChange={(v) => set("pillar2SavingsRate", v)} percent hint="Anteil des versicherten Lohns pro Jahr." />
+              )}
+              <Field
+                label="Versicherter Lohn bis"
+                value={inputs.pillar2InsuredCeiling}
+                onChange={(v) => set("pillar2InsuredCeiling", v)}
+                prefix="CHF"
+                step={5000}
+                min={0}
+                hint="BVG-Obligatorium bis 90’720; höher bei überobligatorischer Versicherung."
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-line pt-5">
+            <SegmentedControl
               label="Salär & Sparrate"
               ariaLabel="Einkommensmodus"
               value={inputs.useIncomePhases ? "phases" : "simple"}
@@ -160,6 +192,7 @@ export const STEPS: StepDef[] = [
       <Grid>
         <Field label="Erwartete reale Rendite" value={inputs.expectedReturn} onChange={(v) => set("expectedReturn", v)} percent />
         <Field label="Rendite Säule 3a" value={inputs.pillar3aReturn} onChange={(v) => set("pillar3aReturn", v)} percent />
+        <Field label="PK-Verzinsung" value={inputs.pillar2InterestRate} onChange={(v) => set("pillar2InterestRate", v)} percent hint="Ø Zins auf dem PK-Guthaben." />
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />
         <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent hint="Für die Monte-Carlo-Simulation." />
         <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Für den Bootstrap-Mix." />

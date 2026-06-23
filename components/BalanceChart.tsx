@@ -32,7 +32,15 @@ export function BalanceChart({ data, fireAge }: { data: BalancePoint[]; fireAge:
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
-            <XAxis dataKey="age" tick={axisTick} tickLine={false} axisLine={{ stroke: CHART.grid }} />
+            <XAxis
+              dataKey="age"
+              type="number"
+              domain={["dataMin", "dataMax"]}
+              allowDecimals={false}
+              tick={axisTick}
+              tickLine={false}
+              axisLine={{ stroke: CHART.grid }}
+            />
             <YAxis tickFormatter={tickFormatterChf} tick={axisTick} tickLine={false} axisLine={false} width={48} />
             <Tooltip content={<DossierTooltip />} cursor={{ stroke: CHART.muted, strokeDasharray: "3 3" }} />
             <Legend

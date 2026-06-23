@@ -65,6 +65,24 @@ export interface IncomePhase {
   annualPillar3aContribution: number;
 }
 
+/**
+ * Pension-fund (Pillar 2) projection plan. Lets the PK be driven by the
+ * salary trajectory rather than only the statutory minimum.
+ *   - "bvg": age-banded statutory retirement credits (7/10/15/18%).
+ *   - "rate": a single average savings contribution rate (employee +
+ *     employer, % of insured salary), useful when the user knows their
+ *     fund's Sparbeitrag.
+ * `insuredCeiling` is the salary up to which income is insured (raise it
+ * above the mandatory 90'720 to model super-mandatory coverage);
+ * `interestRate` is the assumed average projected interest on PK capital.
+ */
+export interface Pillar2Plan {
+  model: "bvg" | "rate";
+  savingsRate: number;
+  insuredCeiling: number;
+  interestRate: number;
+}
+
 export interface AccumulationInputs {
   currentSalary: number;
   salaryGrowth: number; // real, annual
@@ -85,6 +103,12 @@ export interface AccumulationInputs {
    * phase. Absent → the flat constant-growth model is used (unchanged).
    */
   incomePhases?: IncomePhase[];
+  /**
+   * Optional occupational-pension projection plan. Absent → the statutory
+   * BVG minimum (age-banded credits, mandatory ceiling, minimum interest)
+   * is used, unchanged.
+   */
+  pillar2Plan?: Pillar2Plan;
 }
 
 export interface PillarUnlockInputs {

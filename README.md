@@ -139,6 +139,16 @@ schedule is an optional `incomePhases` array on the accumulation engine
 (absent → the flat model runs unchanged); the wizard toggles between the
 two and edits the bands via `IncomePhasesEditor`.
 
+The Pensionskasse (Pillar 2) projection is income-driven and configurable
+via an optional `pillar2Plan`: either the statutory **BVG minimum**
+(age-banded 7–18 % credits) or an **average savings rate** on the insured
+salary, with an adjustable insured-salary ceiling (to model
+super-mandatory coverage of higher incomes) and an average PK interest
+rate. The PK contribution scales with the salary trajectory each year. The
+new `insuredSalary()` helper generalises `coordinatedSalary()` to a
+configurable ceiling; defaults reproduce the mandatory BVG behaviour
+exactly (so existing golden tests are unchanged).
+
 Phase 7 applies the **"Private Dossier"** design system — a restrained,
 editorial private-bank aesthetic. Design tokens (ink / porcelain / paper /
 brass + petrol/steel/stone data palette, hairline rules) live as a Tailwind
