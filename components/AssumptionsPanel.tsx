@@ -31,6 +31,11 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
           label="Frühestmöglicher Bezug"
           value={`Referenzalter − ${PILLAR_3A.earliestWithdrawalYearsBeforeReferenceAge} Jahre`}
         />
+        <Row
+          label="Gestaffelter Bezug"
+          value="je Konto ein Jahr"
+          note="Mehrere 3a-Konten in getrennten Kalenderjahren beziehen bricht die Progression der Kapitalauszahlungssteuer."
+        />
       </Group>
 
       <Group title="Pensionskasse (BVG-Minimum)">

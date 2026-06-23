@@ -144,7 +144,10 @@ taxable account at a chosen age via `oneOffInflows` — applied in the
 accumulation phase if at/before FIRE, otherwise in decumulation.
 
 Pillar withdrawals follow Swiss regulation rather than a draw-when-short
-heuristic: **Säule 3a is always taken as capital** at its unlock age, and
+heuristic: **Säule 3a is always taken as capital** at its unlock age — and
+can be **split across several accounts** (`pillar3aTranches`) closed in
+separate calendar years, the standard "gestaffelter Bezug" that breaks the
+progression of the lump-sum capital tax — and
 **Pillar 2 is settled at the PK retirement age** as one of capital / a
 lifelong Rente (capital × Umwandlungssatz) / a mix (`pillar2PayoutMode`,
 `pillar2CapitalShare`, `pillar2ConversionRate`; default capital, BVG-minimum

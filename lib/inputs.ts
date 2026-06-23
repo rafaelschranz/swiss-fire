@@ -38,6 +38,8 @@ export interface CalculatorInputs {
   pillar2ConversionRate: number; // Umwandlungssatz on the annuitised portion
 
   pillar3aUnlockAge: number;
+  /** Number of 3a accounts to close in separate years (staggered tax-optimal withdrawal). */
+  pillar3aTranches: number;
   earliestPkAge: number;
   ahvReferenceAge: number;
   ahvClaimAge: number;
@@ -88,6 +90,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   pillar2ConversionRate: PILLAR_2.minConversionRate,
 
   pillar3aUnlockAge: 60,
+  pillar3aTranches: 3,
   earliestPkAge: 58,
   ahvReferenceAge: 65,
   ahvClaimAge: 65,

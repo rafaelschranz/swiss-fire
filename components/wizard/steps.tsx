@@ -192,6 +192,7 @@ export const STEPS: StepDef[] = [
         <Field label="Erwartete AHV-Rente" value={inputs.ahvAnnualPension} onChange={(v) => set("ahvAnnualPension", v)} prefix="CHF" suffix="/Jahr" step={500} min={0} {...estimable(props, "ahvAnnualPension")} />
         <Field label="AHV-Bezug ab" value={inputs.ahvClaimAge} onChange={(v) => set("ahvClaimAge", v)} suffix="Jahre" min={63} max={70} {...estimable(props, "ahvClaimAge")} />
         <Field label="Säule 3a verfügbar ab" value={inputs.pillar3aUnlockAge} onChange={(v) => set("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} {...estimable(props, "pillar3aUnlockAge")} />
+        <Field label="Säule-3a-Konten (gestaffelt)" value={inputs.pillar3aTranches} onChange={(v) => set("pillar3aTranches", v)} suffix="Konten" min={1} max={5} step={1} hint="Auf mehrere 3a-Konten verteilt und in getrennten Jahren bezogen — bricht die Progression der Kapitalauszahlungssteuer." />
         <Field label="Pensionskasse verfügbar ab" value={inputs.earliestPkAge} onChange={(v) => set("earliestPkAge", v)} suffix="Jahre" min={55} max={70} {...estimable(props, "earliestPkAge")} />
         <Field label="AHV-Referenzalter" value={inputs.ahvReferenceAge} onChange={(v) => set("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} {...estimable(props, "ahvReferenceAge")} />
 
@@ -217,7 +218,7 @@ export const STEPS: StepDef[] = [
           </p>
           {inputs.pillar2PayoutMode !== "capital" && (
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Umwandlungssatz" value={inputs.pillar2ConversionRate} onChange={(v) => set("pillar2ConversionRate", v)} percent hint="BVG-Minimum 6,8 %; überobligatorisch oft tiefer." />
+              <Field label="Umwandlungssatz" value={inputs.pillar2ConversionRate} onChange={(v) => set("pillar2ConversionRate", v)} percent {...estimable(props, "pillar2ConversionRate", "BVG-Minimum 6,8 %; überobligatorisch oft tiefer.")} />
               {inputs.pillar2PayoutMode === "mix" && (
                 <Field label="Kapitalanteil" value={inputs.pillar2CapitalShare} onChange={(v) => set("pillar2CapitalShare", v)} percent hint="Anteil als Kapital; Rest wird verrentet." />
               )}

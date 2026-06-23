@@ -50,6 +50,7 @@ function buildDecumulationParams(
     pillar2PayoutMode: inputs.pillar2PayoutMode,
     pillar2CapitalShare: inputs.pillar2CapitalShare,
     pillar2ConversionRate: inputs.pillar2ConversionRate,
+    pillar3aTranches: inputs.pillar3aTranches,
   };
 }
 

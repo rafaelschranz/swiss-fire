@@ -133,6 +133,31 @@ describe("Pillar 2 payout mode", () => {
   });
 });
 
+describe("Staggered Säule 3a withdrawal", () => {
+  it("splitting the 3a across accounts withdrawn in separate years lowers total lump-sum tax", () => {
+    const base = baseParams({
+      fireAge: 60,
+      pillar3aUnlockAge: 60,
+      startingTaxable: 2_000_000, // ample, so depletion is never the factor
+      startingPillar3a: 300_000,
+      startingPillar2: 0, // isolate the 3a from any PK settlement
+      pillar3aReturn: 0,
+    });
+
+    const single = simulateDecumulation({ ...base, pillar3aTranches: 1 });
+    const split = simulateDecumulation({ ...base, pillar3aTranches: 3 });
+
+    const totalLumpTax = (r: ReturnType<typeof simulateDecumulation>) =>
+      r.years.reduce((s, y) => s + y.lumpSumTax, 0);
+
+    expect(totalLumpTax(single)).toBeGreaterThan(0);
+    // Progressive tax: 3 × tax(100k) < tax(300k).
+    expect(totalLumpTax(split)).toBeLessThan(totalLumpTax(single));
+    // Both fully draw the 3a down to ~0 within the horizon.
+    expect(split.years[split.years.length - 1].pillar3aBalance).toBeCloseTo(0, 6);
+  });
+});
+
 describe("Bridge capital required", () => {
   it("is positive when FIRE happens before the first pillar unlock", () => {
     const required = computeBridgeCapitalRequired(baseParams({ fireAge: 45 }));

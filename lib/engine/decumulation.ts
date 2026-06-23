@@ -62,6 +62,14 @@ export interface DecumulationParams {
   pillar2CapitalShare?: number;
   /** Conversion rate (Umwandlungssatz) applied to the annuitised portion. */
   pillar2ConversionRate?: number;
+  /**
+   * Number of Säule-3a accounts the balance is split across. Each account is
+   * closed in its own calendar year (one per year from `pillar3aUnlockAge`),
+   * so the progressive lump-sum capital tax is applied to a smaller amount
+   * each year instead of the whole 3a at once — the standard Swiss
+   * "gestaffelter Bezug" tax optimisation. Defaults to 1 (single withdrawal).
+   */
+  pillar3aTranches?: number;
 }
 
 /**
@@ -100,15 +108,17 @@ function annualCashNeed(
 }
 
 /**
- * Year-by-year decumulation simulator implementing a documented
- * tax-optimised HEURISTIC (not a global optimiser):
- *   1. Bridge years: fund spending from the taxable account first.
- *   2. Once unlocked, draw lump sums from Pillar 3a / Pillar 2 only when
- *      the taxable account runs short, and never both in the same tax
- *      year (each year draws from at most one pillar), to avoid the
- *      same-year aggregation that inflates the lump-sum tax.
- *   3. AHV starts at `ahvClaimAge` and offsets the portfolio draw.
- *   4. Non-employed AHV contributions and health insurance are modelled
+ * Year-by-year decumulation simulator following Swiss withdrawal regulation:
+ *   1. Spending is funded from the taxable account.
+ *   2. Säule 3a is taken as capital from `pillar3aUnlockAge`, optionally
+ *      split across `pillar3aTranches` accounts closed one per year so the
+ *      progressive lump-sum tax hits a smaller amount each year.
+ *   3. Pillar 2 is settled once at `earliestPkAge` as capital, a lifelong
+ *      Rente, or a mix (per `pillar2PayoutMode`). Capital withdrawn in the
+ *      same calendar year (3a tranche + PK lump) is aggregated for the
+ *      lump-sum tax, so staggering across years lowers the bill.
+ *   4. AHV (from `ahvClaimAge`) and any PK Rente offset the cash need.
+ *   5. Non-employed AHV contributions and health insurance are modelled
  *      as recurring decumulation costs until the AHV reference age.
  */
 export function simulateDecumulation(params: DecumulationParams): DecumulationResult {
@@ -128,8 +138,10 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
   const conversionRate = params.pillar2ConversionRate ?? PILLAR_2.minConversionRate;
 
   let pillar2Settled = false; // PK taken (capital and/or annuitised) — one-off event
-  let pillar3aWithdrawn = false; // 3a taken as capital — one-off event
   let pillar2Pension = 0; // lifelong annual PK Rente once settled
+  // 3a is drawn as capital, optionally split across several accounts closed in
+  // consecutive years to break the lump-sum tax progression.
+  let pillar3aTranchesLeft = Math.max(1, Math.floor(params.pillar3aTranches ?? 1));
 
   const firstUnlockAge = Math.min(params.pillar3aUnlockAge, params.earliestPkAge);
 
@@ -155,10 +167,14 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       pillar2 = 0;
       pillar2Settled = true;
     }
-    if (!pillar3aWithdrawn && age >= params.pillar3aUnlockAge && pillar3a > 0) {
-      capitalThisYear += pillar3a;
-      pillar3a = 0;
-      pillar3aWithdrawn = true;
+    if (pillar3aTranchesLeft > 0 && age >= params.pillar3aUnlockAge && pillar3a > 0) {
+      // Close one 3a account this year: an equal share of the balance still
+      // outstanding, so the tranches finish exactly after `pillar3aTranches`
+      // years (the final tranche carries any interest accrued meanwhile).
+      const tranche = pillar3a / pillar3aTranchesLeft;
+      capitalThisYear += tranche;
+      pillar3a -= tranche;
+      pillar3aTranchesLeft -= 1;
     }
 
     let lumpSumTaxPaid = 0;

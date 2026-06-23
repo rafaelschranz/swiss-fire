@@ -17,7 +17,8 @@ export type EstimableKey =
   | "earliestPkAge"
   | "ahvAnnualPension"
   | "annualPillar3aContribution"
-  | "healthInsuranceAnnualPremium";
+  | "healthInsuranceAnnualPremium"
+  | "pillar2ConversionRate";
 
 /**
  * Resolution order matters: fields whose estimate depends on another
@@ -33,7 +34,15 @@ export const ESTIMABLE_ORDER: EstimableKey[] = [
   "ahvAnnualPension",
   "annualPillar3aContribution",
   "healthInsuranceAnnualPremium",
+  "pillar2ConversionRate",
 ];
+
+/**
+ * Estimable fields that hold a rate/decimal (e.g. 0.068 = 6.8%) rather than
+ * an integer amount, so `applyEstimates` rounds them to a sensible precision
+ * instead of to a whole number.
+ */
+const RATE_ESTIMABLE_KEYS: ReadonlySet<EstimableKey> = new Set(["pillar2ConversionRate"]);
 
 /** Short, user-facing rationale shown under an estimated field. */
 export const ESTIMATE_LABELS: Record<EstimableKey, string> = {
@@ -45,6 +54,7 @@ export const ESTIMATE_LABELS: Record<EstimableKey, string> = {
   ahvAnnualPension: "Aus Referenzalter & Zivilstand geschätzt — bitte mit AHV-Auszug prüfen.",
   annualPillar3aContribution: "Maximalbeitrag mit Pensionskasse.",
   healthInsuranceAnnualPremium: "Grobe Pauschale pro Haushalt.",
+  pillar2ConversionRate: "BVG-Minimum 6,8 %, gekürzt um ~0,1 %-Pkt. je Jahr Vorbezug — Näherung, Reglement prüfen.",
 };
 
 const ESTIMATORS: Record<EstimableKey, (i: CalculatorInputs) => number> = {
@@ -64,6 +74,14 @@ const ESTIMATORS: Record<EstimableKey, (i: CalculatorInputs) => number> = {
   annualPillar3aContribution: () => PILLAR_3A.maxContributionWithPK,
   healthInsuranceAnnualPremium: (i) =>
     i.maritalStatus === "married" ? 2 * DEFAULTS.healthInsuranceAnnualPremium : DEFAULTS.healthInsuranceAnnualPremium,
+  pillar2ConversionRate: (i) => {
+    // Funds cut the conversion rate for early retirement — roughly 0.1
+    // percentage point per year drawn before the AHV reference age. Floor at
+    // 4% so the estimate stays plausible for very early retirees. Approximate
+    // and reglement-dependent; the user can override it.
+    const yearsEarly = Math.max(0, i.ahvReferenceAge - i.earliestPkAge);
+    return Math.max(0.04, PILLAR_2.minConversionRate - 0.001 * yearsEarly);
+  },
 };
 
 /**
@@ -74,7 +92,10 @@ const ESTIMATORS: Record<EstimableKey, (i: CalculatorInputs) => number> = {
 export function applyEstimates(inputs: CalculatorInputs, autoKeys: ReadonlySet<EstimableKey>): CalculatorInputs {
   const out = { ...inputs };
   for (const key of ESTIMABLE_ORDER) {
-    if (autoKeys.has(key)) out[key] = Math.round(ESTIMATORS[key](out));
+    if (!autoKeys.has(key)) continue;
+    const raw = ESTIMATORS[key](out);
+    // Rate fields keep ~0.1%-point precision; amount/age fields are integers.
+    out[key] = RATE_ESTIMABLE_KEYS.has(key) ? Math.round(raw * 1000) / 1000 : Math.round(raw);
   }
   return out;
 }
