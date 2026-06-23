@@ -165,6 +165,31 @@ annual outflows (living costs, AHV contributions, taxes) plus the AHV
 pension line. The engine stays real-terms; an `inflation` input reflates
 the annual-outflow chart to **nominal** francs so rising costs are visible.
 
+Couples can be modelled as a **household** (`hasPartner` + a `partner`
+profile). The partner gets their own salary, savings, Säule 3a, Pensionskasse
+and AHV, and their own retirement age — so each person can stop working on a
+different timeline. This runs a dedicated calendar-timeline simulator
+(`lib/engine/household.ts`) instead of the single-person accumulation +
+decumulation split: every year, each person is either working (earning,
+contributing to their own pillars, adding savings to the shared taxable pot)
+or retired (pillars settle at their own unlock ages, AHV from their own claim
+age). The shared taxable account and living costs are household-level. Key
+points modelled:
+
+- The **non-employed AHV contribution** ("AHV on wealth" when you have no
+  earned income) is charged per person to a retiree below their AHV reference
+  age — but a partner who is still working **exempts** the other (the
+  statutory Nichterwerbstätigen spouse exemption); when both are retired and
+  below reference age, both owe it on the married (halved) basis.
+- Same-year capital withdrawals by either partner are aggregated for the
+  progressive lump-sum tax (joint assessment of married couples).
+
+Simplifications in the household model (v1): the primary person's income uses
+the flat salary model (not age-banded phases) and the partner's fields are
+entered manually (no auto-estimates); the AHV 150 %-of-max couple cap is left
+to the user; market assumptions (returns, 3a/PK interest, inflation, canton)
+are shared; and Monte Carlo is single-person only for now.
+
 The Pensionskasse (Pillar 2) projection is income-driven and configurable
 via an optional `pillar2Plan`: either the statutory **BVG minimum**
 (age-banded 7–18 % credits) or an **average savings rate** on the insured

@@ -1,0 +1,286 @@
+import { inflowAt } from "./accumulation";
+import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
+import type { Pillar2PayoutMode } from "./decumulation";
+import { dividendIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate, wealthTax } from "./tax";
+import type { CantonTaxData, DecumulationYearResult, OneOffInflow, Pillar2Plan } from "./types";
+
+/**
+ * One member of a household. Each person ages on their own clock and retires
+ * at their own `fireAge`; their pension pillars unlock at their own ages. The
+ * taxable account and living costs are shared at the household level (see
+ * `HouseholdParams`), but the 3a and Pillar 2 pots are individual, as Swiss
+ * law requires. All figures are real (today's purchasing power).
+ */
+export interface HouseholdPerson {
+  label: string;
+  currentAge: number;
+  fireAge: number;
+  /** Flat salary model: salary today + real growth while working. */
+  currentSalary: number;
+  salaryGrowth: number;
+  /** Savings this person adds to the shared taxable account each working year. */
+  annualTaxableSavings: number;
+  currentPillar3a: number;
+  annualPillar3aContribution: number;
+  pillar3aUnlockAge: number;
+  pillar3aTranches: number;
+  currentPillar2: number;
+  pillar2Plan: Pillar2Plan;
+  earliestPkAge: number;
+  pillar2PayoutMode: Pillar2PayoutMode;
+  pillar2CapitalShare: number;
+  pillar2ConversionRate: number;
+  ahvReferenceAge: number;
+  ahvClaimAge: number;
+  ahvAnnualPension: number;
+  healthInsuranceAnnualPremium: number;
+}
+
+export interface HouseholdParams {
+  primary: HouseholdPerson;
+  partner: HouseholdPerson;
+  /** Combined liquid (taxable) capital today. */
+  startingTaxable: number;
+  /** Shared household living costs (real, excl. health premiums). */
+  annualRealSpending: number;
+  canton: CantonTaxData;
+  expectedReturn: number;
+  pillar3aReturn: number;
+  /** Planning horizon, on the PRIMARY person's age axis. */
+  horizonAge: number;
+  oneOffInflows?: OneOffInflow[];
+  /** Per-year real return sequence (indexed by years since today) for Monte Carlo. */
+  returnsPath?: number[];
+}
+
+export interface HouseholdResult {
+  /** Year-by-year household totals, indexed by the primary person's age. */
+  years: DecumulationYearResult[];
+  taxableAtFire: number;
+  pillar3aAtFire: number;
+  pillar2AtFire: number;
+  bridgeCapitalRequired: number;
+  failed: boolean;
+  failedDuringBridge: boolean;
+}
+
+/** See decumulation.ts — symmetric early/deferred AHV adjustment (approximate). */
+function adjustedAhvPension(basePension: number, claimAge: number, referenceAge: number): number {
+  return basePension * (1 + (claimAge - referenceAge) * AHV.approxEarlyReductionPerYear);
+}
+
+interface PersonState {
+  p: HouseholdPerson;
+  pillar3a: number;
+  pillar2: number;
+  pillar2Settled: boolean;
+  pillar2Pension: number;
+  tranchesLeft: number;
+  salary: number;
+}
+
+/**
+ * Household decumulation/accumulation on a single calendar timeline.
+ *
+ * Each year, every person is either working (age < their fireAge) — earning a
+ * salary, adding savings to the shared taxable pot, and crediting their own 3a
+ * and Pillar 2 — or retired, in which case their pillars settle at their own
+ * unlock ages (3a as staggered capital, Pillar 2 as capital / Rente / mix) and
+ * their AHV starts at their claim age. Shared living costs and taxes are met
+ * from the combined taxable account.
+ *
+ * The non-employed AHV contribution ("AHV on wealth") is charged to a retired
+ * person below their AHV reference age — UNLESS their partner is still working
+ * and covers them (the statutory Nichterwerbstätigen exemption). When both are
+ * retired and below reference age, both owe it on the (married, halved) basis.
+ *
+ * Capital lump sums withdrawn by either partner in the same calendar year are
+ * aggregated for the progressive lump-sum tax, reflecting joint assessment of
+ * married couples — so staggering withdrawals across years lowers the bill.
+ */
+export function simulateHousehold(params: HouseholdParams): HouseholdResult {
+  const years: DecumulationYearResult[] = [];
+  const people = [params.primary, params.partner];
+
+  const st: PersonState[] = people.map((p) => ({
+    p,
+    pillar3a: p.currentPillar3a,
+    pillar2: p.currentPillar2,
+    pillar2Settled: false,
+    pillar2Pension: 0,
+    tranchesLeft: Math.max(1, Math.floor(p.pillar3aTranches)),
+    salary: p.currentSalary,
+  }));
+
+  // Map a person's own age to the primary person's age axis.
+  const personAgeAt = (p: HouseholdPerson, primaryAge: number) =>
+    p.currentAge + (primaryAge - params.primary.currentAge);
+
+  const firstFirePrimaryAge = Math.min(
+    ...people.map((p) => params.primary.currentAge + (p.fireAge - p.currentAge)),
+  );
+  const firstUnlockPrimaryAge = Math.min(
+    ...people.map(
+      (p) => params.primary.currentAge + (Math.min(p.pillar3aUnlockAge, p.earliestPkAge) - p.currentAge),
+    ),
+  );
+
+  let taxable = params.startingTaxable;
+  let depleted = false;
+  let failedDuringBridge = false;
+  let bridgeCapitalRequired = 0;
+
+  let taxableAtFire = taxable;
+  let pillar3aAtFire = st[0].pillar3a + st[1].pillar3a;
+  let pillar2AtFire = st[0].pillar2 + st[1].pillar2;
+
+  for (let primaryAge = params.primary.currentAge; primaryAge < params.horizonAge; primaryAge++) {
+    const t = primaryAge - params.primary.currentAge;
+
+    // Capture household composition entering the primary person's FIRE year.
+    if (primaryAge === params.primary.fireAge) {
+      taxableAtFire = taxable;
+      pillar3aAtFire = st[0].pillar3a + st[1].pillar3a;
+      pillar2AtFire = st[0].pillar2 + st[1].pillar2;
+    }
+
+    // Household one-off inflows (keyed to the primary person's age).
+    if (primaryAge > params.primary.currentAge) taxable += inflowAt(params.oneOffInflows, primaryAge);
+
+    // --- Per-person retirement settlement (capital aggregated household-wide) ---
+    let capitalThisYear = 0;
+    for (const s of st) {
+      const age = personAgeAt(s.p, primaryAge);
+      if (s.tranchesLeft > 0 && age >= s.p.pillar3aUnlockAge && s.pillar3a > 0) {
+        const tranche = s.pillar3a / s.tranchesLeft;
+        capitalThisYear += tranche;
+        s.pillar3a -= tranche;
+        s.tranchesLeft -= 1;
+      }
+      if (!s.pillar2Settled && age >= s.p.earliestPkAge && s.pillar2 > 0) {
+        const share = s.p.pillar2PayoutMode === "capital" ? 1 : s.p.pillar2PayoutMode === "pension" ? 0 : s.p.pillar2CapitalShare;
+        const pkCapital = s.pillar2 * share;
+        s.pillar2Pension = (s.pillar2 - pkCapital) * s.p.pillar2ConversionRate;
+        capitalThisYear += pkCapital;
+        s.pillar2 = 0;
+        s.pillar2Settled = true;
+      }
+    }
+
+    let lumpSumTaxPaid = 0;
+    if (capitalThisYear > 0) {
+      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear);
+      taxable += capitalThisYear - lumpSumTaxPaid;
+    }
+
+    // --- Incomes: AHV, PK Rente, and still-working salaries -------------------
+    let ahvPensionTotal = 0;
+    let pillar2PensionTotal = 0;
+    let workingSavings = 0;
+    const working = st.map((s) => {
+      const age = personAgeAt(s.p, primaryAge);
+      const isWorking = age < s.p.fireAge;
+      if (age >= s.p.ahvClaimAge) {
+        ahvPensionTotal += adjustedAhvPension(s.p.ahvAnnualPension, s.p.ahvClaimAge, s.p.ahvReferenceAge);
+      }
+      pillar2PensionTotal += s.pillar2Pension;
+      if (isWorking) workingSavings += s.p.annualTaxableSavings;
+      return isWorking;
+    });
+    const pensionIncome = ahvPensionTotal + pillar2PensionTotal;
+
+    // --- Non-employed AHV ("AHV on wealth") per person ------------------------
+    // A retired person below their AHV reference age owes it, unless the
+    // partner is still working (and thus covers the household) — the statutory
+    // spouse exemption.
+    let nonEmployedContribution = 0;
+    const someoneWorking = working.some(Boolean);
+    if (!someoneWorking) {
+      for (const s of st) {
+        const age = personAgeAt(s.p, primaryAge);
+        const retired = age >= s.p.fireAge;
+        if (retired && age < s.p.ahvReferenceAge) {
+          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), pensionIncome, "married");
+        }
+      }
+    }
+
+    // --- Shared spending, funded from the combined taxable account ------------
+    const spend = params.annualRealSpending + s0health(st);
+    const netCashNeed = spend + nonEmployedContribution - pensionIncome - workingSavings;
+
+    if (primaryAge >= firstFirePrimaryAge && primaryAge < firstUnlockPrimaryAge) {
+      bridgeCapitalRequired += netCashNeed / Math.pow(1 + params.expectedReturn, primaryAge - firstFirePrimaryAge);
+    }
+
+    taxable -= netCashNeed;
+    if (taxable < 0) {
+      depleted = true;
+      if (primaryAge < firstUnlockPrimaryAge) failedDuringBridge = true;
+      taxable = 0;
+    }
+
+    const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
+    const divTax = dividendIncomeTax(params.canton, dividendIncome);
+    const wTax = wealthTax(params.canton, Math.max(0, taxable));
+    taxable -= divTax + wTax;
+    if (taxable < 0) {
+      depleted = true;
+      if (primaryAge < firstUnlockPrimaryAge) failedDuringBridge = true;
+      taxable = 0;
+    }
+
+    // --- Growth, working contributions, and salary progression ----------------
+    const yearReturn = params.returnsPath?.[t] ?? params.expectedReturn;
+    taxable *= 1 + yearReturn;
+
+    for (const s of st) {
+      const age = personAgeAt(s.p, primaryAge);
+      const isWorking = age < s.p.fireAge;
+      s.pillar3a = s.pillar3a * (1 + params.pillar3aReturn) + (isWorking ? s.p.annualPillar3aContribution : 0);
+
+      const interest = s.p.pillar2Plan.interestRate;
+      let credit = 0;
+      if (isWorking) {
+        const ceiling = s.p.pillar2Plan.model === "rate" ? s.p.pillar2Plan.insuredCeiling : PILLAR_2.upperInsuredSalaryLimit;
+        const insured = insuredSalary(s.salary, ceiling);
+        const rate = s.p.pillar2Plan.model === "rate" ? s.p.pillar2Plan.savingsRate : retirementCreditRate(age + 1);
+        credit = insured * rate;
+        s.salary *= 1 + s.p.salaryGrowth;
+      }
+      s.pillar2 = s.pillar2 * (1 + interest) + credit;
+    }
+
+    years.push({
+      age: primaryAge,
+      taxableBalance: taxable,
+      pillar3aBalance: st[0].pillar3a + st[1].pillar3a,
+      pillar2Balance: st[0].pillar2 + st[1].pillar2,
+      spend,
+      ahvNonEmployedContribution: nonEmployedContribution,
+      dividendTax: divTax,
+      wealthTax: wTax,
+      lumpSumTax: lumpSumTaxPaid,
+      ahvPension: ahvPensionTotal,
+      pillar2Pension: pillar2PensionTotal,
+      depleted,
+    });
+
+    if (depleted) break;
+  }
+
+  return {
+    years,
+    taxableAtFire,
+    pillar3aAtFire,
+    pillar2AtFire,
+    bridgeCapitalRequired: Math.max(0, bridgeCapitalRequired),
+    failed: depleted,
+    failedDuringBridge,
+  };
+}
+
+/** Combined health-insurance premium for both household members. */
+function s0health(st: PersonState[]): number {
+  return st.reduce((sum, s) => sum + s.p.healthInsuranceAnnualPremium, 0);
+}

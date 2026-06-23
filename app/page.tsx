@@ -18,9 +18,10 @@ import { AFFILIATE_SLOTS } from "@/lib/affiliates";
 import { simulateAccumulation } from "@/lib/engine/accumulation";
 import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
+import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@/lib/engine/household";
 import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
 import { applyEstimates, ESTIMABLE_ORDER, type EstimableKey } from "@/lib/estimates";
-import { DEFAULT_INPUTS, type CalculatorInputs } from "@/lib/inputs";
+import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
 
 function buildDecumulationParams(
   inputs: CalculatorInputs,
@@ -51,6 +52,82 @@ function buildDecumulationParams(
     pillar2CapitalShare: inputs.pillar2CapitalShare,
     pillar2ConversionRate: inputs.pillar2ConversionRate,
     pillar3aTranches: inputs.pillar3aTranches,
+  };
+}
+
+/** Maps the primary person's effective inputs to a household member. */
+function primaryPerson(inputs: CalculatorInputs): HouseholdPerson {
+  return {
+    label: "Sie",
+    currentAge: inputs.currentAge,
+    fireAge: inputs.fireAge,
+    currentSalary: inputs.currentSalary,
+    salaryGrowth: inputs.salaryGrowth,
+    annualTaxableSavings: inputs.annualTaxableSavings,
+    currentPillar3a: inputs.currentPillar3aBalance,
+    annualPillar3aContribution: inputs.annualPillar3aContribution,
+    pillar3aUnlockAge: inputs.pillar3aUnlockAge,
+    pillar3aTranches: inputs.pillar3aTranches,
+    currentPillar2: inputs.currentPillar2Balance,
+    pillar2Plan: {
+      model: inputs.pillar2Model,
+      savingsRate: inputs.pillar2SavingsRate,
+      insuredCeiling: inputs.pillar2InsuredCeiling,
+      interestRate: inputs.pillar2InterestRate,
+    },
+    earliestPkAge: inputs.earliestPkAge,
+    pillar2PayoutMode: inputs.pillar2PayoutMode,
+    pillar2CapitalShare: inputs.pillar2CapitalShare,
+    pillar2ConversionRate: inputs.pillar2ConversionRate,
+    ahvReferenceAge: inputs.ahvReferenceAge,
+    ahvClaimAge: inputs.ahvClaimAge,
+    ahvAnnualPension: inputs.ahvAnnualPension,
+    healthInsuranceAnnualPremium: inputs.healthInsuranceAnnualPremium,
+  };
+}
+
+/** Maps the partner profile to a household member, sharing market assumptions. */
+function partnerPerson(p: PartnerInputs, sharedPillar2Interest: number): HouseholdPerson {
+  return {
+    label: "Partner:in",
+    currentAge: p.currentAge,
+    fireAge: p.fireAge,
+    currentSalary: p.currentSalary,
+    salaryGrowth: p.salaryGrowth,
+    annualTaxableSavings: p.annualTaxableSavings,
+    currentPillar3a: p.currentPillar3aBalance,
+    annualPillar3aContribution: p.annualPillar3aContribution,
+    pillar3aUnlockAge: p.pillar3aUnlockAge,
+    pillar3aTranches: p.pillar3aTranches,
+    currentPillar2: p.currentPillar2Balance,
+    pillar2Plan: {
+      model: p.pillar2Model,
+      savingsRate: p.pillar2SavingsRate,
+      insuredCeiling: p.pillar2InsuredCeiling,
+      interestRate: sharedPillar2Interest,
+    },
+    earliestPkAge: p.earliestPkAge,
+    pillar2PayoutMode: p.pillar2PayoutMode,
+    pillar2CapitalShare: p.pillar2CapitalShare,
+    pillar2ConversionRate: p.pillar2ConversionRate,
+    ahvReferenceAge: p.ahvReferenceAge,
+    ahvClaimAge: p.ahvClaimAge,
+    ahvAnnualPension: p.ahvAnnualPension,
+    healthInsuranceAnnualPremium: p.healthInsuranceAnnualPremium,
+  };
+}
+
+function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
+  return {
+    primary: primaryPerson(inputs),
+    partner: partnerPerson(inputs.partner, inputs.pillar2InterestRate),
+    startingTaxable: inputs.currentTaxableBalance + inputs.partner.currentTaxableBalance,
+    annualRealSpending: inputs.annualRealSpending,
+    canton: getCanton(inputs.canton),
+    expectedReturn: inputs.expectedReturn,
+    pillar3aReturn: inputs.pillar3aReturn,
+    horizonAge: inputs.horizonAge,
+    oneOffInflows: inputs.oneOffInflows,
   };
 }
 
@@ -117,10 +194,27 @@ export default function Home() {
   );
 
   const decumulation = useMemo(() => simulateDecumulation(decumulationParams), [decumulationParams]);
-  const bridgeCapitalRequired = useMemo(() => computeBridgeCapitalRequired(decumulationParams), [decumulationParams]);
+  const singleBridge = useMemo(() => computeBridgeCapitalRequired(decumulationParams), [decumulationParams]);
 
+  // Household path: a two-person calendar-timeline simulation when a partner
+  // is added. Replaces the single-person accumulation + decumulation outputs.
+  const household = useMemo(
+    () => (eff.hasPartner ? simulateHousehold(buildHouseholdParams(eff)) : null),
+    [eff],
+  );
+
+  // Household-aware result values (fall back to the single-person engine).
+  const taxableAtFire = household ? household.taxableAtFire : accumulation.taxableAtFire;
+  const pillar3aAtFire = household ? household.pillar3aAtFire : accumulation.pillar3aAtFire;
+  const pillar2AtFire = household ? household.pillar2AtFire : accumulation.pillar2AtFire;
+  const bridgeCapital = household ? household.bridgeCapitalRequired : singleBridge;
+  const failed = household ? household.failed : decumulation.failed;
+  const failedDuringBridge = household ? household.failedDuringBridge : decumulation.failedDuringBridge;
+  const resultYears = household ? household.years : decumulation.years;
+
+  // Monte Carlo is single-person only for now (no stochastic household path yet).
   const monteCarlo = useMemo(() => {
-    if (mcMode === "off") return null;
+    if (mcMode === "off" || eff.hasPartner) return null;
     return simulateMonteCarlo({
       decumulationParams,
       volatility: eff.volatility,
@@ -128,9 +222,17 @@ export default function Home() {
       mode: mcMode,
       paths: 500,
     });
-  }, [mcMode, decumulationParams, eff.volatility, eff.equityShare]);
+  }, [mcMode, decumulationParams, eff.volatility, eff.equityShare, eff.hasPartner]);
 
   const balanceData: BalancePoint[] = useMemo(() => {
+    if (household) {
+      return household.years.map((y) => ({
+        age: y.age,
+        taxable: y.taxableBalance,
+        pillar3a: y.pillar3aBalance,
+        pillar2: y.pillar2Balance,
+      }));
+    }
     const accPoints = accumulation.years.map((y) => ({
       age: y.age,
       taxable: y.taxableBalance,
@@ -148,7 +250,7 @@ export default function Home() {
         pillar2: y.pillar2Balance,
       }));
     return [...accPoints, ...decPoints];
-  }, [accumulation, decumulation, eff.fireAge]);
+  }, [household, accumulation, decumulation, eff.fireAge]);
 
   const fanData: FanPoint[] = useMemo(() => {
     if (!monteCarlo) return [];
@@ -256,9 +358,9 @@ export default function Home() {
   }
 
   const capitalSegments = [
-    { label: "Steuerbar", value: accumulation.taxableAtFire, color: "bg-petrol" },
-    { label: "Säule 3a", value: accumulation.pillar3aAtFire, color: "bg-brass" },
-    { label: "Pensionskasse", value: accumulation.pillar2AtFire, color: "bg-steel" },
+    { label: "Steuerbar", value: taxableAtFire, color: "bg-petrol" },
+    { label: "Säule 3a", value: pillar3aAtFire, color: "bg-brass" },
+    { label: "Pensionskasse", value: pillar2AtFire, color: "bg-steel" },
   ];
 
   return (
@@ -281,10 +383,10 @@ export default function Home() {
 
       <div className="col-wide animate-rise -mt-12 space-y-14 pb-20">
         <ResultsHeadline
-          bridgeCapitalRequired={bridgeCapitalRequired}
-          taxableAtFire={accumulation.taxableAtFire}
-          feasible={!decumulation.failed}
-          failedDuringBridge={decumulation.failedDuringBridge}
+          bridgeCapitalRequired={bridgeCapital}
+          taxableAtFire={taxableAtFire}
+          feasible={!failed}
+          failedDuringBridge={failedDuringBridge}
           monteCarloSuccessRate={monteCarlo?.successRate}
         />
 
@@ -328,7 +430,7 @@ export default function Home() {
             Wie viel Geld wird im Ruhestand jährlich verbraucht — in nominalen Franken inklusive Teuerung,
             damit die reale Brückenrechnung greifbar wird. Die AHV-Rente reduziert ab Bezug den Eigenbedarf.
           </p>
-          <AnnualOutflowChart years={decumulation.years} baseAge={eff.currentAge} inflation={eff.inflation} />
+          <AnnualOutflowChart years={resultYears} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
@@ -336,16 +438,20 @@ export default function Home() {
             index="06"
             title="Monte-Carlo"
             action={
-              <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
-                {mcButton("off", "Aus")}
-                {mcButton("parametric", "Parametrisch")}
-                {mcButton("bootstrap", "Bootstrap")}
-              </div>
+              eff.hasPartner ? undefined : (
+                <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
+                  {mcButton("off", "Aus")}
+                  {mcButton("parametric", "Parametrisch")}
+                  {mcButton("bootstrap", "Bootstrap")}
+                </div>
+              )
             }
           />
           <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Wie robust ist der Plan gegenüber schwankenden Renditen?
-            {mcMode === "bootstrap" &&
+            {eff.hasPartner
+              ? "Die Monte-Carlo-Simulation ist vorerst nur für Einzelpersonen verfügbar; die Haushaltsrechnung ist deterministisch."
+              : "Wie robust ist der Plan gegenüber schwankenden Renditen?"}
+            {!eff.hasPartner && mcMode === "bootstrap" &&
               " Der Bootstrap-Modus verwendet eine synthetische Platzhalter-Renditeserie (noch keine echten historischen Daten)."}
           </p>
           {monteCarlo && <MonteCarloFan data={fanData} />}

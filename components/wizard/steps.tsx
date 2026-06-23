@@ -10,7 +10,7 @@ import { OneOffInflowsEditor } from "@/components/wizard/OneOffInflowsEditor";
 import { CANTONS } from "@/lib/engine/cantons";
 import type { CantonCode } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
-import type { CalculatorInputs } from "@/lib/inputs";
+import type { CalculatorInputs, PartnerInputs } from "@/lib/inputs";
 
 export interface StepProps {
   inputs: CalculatorInputs;
@@ -175,6 +175,100 @@ export const STEPS: StepDef[] = [
               onChange={(next) => set("oneOffInflows", next)}
             />
           </div>
+        </div>
+      );
+    },
+  },
+  {
+    id: "partner",
+    title: "Partner:in",
+    subtitle: "Gemeinsam planen — mit eigenem Ausstiegsalter und eigenen Säulen.",
+    render: ({ inputs, set }) => {
+      const p = inputs.partner;
+      const setP = <K extends keyof PartnerInputs>(k: K, v: PartnerInputs[K]) =>
+        set("partner", { ...p, [k]: v });
+      return (
+        <div className="space-y-6">
+          <SegmentedControl
+            label="Mit Partner:in rechnen"
+            ariaLabel="Haushalt mit Partner:in"
+            value={inputs.hasPartner ? "yes" : "no"}
+            onChange={(v) => set("hasPartner", v === "yes")}
+            options={[
+              { value: "no", label: "Alleine" },
+              { value: "yes", label: "Mit Partner:in" },
+            ]}
+          />
+          {!inputs.hasPartner ? (
+            <p className="max-w-prose text-sm leading-relaxed text-muted">
+              Aktivieren Sie diese Option, um eine zweite Person mit eigenem Salär, eigener Säule 3a,
+              Pensionskasse und AHV einzubeziehen. Beide können zu unterschiedlichen Zeitpunkten in Pension
+              gehen; das gemeinsame steuerbare Vermögen und die Lebenshaltungskosten werden als Haushalt
+              gerechnet. Renditeannahmen und Kanton gelten für beide.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              <Grid>
+                <Field label="Aktuelles Alter" value={p.currentAge} onChange={(v) => setP("currentAge", v)} suffix="Jahre" min={18} max={75} />
+                <Field label="FIRE-Alter (Ausstieg)" value={p.fireAge} onChange={(v) => setP("fireAge", v)} suffix="Jahre" min={30} max={75} />
+                <Field label="Bruttosalär" value={p.currentSalary} onChange={(v) => setP("currentSalary", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+                <Field label="Salärwachstum (real)" value={p.salaryGrowth} onChange={(v) => setP("salaryGrowth", v)} percent />
+                <Field label="Sparbetrag (steuerbar)" value={p.annualTaxableSavings} onChange={(v) => setP("annualTaxableSavings", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+                <Field label="3a-Einzahlung" value={p.annualPillar3aContribution} onChange={(v) => setP("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+                <Field label="Steuerbares Vermögen heute" value={p.currentTaxableBalance} onChange={(v) => setP("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} hint="Wird mit Ihrem zum Haushaltsvermögen addiert." />
+                <Field label="Säule-3a-Guthaben heute" value={p.currentPillar3aBalance} onChange={(v) => setP("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
+                <Field label="Pensionskasse-Guthaben heute" value={p.currentPillar2Balance} onChange={(v) => setP("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
+                <Field label="Erwartete AHV-Rente" value={p.ahvAnnualPension} onChange={(v) => setP("ahvAnnualPension", v)} prefix="CHF" suffix="/Jahr" step={500} min={0} hint="Bei Ehepaaren ist die Summe beider Renten auf 150 % der Maximalrente plafoniert." />
+                <Field label="Krankenkassenprämie" value={p.healthInsuranceAnnualPremium} onChange={(v) => setP("healthInsuranceAnnualPremium", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+                <Field label="AHV-Bezug ab" value={p.ahvClaimAge} onChange={(v) => setP("ahvClaimAge", v)} suffix="Jahre" min={63} max={70} />
+                <Field label="AHV-Referenzalter" value={p.ahvReferenceAge} onChange={(v) => setP("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} />
+                <Field label="Säule 3a verfügbar ab" value={p.pillar3aUnlockAge} onChange={(v) => setP("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} />
+                <Field label="Säule-3a-Konten (gestaffelt)" value={p.pillar3aTranches} onChange={(v) => setP("pillar3aTranches", v)} suffix="Konten" min={1} max={5} step={1} />
+                <Field label="Pensionskasse verfügbar ab" value={p.earliestPkAge} onChange={(v) => setP("earliestPkAge", v)} suffix="Jahre" min={55} max={70} />
+              </Grid>
+
+              <div className="border-t border-line pt-5">
+                <SegmentedControl
+                  label="PK-Aufbau"
+                  ariaLabel="Pensionskassen-Modell Partner:in"
+                  value={p.pillar2Model}
+                  onChange={(v) => setP("pillar2Model", v)}
+                  options={[
+                    { value: "bvg", label: "BVG-Minimum" },
+                    { value: "rate", label: "Ø Sparbeitrag" },
+                  ]}
+                />
+                {p.pillar2Model === "rate" && (
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Ø PK-Sparbeitrag" value={p.pillar2SavingsRate} onChange={(v) => setP("pillar2SavingsRate", v)} percent hint="Anteil des versicherten Lohns pro Jahr." />
+                    <Field label="Versicherter Lohn bis" value={p.pillar2InsuredCeiling} onChange={(v) => setP("pillar2InsuredCeiling", v)} prefix="CHF" step={5000} min={0} />
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-line pt-5">
+                <SegmentedControl
+                  label="Pensionskasse-Bezug"
+                  ariaLabel="Pensionskassen-Bezugsart Partner:in"
+                  value={p.pillar2PayoutMode}
+                  onChange={(v) => setP("pillar2PayoutMode", v)}
+                  options={[
+                    { value: "capital", label: "Kapital" },
+                    { value: "pension", label: "Rente" },
+                    { value: "mix", label: "Gemischt" },
+                  ]}
+                />
+                {p.pillar2PayoutMode !== "capital" && (
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Field label="Umwandlungssatz" value={p.pillar2ConversionRate} onChange={(v) => setP("pillar2ConversionRate", v)} percent hint="BVG-Minimum 6,8 %." />
+                    {p.pillar2PayoutMode === "mix" && (
+                      <Field label="Kapitalanteil" value={p.pillar2CapitalShare} onChange={(v) => setP("pillar2CapitalShare", v)} percent />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       );
     },
