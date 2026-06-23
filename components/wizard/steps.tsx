@@ -111,20 +111,20 @@ export const STEPS: StepDef[] = [
                 ? "Ein durchschnittlicher jährlicher Sparbeitrag (Arbeitnehmer + Arbeitgeber) in % des versicherten Lohns — wird mit dem Einkommen mitskaliert."
                 : "Gesetzliche Altersgutschriften (7–18 % je nach Alter) auf dem versicherten Lohn. Für höhere Einkommen mit überobligatorischer Vorsorge „Ø Sparbeitrag“ wählen."}
             </p>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {inputs.pillar2Model === "rate" && (
+            {inputs.pillar2Model === "rate" && (
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Ø PK-Sparbeitrag" value={inputs.pillar2SavingsRate} onChange={(v) => set("pillar2SavingsRate", v)} percent hint="Anteil des versicherten Lohns pro Jahr." />
-              )}
-              <Field
-                label="Versicherter Lohn bis"
-                value={inputs.pillar2InsuredCeiling}
-                onChange={(v) => set("pillar2InsuredCeiling", v)}
-                prefix="CHF"
-                step={5000}
-                min={0}
-                hint="BVG-Obligatorium bis 90’720; höher bei überobligatorischer Versicherung."
-              />
-            </div>
+                <Field
+                  label="Versicherter Lohn bis"
+                  value={inputs.pillar2InsuredCeiling}
+                  onChange={(v) => set("pillar2InsuredCeiling", v)}
+                  prefix="CHF"
+                  step={5000}
+                  min={0}
+                  hint="Bis zu diesem Lohn versichert Ihre Kasse — über 90’720 nur bei überobligatorischer Vorsorge."
+                />
+              </div>
+            )}
           </div>
 
           <div className="border-t border-line pt-5">

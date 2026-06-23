@@ -44,7 +44,10 @@ export function simulateAccumulation(
       : null;
 
   const plan = inputs.pillar2Plan;
-  const pkCeiling = plan?.insuredCeiling ?? PILLAR_2.upperInsuredSalaryLimit;
+  // The configurable insured-salary ceiling only applies to a flat-rate plan
+  // (modelling super-mandatory coverage). The statutory BVG model is always
+  // bound to the mandatory ceiling.
+  const pkCeiling = plan && plan.model === "rate" ? plan.insuredCeiling : PILLAR_2.upperInsuredSalaryLimit;
   const pkInterest = plan?.interestRate ?? PILLAR_2.minInterestRate;
 
   let taxable = inputs.currentTaxableBalance;
