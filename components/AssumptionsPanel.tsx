@@ -38,6 +38,11 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
         <Row label="Mindestzinssatz" value={`${(PILLAR_2.minInterestRate * 100).toFixed(2)}%`} />
         <Row label="Mindestumwandlungssatz" value={`${(PILLAR_2.minConversionRate * 100).toFixed(1)}%`} />
         <Row label="Frühestes Bezugsalter (Standard)" value={`${PILLAR_2.defaultEarliestPkAge}`} note="Reglementsabhängig, individuell konfigurierbar." />
+        <Row
+          label="Bezug"
+          value="Kapital / Rente / gemischt"
+          note="Die Säule 3a wird gesetzlich als Kapital bezogen; die PK wahlweise als Kapital, lebenslange Rente (Guthaben × Umwandlungssatz) oder Mischung. Rentenbezug (AHV + PK) wird als Reduktion des Mittelbedarfs modelliert, nicht separat als Einkommen besteuert."
+        />
       </Group>
 
       <Group title="AHV">

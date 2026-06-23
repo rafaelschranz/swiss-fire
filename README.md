@@ -143,6 +143,18 @@ One-off inflows (inheritance, property sale, bonus) can be credited to the
 taxable account at a chosen age via `oneOffInflows` — applied in the
 accumulation phase if at/before FIRE, otherwise in decumulation.
 
+Pillar withdrawals follow Swiss regulation rather than a draw-when-short
+heuristic: **Säule 3a is always taken as capital** at its unlock age, and
+**Pillar 2 is settled at the PK retirement age** as one of capital / a
+lifelong Rente (capital × Umwandlungssatz) / a mix (`pillar2PayoutMode`,
+`pillar2CapitalShare`, `pillar2ConversionRate`; default capital, BVG-minimum
+6.8 % conversion). Capital withdrawals falling in the same calendar year are
+aggregated for the progressive lump-sum tax — so staggering 3a and PK across
+different years lowers the bill. **Simplification:** recurring pension income
+(AHV plus any PK Rente) is modelled as a net offset to the annual cash need
+and is *not* separately taxed as ordinary income — flagged here and in the
+assumptions panel, consistent with the existing AHV treatment.
+
 The results carry two charts: a **balance chart** (unstacked lines per
 pot — total, taxable, 3a, PK — with FIRE / PK / 3a / AHV milestone
 markers, in real terms) and a **Mittelverwendung-pro-Jahr** chart showing

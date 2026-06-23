@@ -194,6 +194,36 @@ export const STEPS: StepDef[] = [
         <Field label="Säule 3a verfügbar ab" value={inputs.pillar3aUnlockAge} onChange={(v) => set("pillar3aUnlockAge", v)} suffix="Jahre" min={58} max={70} {...estimable(props, "pillar3aUnlockAge")} />
         <Field label="Pensionskasse verfügbar ab" value={inputs.earliestPkAge} onChange={(v) => set("earliestPkAge", v)} suffix="Jahre" min={55} max={70} {...estimable(props, "earliestPkAge")} />
         <Field label="AHV-Referenzalter" value={inputs.ahvReferenceAge} onChange={(v) => set("ahvReferenceAge", v)} suffix="Jahre" min={64} max={66} {...estimable(props, "ahvReferenceAge")} />
+
+        <div className="sm:col-span-2 border-t border-line pt-5">
+          <SegmentedControl
+            label="Pensionskasse-Bezug"
+            ariaLabel="Pensionskassen-Bezugsart"
+            value={inputs.pillar2PayoutMode}
+            onChange={(v) => set("pillar2PayoutMode", v)}
+            options={[
+              { value: "capital", label: "Kapital" },
+              { value: "pension", label: "Rente" },
+              { value: "mix", label: "Gemischt" },
+            ]}
+          />
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            {inputs.pillar2PayoutMode === "capital"
+              ? "Das ganze PK-Guthaben wird als Kapital bezogen (einmalig zum reduzierten Kapitalsteuersatz) und ins frei verfügbare Vermögen überführt."
+              : inputs.pillar2PayoutMode === "pension"
+                ? "Das ganze PK-Guthaben wird in eine lebenslange Rente umgewandelt (Guthaben × Umwandlungssatz pro Jahr). Die Rente ist steuerbares Einkommen."
+                : "Ein Teil wird als Kapital bezogen, der Rest verrentet. Gesetzlich sind mindestens 25 % als Kapital beziehbar."}
+            {" "}Die Säule 3a wird gesetzlich immer als Kapital bezogen.
+          </p>
+          {inputs.pillar2PayoutMode !== "capital" && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Umwandlungssatz" value={inputs.pillar2ConversionRate} onChange={(v) => set("pillar2ConversionRate", v)} percent hint="BVG-Minimum 6,8 %; überobligatorisch oft tiefer." />
+              {inputs.pillar2PayoutMode === "mix" && (
+                <Field label="Kapitalanteil" value={inputs.pillar2CapitalShare} onChange={(v) => set("pillar2CapitalShare", v)} percent hint="Anteil als Kapital; Rest wird verrentet." />
+              )}
+            </div>
+          )}
+        </div>
       </Grid>
       );
     },

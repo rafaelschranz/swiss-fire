@@ -47,6 +47,9 @@ function buildDecumulationParams(
     pillar3aReturn: inputs.pillar3aReturn,
     pillar2InterestRate: inputs.pillar2InterestRate,
     oneOffInflows: inputs.oneOffInflows,
+    pillar2PayoutMode: inputs.pillar2PayoutMode,
+    pillar2CapitalShare: inputs.pillar2CapitalShare,
+    pillar2ConversionRate: inputs.pillar2ConversionRate,
   };
 }
 

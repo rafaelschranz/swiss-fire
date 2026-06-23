@@ -32,6 +32,11 @@ export interface CalculatorInputs {
   pillar2InsuredCeiling: number; // salary insured up to this amount
   pillar2InterestRate: number; // assumed average interest on PK capital
 
+  /** How the PK is taken at retirement: lump sum, lifelong Rente, or a mix. */
+  pillar2PayoutMode: "capital" | "pension" | "mix";
+  pillar2CapitalShare: number; // fraction taken as capital when mode === "mix"
+  pillar2ConversionRate: number; // Umwandlungssatz on the annuitised portion
+
   pillar3aUnlockAge: number;
   earliestPkAge: number;
   ahvReferenceAge: number;
@@ -77,6 +82,10 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   pillar2SavingsRate: 0.15,
   pillar2InsuredCeiling: PILLAR_2.upperInsuredSalaryLimit,
   pillar2InterestRate: PILLAR_2.minInterestRate,
+
+  pillar2PayoutMode: "capital",
+  pillar2CapitalShare: 0.5,
+  pillar2ConversionRate: PILLAR_2.minConversionRate,
 
   pillar3aUnlockAge: 60,
   earliestPkAge: 58,

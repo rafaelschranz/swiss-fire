@@ -86,6 +86,53 @@ describe("Decumulation bridge failure", () => {
   });
 });
 
+describe("Pillar 2 payout mode", () => {
+  it("annuitises the whole PK into a lifelong Rente in pension mode (no capital withdrawn)", () => {
+    const conversionRate = 0.068;
+    const startingPillar2 = 300_000;
+    const params = baseParams({
+      fireAge: 58,
+      earliestPkAge: 58,
+      pillar3aUnlockAge: 60,
+      startingPillar2,
+      pillar2PayoutMode: "pension",
+      pillar2ConversionRate: conversionRate,
+    });
+
+    const result = simulateDecumulation(params);
+
+    // PK is converted at age 58: balance → 0, a lifelong Rente begins, and
+    // no PK capital ever lands in the lump-sum tax.
+    const atSettlement = result.years.find((y) => y.age === 58)!;
+    expect(atSettlement.pillar2Balance).toBe(0);
+    expect(atSettlement.pillar2Pension).toBeCloseTo(startingPillar2 * conversionRate, 2);
+    // The Rente persists in later years and the PK never triggers lump-sum tax.
+    const later = result.years.find((y) => y.age === 70)!;
+    expect(later.pillar2Pension).toBeCloseTo(startingPillar2 * conversionRate, 2);
+  });
+
+  it("splits capital and Rente in mix mode", () => {
+    const conversionRate = 0.068;
+    const capitalShare = 0.4;
+    const startingPillar2 = 300_000;
+    const params = baseParams({
+      fireAge: 58,
+      earliestPkAge: 58,
+      startingPillar2,
+      pillar2PayoutMode: "mix",
+      pillar2CapitalShare: capitalShare,
+      pillar2ConversionRate: conversionRate,
+    });
+
+    const result = simulateDecumulation(params);
+    const atSettlement = result.years.find((y) => y.age === 58)!;
+
+    expect(atSettlement.pillar2Balance).toBe(0);
+    expect(atSettlement.pillar2Pension).toBeCloseTo(startingPillar2 * (1 - capitalShare) * conversionRate, 2);
+    expect(atSettlement.lumpSumTax).toBeGreaterThan(0); // the capital share is taxed as a lump sum
+  });
+});
+
 describe("Bridge capital required", () => {
   it("is positive when FIRE happens before the first pillar unlock", () => {
     const required = computeBridgeCapitalRequired(baseParams({ fireAge: 45 }));

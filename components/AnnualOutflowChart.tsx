@@ -36,8 +36,11 @@ export function AnnualOutflowChart({
       ahvContrib: y.ahvNonEmployedContribution * factor,
       taxes: (y.dividendTax + y.wealthTax + y.lumpSumTax) * factor,
       ahvPension: y.ahvPension * factor,
+      pk2Pension: y.pillar2Pension * factor,
     };
   });
+
+  const hasPkPension = rows.some((r) => r.pk2Pension > 0);
 
   return (
     <div className="card p-5">
@@ -45,7 +48,7 @@ export function AnnualOutflowChart({
       <div
         className="h-72 w-full"
         role="img"
-        aria-label="Gestapeltes Balkendiagramm der jährlichen Ausgaben (Lebenshaltung, AHV-Beiträge, Steuern) in nominalen Franken, mit der AHV-Rente als Linie."
+        aria-label="Gestapeltes Balkendiagramm der jährlichen Ausgaben (Lebenshaltung, AHV-Beiträge, Steuern) in nominalen Franken, mit AHV-Rente und – falls verrentet – PK-Rente als Linien."
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -61,6 +64,9 @@ export function AnnualOutflowChart({
             <Bar dataKey="ahvContrib" name="AHV-Beiträge" stackId="out" fill={CHART.stone} maxBarSize={18} />
             <Bar dataKey="taxes" name="Steuern" stackId="out" fill={CHART.brass} maxBarSize={18} />
             <Line type="monotone" dataKey="ahvPension" name="AHV-Rente" stroke={CHART.ink} strokeWidth={2} dot={false} />
+            {hasPkPension && (
+              <Line type="monotone" dataKey="pk2Pension" name="PK-Rente" stroke={CHART.steel} strokeWidth={2} strokeDasharray="4 3" dot={false} />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
