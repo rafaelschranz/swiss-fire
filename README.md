@@ -139,6 +139,17 @@ schedule is an optional `incomePhases` array on the accumulation engine
 (absent → the flat model runs unchanged); the wizard toggles between the
 two and edits the bands via `IncomePhasesEditor`.
 
+One-off inflows (inheritance, property sale, bonus) can be credited to the
+taxable account at a chosen age via `oneOffInflows` — applied in the
+accumulation phase if at/before FIRE, otherwise in decumulation.
+
+The results carry two charts: a **balance chart** (unstacked lines per
+pot — total, taxable, 3a, PK — with FIRE / PK / 3a / AHV milestone
+markers, in real terms) and a **Mittelverwendung-pro-Jahr** chart showing
+annual outflows (living costs, AHV contributions, taxes) plus the AHV
+pension line. The engine stays real-terms; an `inflation` input reflates
+the annual-outflow chart to **nominal** francs so rising costs are visible.
+
 The Pensionskasse (Pillar 2) projection is income-driven and configurable
 via an optional `pillar2Plan`: either the statutory **BVG minimum**
 (age-banded 7–18 % credits) or an **average savings rate** on the insured

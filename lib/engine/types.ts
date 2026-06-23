@@ -83,6 +83,16 @@ export interface Pillar2Plan {
   interestRate: number;
 }
 
+/**
+ * A one-off cash inflow (e.g. an inheritance or a property sale) credited to
+ * the taxable account in the year the person reaches `age`. Real CHF.
+ */
+export interface OneOffInflow {
+  age: number;
+  amount: number;
+  label?: string;
+}
+
 export interface AccumulationInputs {
   currentSalary: number;
   salaryGrowth: number; // real, annual
@@ -109,6 +119,11 @@ export interface AccumulationInputs {
    * is used, unchanged.
    */
   pillar2Plan?: Pillar2Plan;
+  /**
+   * One-off inflows (inheritance, windfalls) credited to the taxable account
+   * at the given age. Those at age <= fireAge land during accumulation.
+   */
+  oneOffInflows?: OneOffInflow[];
 }
 
 export interface PillarUnlockInputs {

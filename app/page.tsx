@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { AffiliateSlot } from "@/components/AffiliateSlot";
+import { AnnualOutflowChart } from "@/components/AnnualOutflowChart";
 import { AssumptionsPanel } from "@/components/AssumptionsPanel";
 import { BalanceChart, type BalancePoint } from "@/components/BalanceChart";
 import { Disclaimer } from "@/components/Disclaimer";
@@ -45,6 +46,7 @@ function buildDecumulationParams(
     startingPillar2,
     pillar3aReturn: inputs.pillar3aReturn,
     pillar2InterestRate: inputs.pillar2InterestRate,
+    oneOffInflows: inputs.oneOffInflows,
   };
 }
 
@@ -100,6 +102,7 @@ export default function Home() {
           insuredCeiling: eff.pillar2InsuredCeiling,
           interestRate: eff.pillar2InterestRate,
         },
+        oneOffInflows: eff.oneOffInflows,
       }),
     [eff],
   );
@@ -304,12 +307,29 @@ export default function Home() {
 
         <section className="space-y-5">
           <SectionHeader index="04" title="Vermögensverlauf" />
-          <BalanceChart data={balanceData} fireAge={eff.fireAge} />
+          <BalanceChart
+            data={balanceData}
+            markers={{
+              fireAge: eff.fireAge,
+              pillar3aUnlockAge: eff.pillar3aUnlockAge,
+              earliestPkAge: eff.earliestPkAge,
+              ahvClaimAge: eff.ahvClaimAge,
+            }}
+          />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="05" title="Mittelverwendung pro Jahr" />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">
+            Wie viel Geld wird im Ruhestand jährlich verbraucht — in nominalen Franken inklusive Teuerung,
+            damit die reale Brückenrechnung greifbar wird. Die AHV-Rente reduziert ab Bezug den Eigenbedarf.
+          </p>
+          <AnnualOutflowChart years={decumulation.years} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
           <SectionHeader
-            index="05"
+            index="06"
             title="Monte-Carlo"
             action={
               <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
@@ -328,12 +348,12 @@ export default function Home() {
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="06" title="Annahmen & Quellen" />
+          <SectionHeader index="07" title="Annahmen & Quellen" />
           <AssumptionsPanel canton={getCanton(eff.canton)} />
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="07" title="Anbieter" />
+          <SectionHeader index="08" title="Anbieter" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
             <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />

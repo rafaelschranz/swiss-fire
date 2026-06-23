@@ -99,6 +99,36 @@ describe("Accumulation simulator", () => {
     expect(result.pillar2AtFire).toBeCloseTo((fireAge - currentAge) * insured * rate, 2);
   });
 
+  it("credits a one-off inflow to the taxable balance at the given age", () => {
+    const withoutInflow = simulateAccumulation(40, 45, {
+      currentSalary: 0,
+      salaryGrowth: 0,
+      currentTaxableBalance: 100_000,
+      annualTaxableSavings: 0,
+      currentPillar3aBalance: 0,
+      annualPillar3aContribution: 0,
+      pillar3aReturn: 0,
+      currentPillar2Balance: 0,
+      expectedReturn: 0,
+    });
+
+    const withInflow = simulateAccumulation(40, 45, {
+      currentSalary: 0,
+      salaryGrowth: 0,
+      currentTaxableBalance: 100_000,
+      annualTaxableSavings: 0,
+      currentPillar3aBalance: 0,
+      annualPillar3aContribution: 0,
+      pillar3aReturn: 0,
+      currentPillar2Balance: 0,
+      expectedReturn: 0,
+      oneOffInflows: [{ age: 43, amount: 250_000 }],
+    });
+
+    // No returns: the inflow adds exactly its amount to the FIRE balance.
+    expect(withInflow.taxableAtFire - withoutInflow.taxableAtFire).toBeCloseTo(250_000, 2);
+  });
+
   it("uses an explicit override for the PK balance at FIRE when provided", () => {
     const result = simulateAccumulation(40, 42, {
       currentSalary: 80_000,

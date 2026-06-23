@@ -1,6 +1,18 @@
 import { PILLAR_2 } from "./constants";
 import { insuredSalary, retirementCreditRate } from "./tax";
-import type { AccumulationInputs, AccumulationResult, AccumulationYearResult, IncomePhase } from "./types";
+import type {
+  AccumulationInputs,
+  AccumulationResult,
+  AccumulationYearResult,
+  IncomePhase,
+  OneOffInflow,
+} from "./types";
+
+/** Sum of one-off inflows credited exactly at `age`. */
+export function inflowAt(inflows: OneOffInflow[] | undefined, age: number): number {
+  if (!inflows) return 0;
+  return inflows.reduce((sum, f) => (f.age === age ? sum + f.amount : sum), 0);
+}
 
 /**
  * Returns the income phase whose band covers `age`: the phase with the
@@ -50,7 +62,7 @@ export function simulateAccumulation(
   const pkCeiling = plan && plan.model === "rate" ? plan.insuredCeiling : PILLAR_2.upperInsuredSalaryLimit;
   const pkInterest = plan?.interestRate ?? PILLAR_2.minInterestRate;
 
-  let taxable = inputs.currentTaxableBalance;
+  let taxable = inputs.currentTaxableBalance + inflowAt(inputs.oneOffInflows, currentAge);
   let pillar3a = inputs.currentPillar3aBalance;
   let pillar2 = inputs.currentPillar2Balance;
   let salary = phases ? activeIncomePhase(phases, currentAge).salary : inputs.currentSalary;
@@ -63,7 +75,7 @@ export function simulateAccumulation(
     const pillar3aContribution = phase ? phase.annualPillar3aContribution : inputs.annualPillar3aContribution;
     const salaryThisYear = phase ? phase.salary : salary;
 
-    taxable = taxable * (1 + inputs.expectedReturn) + taxableSavings;
+    taxable = taxable * (1 + inputs.expectedReturn) + taxableSavings + inflowAt(inputs.oneOffInflows, age + 1);
     pillar3a = pillar3a * (1 + inputs.pillar3aReturn) + pillar3aContribution;
 
     // PK savings credit: a flat average savings rate (if a "rate" plan is

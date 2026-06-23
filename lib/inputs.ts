@@ -1,5 +1,5 @@
 import { PILLAR_2 } from "@/lib/engine/constants";
-import type { CantonCode, IncomePhase } from "@/lib/engine/types";
+import type { CantonCode, IncomePhase, OneOffInflow } from "@/lib/engine/types";
 
 /**
  * The full set of user-editable calculator inputs. Stored in real
@@ -41,9 +41,14 @@ export interface CalculatorInputs {
   annualRealSpending: number;
   healthInsuranceAnnualPremium: number;
 
+  /** One-off inflows (e.g. inheritance) credited to the taxable account at a given age. */
+  oneOffInflows: OneOffInflow[];
+
   expectedReturn: number;
   volatility: number;
   equityShare: number;
+  /** Assumed annual inflation, used only to show nominal (inflated) figures. */
+  inflation: number;
 }
 
 export const DEFAULT_INPUTS: CalculatorInputs = {
@@ -82,7 +87,10 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   annualRealSpending: 48_000,
   healthInsuranceAnnualPremium: 5_000,
 
+  oneOffInflows: [],
+
   expectedReturn: 0.04,
   volatility: 0.12,
   equityShare: 0.7,
+  inflation: 0.01,
 };

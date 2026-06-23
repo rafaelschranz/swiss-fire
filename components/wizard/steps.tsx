@@ -6,6 +6,7 @@ import { Field } from "@/components/ui/Field";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectField } from "@/components/ui/SelectField";
 import { IncomePhasesEditor } from "@/components/wizard/IncomePhasesEditor";
+import { OneOffInflowsEditor } from "@/components/wizard/OneOffInflowsEditor";
 import { CANTONS } from "@/lib/engine/cantons";
 import type { CantonCode } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
@@ -161,6 +162,19 @@ export const STEPS: StepDef[] = [
               )}
             </div>
           </div>
+
+          <div className="border-t border-line pt-5">
+            <p className="text-sm font-medium text-ink">Einmalige Zuflüsse (z. B. Erbschaft)</p>
+            <p className="mt-1 mb-4 text-xs leading-relaxed text-muted">
+              Optionale Einmalbeträge, die in einem bestimmten Alter dem steuerbaren Vermögen gutgeschrieben werden.
+            </p>
+            <OneOffInflowsEditor
+              inflows={inputs.oneOffInflows}
+              currentAge={inputs.currentAge}
+              horizonAge={inputs.horizonAge}
+              onChange={(next) => set("oneOffInflows", next)}
+            />
+          </div>
         </div>
       );
     },
@@ -194,6 +208,7 @@ export const STEPS: StepDef[] = [
         <Field label="Rendite Säule 3a" value={inputs.pillar3aReturn} onChange={(v) => set("pillar3aReturn", v)} percent />
         <Field label="PK-Verzinsung" value={inputs.pillar2InterestRate} onChange={(v) => set("pillar2InterestRate", v)} percent hint="Ø Zins auf dem PK-Guthaben." />
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />
+        <Field label="Teuerung (Inflation)" value={inputs.inflation} onChange={(v) => set("inflation", v)} percent hint="Nur für die nominale Darstellung der Jahresausgaben." />
         <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent hint="Für die Monte-Carlo-Simulation." />
         <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Für den Bootstrap-Mix." />
       </Grid>

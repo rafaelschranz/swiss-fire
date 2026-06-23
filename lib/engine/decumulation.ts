@@ -1,6 +1,7 @@
+import { inflowAt } from "./accumulation";
 import { AHV, DEFAULTS } from "./constants";
 import { dividendIncomeTax, lumpSumTax, nonEmployedAhvContribution, wealthTax } from "./tax";
-import type { CantonTaxData, DecumulationResult, DecumulationYearResult } from "./types";
+import type { CantonTaxData, DecumulationResult, DecumulationYearResult, OneOffInflow } from "./types";
 
 export interface DecumulationParams {
   fireAge: number;
@@ -39,6 +40,12 @@ export interface DecumulationParams {
    * until it is withdrawn. Defaults to 0 (held flat) when omitted.
    */
   pillar2InterestRate?: number;
+  /**
+   * One-off inflows (inheritance, windfalls) credited to the taxable account.
+   * Those after `fireAge` apply here; inflows at or before `fireAge` are
+   * already reflected in `startingTaxable` by the accumulation phase.
+   */
+  oneOffInflows?: OneOffInflow[];
 }
 
 /**
@@ -119,6 +126,10 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       age >= params.ahvClaimAge
         ? adjustedAhvPension(params.ahvAnnualPension, params.ahvClaimAge, params.ahvReferenceAge)
         : 0;
+
+    // One-off inflows after FIRE land in the taxable account for that year.
+    // (Inflows at/before fireAge are already baked into startingTaxable.)
+    if (age > params.fireAge) taxable += inflowAt(params.oneOffInflows, age);
 
     const { nonEmployedContribution, netCashNeed } = annualCashNeed(params, age, taxable, ahvPension);
     const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
