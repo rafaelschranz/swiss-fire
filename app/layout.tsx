@@ -1,17 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+import { IBM_Plex_Mono, Inter, Spectral } from "next/font/google";
 import "./globals.css";
 import { JsonLd } from "@/components/JsonLd";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spectral = Spectral({
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
+  variable: "--font-spectral",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  weight: ["400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-plex",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -58,7 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spectral.variable} ${inter.variable} ${plexMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">
         <JsonLd
@@ -74,13 +85,36 @@ export default function RootLayout({
             offers: { "@type": "Offer", price: "0", priceCurrency: "CHF" },
           }}
         />
-        <a
-          href="#hauptinhalt"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-zinc-900 focus:px-4 focus:py-2 focus:text-white dark:focus:bg-zinc-100 dark:focus:text-zinc-900"
-        >
+        <a href="#hauptinhalt" className="skip-link">
           Zum Hauptinhalt springen
         </a>
+
+        <header className="bg-ink text-paper">
+          <div className="col flex items-center justify-between py-3.5">
+            <Link href="/" className="eyebrow text-brass-soft no-underline">
+              Private Dossier · Swiss FIRE
+            </Link>
+            <Link
+              href="/ratgeber"
+              className="eyebrow text-paper/70 no-underline transition hover:text-paper"
+            >
+              Ratgeber
+            </Link>
+          </div>
+        </header>
+
         {children}
+
+        <footer className="mt-auto bg-ink-2 text-paper/70">
+          <div className="col space-y-2 py-8 text-xs leading-relaxed">
+            <p className="eyebrow text-brass-soft">Hinweis</p>
+            <p className="max-w-prose">
+              Ausschliesslich zu Bildungszwecken. Keine Finanz-, Steuer- oder Anlageberatung.
+              Alle Steuerangaben sind Schätzungen ohne Gewähr. Berechnungen laufen lokal im
+              Browser; es werden keine Eingaben an einen Server übertragen.
+            </p>
+          </div>
+        </footer>
       </body>
     </html>
   );
