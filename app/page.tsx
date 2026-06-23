@@ -7,47 +7,24 @@ import { AffiliateSlot } from "@/components/AffiliateSlot";
 import { AssumptionsPanel } from "@/components/AssumptionsPanel";
 import { BalanceChart, type BalancePoint } from "@/components/BalanceChart";
 import { Disclaimer } from "@/components/Disclaimer";
-import { InputsPanel, type CalculatorInputs } from "@/components/InputsPanel";
 import { Lifeline } from "@/components/Lifeline";
 import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
 import { ResultsHeadline } from "@/components/ResultsHeadline";
+import { StepProgress } from "@/components/wizard/StepProgress";
+import { STEPS } from "@/components/wizard/steps";
 import { AFFILIATE_SLOTS } from "@/lib/affiliates";
-import { getCanton } from "@/lib/engine/cantons";
 import { simulateAccumulation } from "@/lib/engine/accumulation";
+import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
 import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
+import { DEFAULT_INPUTS, type CalculatorInputs } from "@/lib/inputs";
 
-const DEFAULT_INPUTS: CalculatorInputs = {
-  currentAge: 35,
-  fireAge: 55,
-  horizonAge: 95,
-  maritalStatus: "single",
-  canton: "ZH",
-
-  currentSalary: 110_000,
-  salaryGrowth: 0.01,
-  currentTaxableBalance: 80_000,
-  annualTaxableSavings: 25_000,
-  currentPillar3aBalance: 40_000,
-  annualPillar3aContribution: 7_258,
-  pillar3aReturn: 0.04,
-  currentPillar2Balance: 90_000,
-
-  pillar3aUnlockAge: 60,
-  earliestPkAge: 58,
-  ahvReferenceAge: 65,
-  ahvClaimAge: 65,
-  ahvAnnualPension: 24_000,
-
-  annualRealSpending: 48_000,
-  healthInsuranceAnnualPremium: 5_000,
-
-  expectedReturn: 0.04,
-  volatility: 0.12,
-  equityShare: 0.7,
-};
-
-function buildDecumulationParams(inputs: CalculatorInputs, startingTaxable: number, startingPillar3a: number, startingPillar2: number): DecumulationParams {
+function buildDecumulationParams(
+  inputs: CalculatorInputs,
+  startingTaxable: number,
+  startingPillar3a: number,
+  startingPillar2: number,
+): DecumulationParams {
   return {
     fireAge: inputs.fireAge,
     horizonAge: inputs.horizonAge,
@@ -69,7 +46,12 @@ function buildDecumulationParams(inputs: CalculatorInputs, startingTaxable: numb
 
 export default function Home() {
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
+  const [step, setStep] = useState(0);
+  const [showResults, setShowResults] = useState(false);
   const [mcMode, setMcMode] = useState<MonteCarloMode | "off">("off");
+
+  const set = <K extends keyof CalculatorInputs>(key: K, value: CalculatorInputs[K]) =>
+    setInputs((prev) => ({ ...prev, [key]: value }));
 
   const accumulation = useMemo(
     () =>
@@ -132,95 +114,176 @@ export default function Home() {
     }));
   }, [monteCarlo, inputs.fireAge]);
 
+  const isLastStep = step === STEPS.length - 1;
+  const activeStep = STEPS[step];
+
+  const next = () => {
+    if (isLastStep) {
+      setShowResults(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setStep((s) => s + 1);
+    }
+  };
+
+  const back = () => setStep((s) => Math.max(0, s - 1));
+
+  const editInputs = () => {
+    setShowResults(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const mcButton = (mode: MonteCarloMode | "off", label: string) => (
+    <button
+      type="button"
+      aria-pressed={mcMode === mode}
+      onClick={() => setMcMode(mode)}
+      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+        mcMode === mode
+          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+          : "border border-zinc-300 text-zinc-600 hover:border-zinc-400 dark:border-zinc-700 dark:text-zinc-300"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <main id="hauptinhalt" className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <header className="space-y-1">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            Swiss FIRE Brücken-Rechner
-          </h1>
+    <>
+      <header className="sticky top-0 z-20 border-b border-zinc-200/60 bg-white/70 backdrop-blur dark:border-zinc-800/60 dark:bg-zinc-950/60">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+          <span className="flex items-center gap-2 font-semibold text-zinc-900 dark:text-zinc-100">
+            <span aria-hidden="true">🇨🇭</span> Swiss FIRE
+          </span>
           <Link
             href="/ratgeber"
-            className="text-sm font-medium text-blue-700 underline-offset-2 hover:underline dark:text-blue-400"
+            className="text-sm font-medium text-sky-700 underline-offset-4 hover:underline dark:text-sky-400"
           >
             Ratgeber →
           </Link>
         </div>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Modelliert die Brückenphase zwischen FIRE-Ausstieg und dem Zugriff auf Säule 3a, Pensionskasse
-          und AHV — inklusive Steuerschätzung pro Kanton.
-        </p>
       </header>
 
-      <Disclaimer />
+      <main id="hauptinhalt" className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+        {!showResults ? (
+          <div className="mx-auto max-w-2xl">
+            <div className="mb-8 text-center">
+              <h1 className="bg-gradient-to-br from-sky-600 to-indigo-600 bg-clip-text text-3xl font-extrabold tracking-tight text-transparent sm:text-4xl">
+                Reicht Ihr Kapital bis zur Pension?
+              </h1>
+              <p className="mx-auto mt-2 max-w-md text-zinc-600 dark:text-zinc-400">
+                In vier Schritten zur Brückenrechnung zwischen Frühpensionierung und dem Zugriff auf
+                Säule 3a, Pensionskasse und AHV.
+              </p>
+            </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
-        <InputsPanel inputs={inputs} onChange={setInputs} />
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/50 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none sm:p-8">
+              <StepProgress steps={STEPS} current={step} onJump={setStep} />
 
-        <div className="space-y-6">
-          <Lifeline
-            currentAge={inputs.currentAge}
-            fireAge={inputs.fireAge}
-            pillar3aUnlockAge={inputs.pillar3aUnlockAge}
-            earliestPkAge={inputs.earliestPkAge}
-            ahvClaimAge={inputs.ahvClaimAge}
-            horizonAge={inputs.horizonAge}
-          />
+              <div key={activeStep.id} className="animate-step mt-8">
+                <div className="mb-6">
+                  <p className="text-3xl" aria-hidden="true">
+                    {activeStep.icon}
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-zinc-900 dark:text-zinc-100">{activeStep.title}</h2>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">{activeStep.subtitle}</p>
+                </div>
 
-          <ResultsHeadline
-            bridgeCapitalRequired={bridgeCapitalRequired}
-            taxableAtFire={accumulation.taxableAtFire}
-            feasible={!decumulation.failed}
-            failedDuringBridge={decumulation.failedDuringBridge}
-            monteCarloSuccessRate={monteCarlo?.successRate}
-          />
+                {activeStep.render({ inputs, set })}
+              </div>
 
-          <BalanceChart data={balanceData} fireAge={inputs.fireAge} />
+              <div className="mt-8 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={back}
+                  disabled={step === 0}
+                  className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 disabled:invisible dark:text-zinc-300 dark:hover:bg-zinc-800"
+                >
+                  ← Zurück
+                </button>
+                <button
+                  type="button"
+                  onClick={next}
+                  className="rounded-xl bg-gradient-to-br from-sky-600 to-indigo-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-sky-600/20 transition hover:brightness-110 active:scale-[0.98]"
+                >
+                  {isLastStep ? "Ergebnis berechnen →" : "Weiter →"}
+                </button>
+              </div>
+            </div>
 
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Monte-Carlo-Simulation</p>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Monte-Carlo-Modus">
+            <p className="mt-6 text-center text-xs text-zinc-400 dark:text-zinc-500">
+              Bildungstool, keine Finanzberatung. Alle Berechnungen laufen lokal in Ihrem Browser.
+            </p>
+          </div>
+        ) : (
+          <div className="animate-step space-y-8">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Ihre Brückenrechnung</h1>
               <button
                 type="button"
-                aria-pressed={mcMode === "off"}
-                onClick={() => setMcMode("off")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "off" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
+                onClick={editInputs}
+                className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
-                Aus
-              </button>
-              <button
-                type="button"
-                aria-pressed={mcMode === "parametric"}
-                onClick={() => setMcMode("parametric")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "parametric" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
-              >
-                Parametrisch
-              </button>
-              <button
-                type="button"
-                aria-pressed={mcMode === "bootstrap"}
-                onClick={() => setMcMode("bootstrap")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "bootstrap" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
-              >
-                Block-Bootstrap (synthetisch)
+                ✎ Eingaben anpassen
               </button>
             </div>
-            {mcMode === "bootstrap" && (
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                Verwendet eine synthetische Platzhalter-Renditeserie (data/returns/proxy-returns.ts), keine
-                echten historischen Daten.
-              </p>
-            )}
+
+            <ResultsHeadline
+              bridgeCapitalRequired={bridgeCapitalRequired}
+              taxableAtFire={accumulation.taxableAtFire}
+              feasible={!decumulation.failed}
+              failedDuringBridge={decumulation.failedDuringBridge}
+              monteCarloSuccessRate={monteCarlo?.successRate}
+            />
+
+            <Lifeline
+              currentAge={inputs.currentAge}
+              fireAge={inputs.fireAge}
+              pillar3aUnlockAge={inputs.pillar3aUnlockAge}
+              earliestPkAge={inputs.earliestPkAge}
+              ahvClaimAge={inputs.ahvClaimAge}
+              horizonAge={inputs.horizonAge}
+            />
+
+            <BalanceChart data={balanceData} fireAge={inputs.fireAge} />
+
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Monte-Carlo-Simulation</p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Wie robust ist der Plan gegenüber schwankenden Renditen?
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Monte-Carlo-Modus">
+                  {mcButton("off", "Aus")}
+                  {mcButton("parametric", "Parametrisch")}
+                  {mcButton("bootstrap", "Bootstrap")}
+                </div>
+              </div>
+              {mcMode === "bootstrap" && (
+                <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                  Verwendet eine synthetische Platzhalter-Renditeserie (noch keine echten historischen Daten).
+                </p>
+              )}
+              {monteCarlo && (
+                <div className="mt-4">
+                  <MonteCarloFan data={fanData} />
+                </div>
+              )}
+            </div>
+
+            <AssumptionsPanel canton={getCanton(inputs.canton)} />
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
+              <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
+            </div>
+
+            <Disclaimer />
           </div>
-
-          {monteCarlo && <MonteCarloFan data={fanData} />}
-
-          <AssumptionsPanel canton={getCanton(inputs.canton)} />
-
-          <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
-          <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
-        </div>
-      </div>
-    </main>
+        )}
+      </main>
+    </>
   );
 }

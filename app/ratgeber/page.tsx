@@ -61,7 +61,7 @@ export default function RatgeberPage() {
   };
 
   return (
-    <article className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10 sm:px-6">
+    <main id="hauptinhalt" className="mx-auto w-full max-w-3xl space-y-8 px-4 py-10 sm:px-6">
       <JsonLd data={faqJsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
 
@@ -140,6 +140,6 @@ export default function RatgeberPage() {
           ← Zum Rechner
         </Link>
       </p>
-    </article>
+    </main>
   );
 }

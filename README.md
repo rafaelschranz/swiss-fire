@@ -115,14 +115,19 @@ the Schwyz lump-sum tax curve, bridge-depletion failure, tax-optimal
 withdrawal staggering, and Monte Carlo success-rate monotonicity in
 starting capital and expected return.
 
-Phase 4 (UI) is built: a single-page client-side calculator
-(`app/page.tsx`) wiring `InputsPanel`, `Lifeline`, `ResultsHeadline`,
-`BalanceChart`, an optional `MonteCarloFan` (parametric/bootstrap toggle),
-`AssumptionsPanel`, the FINSA/FIDLEG `Disclaimer`, and disclosed
-`AffiliateSlot`s together with the engine. All computation runs in the
-browser; no inputs are sent to a server. German-language UI by default.
-`tsc --noEmit`, `eslint`, and `vitest run` all pass, and the page has been
-verified rendering real computed figures via a local dev server.
+Phase 4 (UI) is built and was reworked in Phase 6 into a guided
+experience: `app/page.tsx` is a client component that runs a four-step
+wizard (Über Sie / Vermögen heute / Ruhestand / Feinabstimmung) built from
+`components/wizard/*` and the polished `components/ui/*` primitives
+(currency + percent fields, segmented control, select). Submitting reveals
+a results dashboard — a gradient verdict hero (`ResultsHeadline`),
+`Lifeline`, `BalanceChart`, an optional `MonteCarloFan`
+(parametric/bootstrap toggle), `AssumptionsPanel`, the FINSA/FIDLEG
+`Disclaimer`, and disclosed `AffiliateSlot`s — with an "Eingaben anpassen"
+button back into the wizard. Shared input state/defaults live in
+`lib/inputs.ts`. All computation runs in the browser; no inputs are sent
+to a server. German-language UI by default. `tsc --noEmit`, `eslint`,
+`vitest run`, and `next build` all pass.
 
 Phase 5 (SEO + a11y) is built: `app/robots.ts`, `app/sitemap.ts`,
 canonical/OpenGraph/Twitter metadata and `WebApplication` JSON-LD in the
