@@ -44,6 +44,27 @@ describe("Decumulation bridge failure", () => {
     expect(result.failed).toBe(false);
   });
 
+  it("grows the not-yet-withdrawn pension balances during decumulation", () => {
+    // FIRE at 50 with a large taxable buffer, so no pillar is drawn in the
+    // early years — the locked 3a and PK should compound at their rates.
+    const params = baseParams({
+      fireAge: 50,
+      pillar3aUnlockAge: 60,
+      earliestPkAge: 58,
+      startingTaxable: 2_000_000,
+      startingPillar3a: 100_000,
+      startingPillar2: 300_000,
+      pillar3aReturn: 0.05,
+      pillar2InterestRate: 0.02,
+    });
+
+    const result = simulateDecumulation(params);
+    const afterTwoYears = result.years[1]; // age 51, two end-of-year compoundings
+
+    expect(afterTwoYears.pillar3aBalance).toBeCloseTo(100_000 * 1.05 ** 2, 0);
+    expect(afterTwoYears.pillar2Balance).toBeCloseTo(300_000 * 1.02 ** 2, 0);
+  });
+
   it("reports failure when an unlocked pillar only partially covers the shortfall", () => {
     // No bridge (FIRE at/after first unlock), tiny taxable, and a pillar
     // balance smaller than a single year's grossed-up shortfall: the draw

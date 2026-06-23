@@ -28,6 +28,17 @@ export interface DecumulationParams {
    * supplied path's length.
    */
   returnsPath?: number[];
+  /**
+   * Real annual growth of the (still-locked or not-yet-withdrawn) Pillar 3a
+   * balance during decumulation — a deferred 3a stays invested until drawn.
+   * Defaults to 0 (held flat) when omitted.
+   */
+  pillar3aReturn?: number;
+  /**
+   * Real annual interest credited on the Pillar 2 / vested-benefits balance
+   * until it is withdrawn. Defaults to 0 (held flat) when omitted.
+   */
+  pillar2InterestRate?: number;
 }
 
 /**
@@ -166,6 +177,10 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     const yearIndex = age - params.fireAge;
     const yearReturn = params.returnsPath?.[yearIndex] ?? params.expectedReturn;
     taxable *= 1 + yearReturn;
+
+    // Not-yet-withdrawn pension capital keeps compounding until it is drawn.
+    pillar3a *= 1 + (params.pillar3aReturn ?? 0);
+    pillar2 *= 1 + (params.pillar2InterestRate ?? 0);
 
     lifetimeTaxPaid += divTax + wTax + lumpSumTaxPaid;
 

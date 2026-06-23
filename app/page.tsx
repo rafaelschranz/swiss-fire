@@ -43,6 +43,8 @@ function buildDecumulationParams(
     startingTaxable,
     startingPillar3a,
     startingPillar2,
+    pillar3aReturn: inputs.pillar3aReturn,
+    pillar2InterestRate: inputs.pillar2InterestRate,
   };
 }
 
