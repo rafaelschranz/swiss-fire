@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Field } from "@/components/ui/Field";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SelectField } from "@/components/ui/SelectField";
+import { IncomePhasesEditor } from "@/components/wizard/IncomePhasesEditor";
 import { CANTONS } from "@/lib/engine/cantons";
 import type { CantonCode } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
@@ -82,19 +83,53 @@ export const STEPS: StepDef[] = [
   },
   {
     id: "wealth",
-    title: "Vermögen heute",
-    subtitle: "Ihre aktuellen Ersparnisse und Vorsorgeguthaben.",
+    title: "Vermögen & Einkommen",
+    subtitle: "Aktuelle Guthaben sowie Salär und Sparrate bis zum Ausstieg.",
     render: (props) => {
       const { inputs, set } = props;
       return (
-      <Grid>
-        <Field label="Bruttosalär" value={inputs.currentSalary} onChange={(v) => set("currentSalary", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-        <Field label="Sparbetrag (steuerbar)" value={inputs.annualTaxableSavings} onChange={(v) => set("annualTaxableSavings", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-        <Field label="Steuerbares Vermögen" value={inputs.currentTaxableBalance} onChange={(v) => set("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} />
-        <Field label="Säule-3a-Guthaben" value={inputs.currentPillar3aBalance} onChange={(v) => set("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
-        <Field label="3a-Einzahlung" value={inputs.annualPillar3aContribution} onChange={(v) => set("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...estimable(props, "annualPillar3aContribution")} />
-        <Field label="Pensionskasse-Guthaben" value={inputs.currentPillar2Balance} onChange={(v) => set("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
-      </Grid>
+        <div className="space-y-6">
+          <Grid>
+            <Field label="Steuerbares Vermögen heute" value={inputs.currentTaxableBalance} onChange={(v) => set("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} />
+            <Field label="Säule-3a-Guthaben heute" value={inputs.currentPillar3aBalance} onChange={(v) => set("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
+            <Field label="Pensionskasse-Guthaben heute" value={inputs.currentPillar2Balance} onChange={(v) => set("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
+          </Grid>
+
+          <div className="border-t border-line pt-5">
+            <SegmentedControl
+              label="Salär & Sparrate"
+              ariaLabel="Einkommensmodus"
+              value={inputs.useIncomePhases ? "phases" : "simple"}
+              onChange={(v) => set("useIncomePhases", v === "phases")}
+              options={[
+                { value: "simple", label: "Konstant" },
+                { value: "phases", label: "Nach Altersphasen" },
+              ]}
+            />
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              {inputs.useIncomePhases
+                ? "Definieren Sie Salär und Sparrate je Altersphase — ideal, wenn Ihr Einkommen über die Jahre stark steigt."
+                : "Ein gleichbleibendes Salär mit realem Wachstum (siehe Feinabstimmung). Für stark steigende Einkommen auf „Nach Altersphasen“ wechseln."}
+            </p>
+
+            <div className="mt-4">
+              {inputs.useIncomePhases ? (
+                <IncomePhasesEditor
+                  phases={inputs.incomePhases}
+                  startAge={inputs.currentAge}
+                  fireAge={inputs.fireAge}
+                  onChange={(next) => set("incomePhases", next)}
+                />
+              ) : (
+                <Grid>
+                  <Field label="Bruttosalär" value={inputs.currentSalary} onChange={(v) => set("currentSalary", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+                  <Field label="Sparbetrag (steuerbar)" value={inputs.annualTaxableSavings} onChange={(v) => set("annualTaxableSavings", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+                  <Field label="3a-Einzahlung" value={inputs.annualPillar3aContribution} onChange={(v) => set("annualPillar3aContribution", v)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...estimable(props, "annualPillar3aContribution")} />
+                </Grid>
+              )}
+            </div>
+          </div>
+        </div>
       );
     },
   },

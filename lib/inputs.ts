@@ -1,4 +1,4 @@
-import type { CantonCode } from "@/lib/engine/types";
+import type { CantonCode, IncomePhase } from "@/lib/engine/types";
 
 /**
  * The full set of user-editable calculator inputs. Stored in real
@@ -20,6 +20,10 @@ export interface CalculatorInputs {
   annualPillar3aContribution: number;
   pillar3aReturn: number;
   currentPillar2Balance: number;
+
+  /** When true, salary/savings come from `incomePhases` rather than the flat fields above. */
+  useIncomePhases: boolean;
+  incomePhases: IncomePhase[];
 
   pillar3aUnlockAge: number;
   earliestPkAge: number;
@@ -50,6 +54,12 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   annualPillar3aContribution: 7_258,
   pillar3aReturn: 0.04,
   currentPillar2Balance: 90_000,
+
+  useIncomePhases: false,
+  incomePhases: [
+    { fromAge: 35, salary: 110_000, annualTaxableSavings: 25_000, annualPillar3aContribution: 7_258 },
+    { fromAge: 45, salary: 140_000, annualTaxableSavings: 40_000, annualPillar3aContribution: 7_258 },
+  ],
 
   pillar3aUnlockAge: 60,
   earliestPkAge: 58,

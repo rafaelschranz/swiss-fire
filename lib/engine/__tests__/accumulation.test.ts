@@ -50,6 +50,30 @@ describe("Accumulation simulator", () => {
     expect(result.pillar3aAtFire).toBeGreaterThan(5_000 + 7_258 * 2);
   });
 
+  it("applies age-banded income phases instead of the flat fields when provided", () => {
+    // Two phases: ages 25-29 save 10k/yr, ages 30-34 save 40k/yr. No returns,
+    // so the taxable balance is just the sum of the per-year savings.
+    const result = simulateAccumulation(25, 35, {
+      currentSalary: 0,
+      salaryGrowth: 0,
+      currentTaxableBalance: 0,
+      annualTaxableSavings: 999_999, // must be ignored in favour of phases
+      currentPillar3aBalance: 0,
+      annualPillar3aContribution: 999_999, // must be ignored
+      pillar3aReturn: 0,
+      currentPillar2Balance: 0,
+      expectedReturn: 0,
+      incomePhases: [
+        { fromAge: 25, salary: 70_000, annualTaxableSavings: 10_000, annualPillar3aContribution: 5_000 },
+        { fromAge: 30, salary: 120_000, annualTaxableSavings: 40_000, annualPillar3aContribution: 7_000 },
+      ],
+    });
+
+    // 5 years at 10k (ages 25-29) + 5 years at 40k (ages 30-34).
+    expect(result.taxableAtFire).toBeCloseTo(5 * 10_000 + 5 * 40_000, 2);
+    expect(result.pillar3aAtFire).toBeCloseTo(5 * 5_000 + 5 * 7_000, 2);
+  });
+
   it("uses an explicit override for the PK balance at FIRE when provided", () => {
     const result = simulateAccumulation(40, 42, {
       currentSalary: 80_000,

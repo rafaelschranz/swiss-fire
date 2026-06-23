@@ -91,6 +91,7 @@ export default function Home() {
         pillar3aReturn: eff.pillar3aReturn,
         currentPillar2Balance: eff.currentPillar2Balance,
         expectedReturn: eff.expectedReturn,
+        incomePhases: eff.useIncomePhases ? eff.incomePhases : undefined,
       }),
     [eff],
   );

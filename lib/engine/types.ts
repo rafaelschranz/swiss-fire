@@ -52,6 +52,19 @@ export interface PersonalInputs {
   canton: CantonCode;
 }
 
+/**
+ * An age-banded income/savings phase. Applies from `fromAge` until the next
+ * phase's `fromAge` (or FIRE). Models careers where salary and savings rate
+ * change markedly over time — e.g. a 25-year-old whose income ramps up.
+ * All figures are real (today's purchasing power).
+ */
+export interface IncomePhase {
+  fromAge: number;
+  salary: number;
+  annualTaxableSavings: number;
+  annualPillar3aContribution: number;
+}
+
 export interface AccumulationInputs {
   currentSalary: number;
   salaryGrowth: number; // real, annual
@@ -64,6 +77,14 @@ export interface AccumulationInputs {
   /** If provided, overrides the projected PK balance at FIRE entirely. */
   expectedPillar2BalanceAtFire?: number;
   expectedReturn: number; // taxable portfolio, real
+  /**
+   * Optional age-banded salary / savings schedule. When present (non-empty),
+   * it replaces `currentSalary` + `salaryGrowth` + `annualTaxableSavings` +
+   * `annualPillar3aContribution`: each year uses the values of the phase
+   * whose band covers that age. Ages below the lowest band use the lowest
+   * phase. Absent → the flat constant-growth model is used (unchanged).
+   */
+  incomePhases?: IncomePhase[];
 }
 
 export interface PillarUnlockInputs {

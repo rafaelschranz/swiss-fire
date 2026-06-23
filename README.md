@@ -132,6 +132,13 @@ start **auto-estimated** from the entered figures + verified constants via
 entry. All computation runs in the browser; no inputs are sent to a
 server. German-language UI by default.
 
+Income can be modelled two ways: a constant salary with real growth, or an
+**age-banded schedule** ("ab Alter X: Salär, Sparrate, 3a") for careers
+where income ramps up sharply — e.g. someone in their twenties. The
+schedule is an optional `incomePhases` array on the accumulation engine
+(absent → the flat model runs unchanged); the wizard toggles between the
+two and edits the bands via `IncomePhasesEditor`.
+
 Phase 7 applies the **"Private Dossier"** design system — a restrained,
 editorial private-bank aesthetic. Design tokens (ink / porcelain / paper /
 brass + petrol/steel/stone data palette, hairline rules) live as a Tailwind
