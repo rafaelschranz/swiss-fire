@@ -495,6 +495,31 @@ export const STEPS: StepDef[] = [
             </div>
           )}
         </div>
+
+        <div className="sm:col-span-2 border-t border-line pt-5">
+          <SegmentedControl
+            label="Nach Ausstieg noch erwerbstätig?"
+            ariaLabel="Erwerbstätigkeit nach FIRE"
+            value={inputs.postFireEmployment ? "yes" : "no"}
+            onChange={(v) => set("postFireEmployment", v === "yes")}
+            options={[
+              { value: "no", label: "Nein" },
+              { value: "yes", label: "Teilzeit / Mandate" },
+            ]}
+          />
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            Wer nach dem Ausstieg noch genug verdient, zahlt keine Nichterwerbstätigen-AHV („AHV aufs
+            Vermögen“): Sind die AHV-Beiträge aus der Erwerbstätigkeit (10,6 %) mindestens halb so hoch wie
+            der sonst fällige Nichterwerbstätigen-Beitrag, entfällt dieser. Das Erwerbseinkommen reduziert
+            zudem den Kapitalbezug und wird als Einkommen besteuert.
+          </p>
+          {inputs.postFireEmployment && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Erwerbseinkommen (brutto)" value={inputs.postFireIncome} onChange={(v) => set("postFireIncome", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+              <Field label="Erwerbstätig bis Alter" value={inputs.postFireWorkUntilAge} onChange={(v) => set("postFireWorkUntilAge", v)} suffix="Jahre" min={inputs.fireAge} max={70} />
+            </div>
+          )}
+        </div>
       </Grid>
       );
     },

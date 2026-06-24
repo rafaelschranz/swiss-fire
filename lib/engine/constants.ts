@@ -104,6 +104,14 @@ export const AHV = {
     /** A non-employed spouse is exempt if the working spouse pays at least this multiple of the minimum. */
     spouseExemptionMultiple: 2,
   },
+  /**
+   * Total AHV/IV/EO contribution rate on employment income (employee + employer),
+   * 2026: AHV 8.7% + IV 1.4% + EO 0.5% = 10.6%. A gainfully employed person is
+   * exempt from the non-employed contribution if their employment contributions
+   * reach at least half of what they would owe as non-employed.
+   */
+  employmentContributionRate: 0.106,
+  nonEmployedExemptionShare: 0.5,
 } as const;
 
 // ---------------------------------------------------------------------------

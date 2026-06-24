@@ -158,6 +158,44 @@ describe("Staggered Säule 3a withdrawal", () => {
   });
 });
 
+describe("Post-FIRE residual employment", () => {
+  it("waives the non-employed AHV contribution while earning enough, and reinstates it after", () => {
+    // Early retiree (FIRE 50), below AHV reference age, would owe the
+    // non-employed contribution — but works part-time until 60.
+    const params = baseParams({
+      fireAge: 50,
+      ahvClaimAge: 65,
+      startingTaxable: 2_000_000, // large wealth → sizeable would-be contribution
+      startingPillar3a: 0,
+      startingPillar2: 0,
+      postFireIncome: 60_000,
+      postFireWorkUntilAge: 60,
+    });
+
+    const result = simulateDecumulation(params);
+    const at55 = result.years.find((y) => y.age === 55)!; // still working
+    const at62 = result.years.find((y) => y.age === 62)!; // stopped, still < reference age
+
+    expect(at55.ahvNonEmployedContribution).toBe(0); // waived while working enough
+    expect(at62.ahvNonEmployedContribution).toBeGreaterThan(0); // reinstated after work ends
+  });
+
+  it("does not waive the contribution when the residual income is too small", () => {
+    const params = baseParams({
+      fireAge: 50,
+      ahvClaimAge: 65,
+      startingTaxable: 2_000_000,
+      startingPillar3a: 0,
+      startingPillar2: 0,
+      postFireIncome: 5_000, // 10.6% × 5000 = 530 < half the would-be contribution
+      postFireWorkUntilAge: 60,
+    });
+
+    const at55 = simulateDecumulation(params).years.find((y) => y.age === 55)!;
+    expect(at55.ahvNonEmployedContribution).toBeGreaterThan(0);
+  });
+});
+
 describe("Bridge capital required", () => {
   it("is positive when FIRE happens before the first pillar unlock", () => {
     const required = computeBridgeCapitalRequired(baseParams({ fireAge: 45 }));

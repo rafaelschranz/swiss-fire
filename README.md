@@ -199,6 +199,14 @@ by the cantonal capital-tax curve × the Gemeinde factor **plus** the federal
 one-fifth tariff (Art. 38 DBG). The non-employed **AHV contribution**
 ("AHV on wealth") now includes the funds' 5 % administrative-cost surcharge.
 
+**Residual post-FIRE employment**: an optional toggle lets a single person keep
+earning part-time after FIRE (`postFireIncome` until `postFireWorkUntilAge`).
+The income offsets the portfolio draw and is income-taxed, and — applying the
+statutory test — it **waives the non-employed AHV contribution** in years where
+the employment AHV contributions (10.6 %) reach at least half of what would
+otherwise be due. (For couples this is already covered by the spouse-working
+exemption in the household engine.)
+
 The ESTV API (swisstaxcalculator.estv.admin.ch) was used to source the exact
 federal tariff and is reachable for the per-municipality cantonal scales +
 Steuerfüsse; reproducing every canton's cantonal/communal tariff and the

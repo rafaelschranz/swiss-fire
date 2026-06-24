@@ -83,6 +83,11 @@ export interface CalculatorInputs {
   annualRealSpending: number;
   healthInsuranceAnnualPremium: number;
 
+  /** Still earning some employment income after FIRE (part-time / consulting). */
+  postFireEmployment: boolean;
+  postFireIncome: number;
+  postFireWorkUntilAge: number;
+
   /** One-off inflows (e.g. inheritance) credited to the taxable account at a given age. */
   oneOffInflows: OneOffInflow[];
 
@@ -143,6 +148,10 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
 
   annualRealSpending: 48_000,
   healthInsuranceAnnualPremium: 5_000,
+
+  postFireEmployment: false,
+  postFireIncome: 30_000,
+  postFireWorkUntilAge: 60,
 
   oneOffInflows: [],
 

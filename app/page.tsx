@@ -55,6 +55,8 @@ function buildDecumulationParams(
     pillar2ConversionRate: inputs.pillar2ConversionRate,
     pillar3aTranches: inputs.pillar3aTranches,
     gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
+    postFireIncome: inputs.postFireEmployment ? inputs.postFireIncome : 0,
+    postFireWorkUntilAge: inputs.postFireWorkUntilAge,
   };
 }
 

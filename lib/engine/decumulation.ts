@@ -77,6 +77,15 @@ export interface DecumulationParams {
    * "gestaffelter Bezug" tax optimisation. Defaults to 1 (single withdrawal).
    */
   pillar3aTranches?: number;
+  /**
+   * Residual employment after FIRE: gross annual income earned until
+   * `postFireWorkUntilAge`. It offsets the portfolio draw, is taxed as ordinary
+   * income, and — if the AHV contributions on it reach at least half the
+   * would-be non-employed contribution — waives the non-employed "AHV on
+   * wealth" for that year. Defaults to 0 (fully retired).
+   */
+  postFireIncome?: number;
+  postFireWorkUntilAge?: number;
 }
 
 /**
@@ -103,15 +112,29 @@ function annualCashNeed(
   age: number,
   taxableEstimate: number,
   ahvPension: number,
-): { nonEmployedContribution: number; netCashNeed: number } {
+): { nonEmployedContribution: number; netCashNeed: number; employmentIncome: number } {
+  // Residual post-FIRE employment income for this year, if any.
+  const employmentIncome =
+    params.postFireIncome && age < (params.postFireWorkUntilAge ?? 0) ? params.postFireIncome : 0;
+
   const replacementIncomeBasis = ahvPension > 0 ? ahvPension : params.annualRealSpending;
-  const nonEmployedContribution =
+  let nonEmployedContribution =
     age < params.ahvReferenceAge
       ? nonEmployedAhvContribution(taxableEstimate, replacementIncomeBasis, params.maritalStatus)
       : 0;
+
+  // A gainfully employed person is exempt from the non-employed contribution
+  // when their employment AHV contributions reach at least half of it.
+  if (
+    employmentIncome > 0 &&
+    AHV.employmentContributionRate * employmentIncome >= AHV.nonEmployedExemptionShare * nonEmployedContribution
+  ) {
+    nonEmployedContribution = 0;
+  }
+
   const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
-  const netCashNeed = spend + nonEmployedContribution - ahvPension;
-  return { nonEmployedContribution, netCashNeed };
+  const netCashNeed = spend + nonEmployedContribution - ahvPension - employmentIncome;
+  return { nonEmployedContribution, netCashNeed, employmentIncome };
 }
 
 /**
@@ -197,7 +220,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
 
     // --- Spending, funded from the taxable account -------------------------
     const pensionIncome = ahvPension + pillar2Pension;
-    const { nonEmployedContribution, netCashNeed } = annualCashNeed(params, age, taxable, pensionIncome);
+    const { nonEmployedContribution, netCashNeed, employmentIncome } = annualCashNeed(params, age, taxable, pensionIncome);
     const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
 
     taxable -= netCashNeed;
@@ -214,7 +237,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     // effective rate × Gemeinde factor). `divTax` therefore now holds the total
     // recurring income tax, not only the dividend portion.
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
-    const ordinaryIncome = pensionIncome + dividendIncome;
+    const ordinaryIncome = pensionIncome + dividendIncome + employmentIncome;
     const divTax =
       federalIncomeTax(ordinaryIncome, married) + cantonalIncomeTax(params.canton, ordinaryIncome, married) * gemeinde;
     const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable), married) * gemeinde;
