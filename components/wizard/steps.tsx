@@ -42,7 +42,7 @@ export interface StepDef {
 
 const cantonOptions = (Object.keys(CANTONS) as CantonCode[]).map((code) => ({
   value: code,
-  label: `${CANTONS[code].name}${CANTONS[code].verified ? "" : " (Näherung)"}`,
+  label: CANTONS[code].name,
 }));
 
 const Grid = ({ children }: { children: ReactNode }) => (
@@ -237,7 +237,7 @@ export const STEPS: StepDef[] = [
           value={inputs.canton}
           onChange={(v) => set("canton", v as CantonCode)}
           options={cantonOptions}
-          hint="„Näherung“ = Steuerkurve noch nicht verifiziert."
+          hint="Kapitalauszahlungssteuer: echte ESTV-Werte (2026, alle Kantone). Vermögens- & Einkommenssteuer sind genähert — Details unter „Annahmen“."
         />
         <div className="border-t border-line pt-5">
           <SegmentedControl

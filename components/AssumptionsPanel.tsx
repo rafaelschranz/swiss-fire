@@ -101,7 +101,7 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
         />
       </Group>
 
-      <Group title={`Steuern — ${canton.name}${!canton.verified ? " (Näherung)" : ""}`}>
+      <Group title={`Steuern — ${canton.name}`}>
         <Row
           label="Dividendenrendite-Annahme"
           value={`${(DEFAULTS.dividendYield * 100).toFixed(1)}%/Jahr`}
