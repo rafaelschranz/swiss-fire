@@ -134,6 +134,14 @@ Two return models, both reusing the deterministic engines path-by-path:
 Monte Carlo runs for both single people (decumulation, indexed from FIRE) and
 households (the calendar-timeline engine, indexed from today).
 
+The deterministic **expected real return and volatility** are themselves
+auto-estimated from the chosen allocation (`portfolioRealStats`): the equity
+sleeve (Swiss/global blend) mixed with bonds by the equity share, using the
+same real MARKET figures. So the projection, the parametric Monte Carlo, and
+the historical Monte Carlo all move together when the allocation changes (the
+default 70/30 mix lands at ≈4% real / ≈12% vol). Both fields keep a "Schätzen"
+toggle to override with a manual figure.
+
 Phase 4 (UI) is built and was reworked in Phase 6 into a guided
 experience: `app/page.tsx` is a client component that runs a four-step
 wizard (Über Sie / Vermögen heute / Ruhestand / Feinabstimmung) built from

@@ -480,17 +480,20 @@ export const STEPS: StepDef[] = [
     id: "assumptions",
     title: "Feinabstimmung",
     subtitle: "Optional — sinnvolle Standardwerte sind bereits gesetzt.",
-    render: ({ inputs, set }) => (
+    render: (props) => {
+      const { inputs, set } = props;
+      return (
       <Grid>
-        <Field label="Erwartete reale Rendite" value={inputs.expectedReturn} onChange={(v) => set("expectedReturn", v)} percent />
+        <Field label="Erwartete reale Rendite" value={inputs.expectedReturn} onChange={(v) => set("expectedReturn", v)} percent {...estimable(props, "expectedReturn", "Reale Portfolio-Rendite (real, nach Teuerung).")} />
+        <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent {...estimable(props, "volatility", "Für die Monte-Carlo-Simulation.")} />
+        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien vs. Obligationen. Bestimmt auch die geschätzte Rendite & Volatilität." />
+        <Field label="Schweiz-Anteil der Aktien" value={inputs.swissEquityShare} onChange={(v) => set("swissEquityShare", v)} percent hint="z. B. 40 % Schweiz / 60 % global. Rest = globale Aktien (reale Kennzahlen Pictet & UBS/DMS)." />
         <Field label="Rendite Säule 3a" value={inputs.pillar3aReturn} onChange={(v) => set("pillar3aReturn", v)} percent />
         <Field label="PK-Verzinsung" value={inputs.pillar2InterestRate} onChange={(v) => set("pillar2InterestRate", v)} percent hint="Ø Zins auf dem PK-Guthaben." />
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />
         <Field label="Teuerung (Inflation)" value={inputs.inflation} onChange={(v) => set("inflation", v)} percent hint="Nur für die nominale Darstellung der Jahresausgaben." />
-        <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent hint="Für die Monte-Carlo-Simulation." />
-        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien vs. Obligationen für den historischen Monte-Carlo-Modus." />
-        <Field label="Schweiz-Anteil der Aktien" value={inputs.swissEquityShare} onChange={(v) => set("swissEquityShare", v)} percent hint="z. B. 40 % Schweiz / 60 % global. Rest = globale Aktien (reale Kennzahlen Pictet & UBS/DMS)." />
       </Grid>
-    ),
+      );
+    },
   },
 ];

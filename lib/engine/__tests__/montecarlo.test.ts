@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import type { DecumulationParams } from "../decumulation";
 import { MARKET } from "../constants";
-import { blendedEquity, simulateMonteCarlo } from "../montecarlo";
+import { blendedEquity, portfolioRealStats, simulateMonteCarlo } from "../montecarlo";
 
 function baseParams(overrides: Partial<DecumulationParams> = {}): DecumulationParams {
   return {
@@ -43,6 +43,27 @@ describe("Equity geography blend", () => {
     // With correlation < 1, the blended vol is below the naive weighted average.
     const linearVol = w * MARKET.equityVolatility + (1 - w) * MARKET.globalEquityVolatility;
     expect(blend.vol).toBeLessThan(linearVol);
+  });
+});
+
+describe("Portfolio real stats (allocation-implied return/vol)", () => {
+  it("reduces to bonds with no equity and to the equity sleeve with all equity", () => {
+    const allBonds = portfolioRealStats(0, 0.4);
+    expect(allBonds.mean).toBeCloseTo(MARKET.bondRealReturn, 10);
+    expect(allBonds.vol).toBeCloseTo(MARKET.bondVolatility, 10);
+
+    const allEquity = portfolioRealStats(1, 0.4);
+    const eq = blendedEquity(0.4);
+    expect(allEquity.mean).toBeCloseTo(eq.mean, 10);
+    expect(allEquity.vol).toBeCloseTo(eq.vol, 10);
+  });
+
+  it("a 70/30 equity/bond mix lands near the project's 4% real / 12% vol defaults", () => {
+    const s = portfolioRealStats(0.7, 0.4);
+    expect(s.mean).toBeGreaterThan(0.035);
+    expect(s.mean).toBeLessThan(0.045);
+    expect(s.vol).toBeGreaterThan(0.10);
+    expect(s.vol).toBeLessThan(0.14);
   });
 });
 

@@ -1,4 +1,5 @@
 import { AHV, DEFAULTS, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
+import { portfolioRealStats } from "@/lib/engine/montecarlo";
 import { estimateAhvPension } from "@/lib/engine/tax";
 import type { CalculatorInputs, PartnerInputs } from "@/lib/inputs";
 
@@ -18,7 +19,9 @@ type PrimaryEstimableKey =
   | "ahvAnnualPension"
   | "annualPillar3aContribution"
   | "healthInsuranceAnnualPremium"
-  | "pillar2ConversionRate";
+  | "pillar2ConversionRate"
+  | "expectedReturn"
+  | "volatility";
 
 /**
  * Partner fields that can be estimated. These mirror the primary person's
@@ -58,6 +61,8 @@ const PRIMARY_ORDER: PrimaryEstimableKey[] = [
   "annualPillar3aContribution",
   "healthInsuranceAnnualPremium",
   "pillar2ConversionRate",
+  "expectedReturn",
+  "volatility",
 ];
 
 /** All estimable keys (primary + partner), used to seed the auto set. */
@@ -71,7 +76,7 @@ export const ESTIMABLE_ORDER: EstimableKey[] = [
  * an integer amount, so `applyEstimates` rounds them to a sensible precision
  * instead of to a whole number.
  */
-const RATE_FIELDS: ReadonlySet<string> = new Set(["pillar2ConversionRate"]);
+const RATE_FIELDS: ReadonlySet<string> = new Set(["pillar2ConversionRate", "expectedReturn", "volatility"]);
 
 const round = (key: string, raw: number): number =>
   RATE_FIELDS.has(key.replace("partner:", "")) ? Math.round(raw * 1000) / 1000 : Math.round(raw);
@@ -87,6 +92,8 @@ const FIELD_LABELS: Record<PrimaryEstimableKey, string> = {
   annualPillar3aContribution: "Maximalbeitrag mit Pensionskasse.",
   healthInsuranceAnnualPremium: "Grobe Pauschale pro Person.",
   pillar2ConversionRate: "BVG-Minimum 6,8 %, gekürzt um ~0,1 %-Pkt. je Jahr Vorbezug — Näherung, Reglement prüfen.",
+  expectedReturn: "Aus Ihrer Allokation & realen Langfristkennzahlen (Pictet/UBS) berechnet.",
+  volatility: "Portfolio-Volatilität aus der Allokation (reale Kennzahlen) berechnet.",
 };
 
 export const ESTIMATE_LABELS: Record<EstimableKey, string> = {
@@ -125,6 +132,10 @@ const PRIMARY_ESTIMATORS: Record<PrimaryEstimableKey, (i: CalculatorInputs) => n
       ? 2 * DEFAULTS.healthInsuranceAnnualPremium
       : DEFAULTS.healthInsuranceAnnualPremium,
   pillar2ConversionRate: (i) => estimateConversionRate(i.ahvReferenceAge, i.earliestPkAge),
+  // Real portfolio return/volatility implied by the chosen equity share and
+  // Swiss/global equity split, from the cited MARKET figures.
+  expectedReturn: (i) => portfolioRealStats(i.equityShare, i.swissEquityShare).mean,
+  volatility: (i) => portfolioRealStats(i.equityShare, i.swissEquityShare).vol,
 };
 
 const PARTNER_ESTIMATORS: Record<PartnerEstimableField, (p: PartnerInputs) => number> = {

@@ -82,6 +82,22 @@ export function blendedEquity(swissEquityShare: number): { mean: number; vol: nu
 }
 
 /**
+ * Real expected return and volatility of the whole portfolio (equity sleeve
+ * blended with Swiss bonds by `equityShare`), from the real MARKET figures.
+ * Lets the deterministic projection and the parametric Monte Carlo default be
+ * grounded in the same real data as the historical mode.
+ */
+export function portfolioRealStats(equityShare: number, swissEquityShare: number): { mean: number; vol: number } {
+  const w = Math.min(1, Math.max(0, equityShare));
+  const eq = blendedEquity(swissEquityShare);
+  const { bondRealReturn, bondVolatility, equityBondCorrelation: rho } = MARKET;
+  const mean = w * eq.mean + (1 - w) * bondRealReturn;
+  const variance =
+    w * w * eq.vol * eq.vol + (1 - w) * (1 - w) * bondVolatility * bondVolatility + 2 * w * (1 - w) * rho * eq.vol * bondVolatility;
+  return { mean, vol: Math.sqrt(variance) };
+}
+
+/**
  * Two-asset path calibrated to real history (MARKET). The equity sleeve is a
  * Swiss/global blend (`swissEquityShare`); equity and bond real returns are
  * drawn lognormally from their historical means/vols, correlated via a
