@@ -144,8 +144,10 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       pillar2AtFire = st[0].pillar2 + st[1].pillar2;
     }
 
-    // Household one-off inflows (keyed to the primary person's age).
-    if (primaryAge > params.primary.currentAge) taxable += inflowAt(params.oneOffInflows, primaryAge);
+    // Household one-off inflows (keyed to the primary person's age). Unlike the
+    // single-person path, the starting balance does not pre-include a current-age
+    // inflow, so it is credited here too.
+    taxable += inflowAt(params.oneOffInflows, primaryAge);
 
     // --- Per-person retirement settlement (capital aggregated household-wide) ---
     let capitalThisYear = 0;
@@ -196,11 +198,15 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     let nonEmployedContribution = 0;
     const someoneWorking = working.some(Boolean);
     if (!someoneWorking) {
+      // Income proxy for the contribution basis: actual pension income, or, for
+      // a pre-pension early retiree living off the portfolio, the household
+      // spending — matching the single-person engine's annualCashNeed.
+      const replacementIncome = pensionIncome > 0 ? pensionIncome : params.annualRealSpending;
       for (const s of st) {
         const age = personAgeAt(s.p, primaryAge);
         const retired = age >= s.p.fireAge;
         if (retired && age < s.p.ahvReferenceAge) {
-          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), pensionIncome, "married");
+          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), replacementIncome, "married");
         }
       }
     }
