@@ -488,7 +488,8 @@ export const STEPS: StepDef[] = [
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />
         <Field label="Teuerung (Inflation)" value={inputs.inflation} onChange={(v) => set("inflation", v)} percent hint="Nur für die nominale Darstellung der Jahresausgaben." />
         <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent hint="Für die Monte-Carlo-Simulation." />
-        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien-/Obligationen-Mix für den historischen Monte-Carlo-Modus (reale Pictet-Kennzahlen)." />
+        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien vs. Obligationen für den historischen Monte-Carlo-Modus." />
+        <Field label="Schweiz-Anteil der Aktien" value={inputs.swissEquityShare} onChange={(v) => set("swissEquityShare", v)} percent hint="z. B. 40 % Schweiz / 60 % global. Rest = globale Aktien (reale Kennzahlen Pictet & UBS/DMS)." />
       </Grid>
     ),
   },

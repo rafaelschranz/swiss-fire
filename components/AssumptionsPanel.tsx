@@ -56,13 +56,18 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
           value={`${(MARKET.equityRealReturn * 100).toFixed(1)}% · σ ${(MARKET.equityVolatility * 100).toFixed(0)}%`}
         />
         <Row
+          label="Aktien global (real)"
+          value={`${(MARKET.globalEquityRealReturn * 100).toFixed(1)}% · σ ${(MARKET.globalEquityVolatility * 100).toFixed(0)}%`}
+          note="UBS/DMS Welt-Index. Der Aktienteil wird nach Ihrem Schweiz-/Global-Anteil gemischt; Welt-Kennzahlen im Berichtswährungs-Basis (CHF-Stärke nicht abgebildet)."
+        />
+        <Row
           label="Obligationen Schweiz (real)"
           value={`${(MARKET.bondRealReturn * 100).toFixed(1)}% · σ ${(MARKET.bondVolatility * 100).toFixed(1)}%`}
         />
         <Row
-          label="Aktien/Obligationen-Korrelation"
-          value={MARKET.equityBondCorrelation.toFixed(2)}
-          note="Annahme (keine Pictet-Kennzahl). Der historische Modus zieht Renditen aus diesen Verteilungen, gemischt nach Aktienquote."
+          label="Korrelationen (Annahme)"
+          value={`Aktien/Obl. ${MARKET.equityBondCorrelation.toFixed(2)} · CH/Welt ${MARKET.swissGlobalEquityCorrelation.toFixed(2)}`}
+          note="Modellannahmen, keine publizierten Einzelwerte. Der historische Modus zieht Renditen aus diesen Verteilungen."
         />
         <Row label="Quelle" value={MARKET.source} />
       </Group>

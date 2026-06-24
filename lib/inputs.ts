@@ -89,6 +89,8 @@ export interface CalculatorInputs {
   expectedReturn: number;
   volatility: number;
   equityShare: number;
+  /** Swiss share of the equity sleeve (0..1); the rest is global equities. */
+  swissEquityShare: number;
   /** Assumed annual inflation, used only to show nominal (inflated) figures. */
   inflation: number;
 
@@ -143,6 +145,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   expectedReturn: 0.04,
   volatility: 0.12,
   equityShare: 0.7,
+  swissEquityShare: 0.4,
   inflation: 0.01,
 
   hasPartner: false,

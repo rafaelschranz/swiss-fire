@@ -21,6 +21,8 @@ export interface MonteCarloInputs {
   volatility: number;
   /** Equity share of the mix (0..1); bonds = 1 - equityShare. */
   equityShare: number;
+  /** Swiss share of the equity sleeve (0..1); the rest is global equities. */
+  swissEquityShare: number;
   mode: MonteCarloMode;
   paths?: number;
   /** Injectable seed for reproducible runs (tests); omit for a fresh random seed. */
@@ -31,6 +33,7 @@ export interface HouseholdMonteCarloInputs {
   householdParams: HouseholdParams;
   volatility: number;
   equityShare: number;
+  swissEquityShare: number;
   mode: MonteCarloMode;
   paths?: number;
   seed?: number;
@@ -66,20 +69,35 @@ function generateParametricPath(years: number, mean: number, vol: number, rng: (
 }
 
 /**
- * Two-asset path calibrated to real Swiss history (MARKET). Equity and bond
- * real returns are drawn lognormally from their historical means/vols, made
- * correlated via a Cholesky step, and blended by the equity share.
+ * Real mean and volatility of the equity sleeve, blended from Swiss and global
+ * equities by `swissEquityShare` (e.g. 0.2 = 20% Swiss / 80% global), using the
+ * real Swiss (Pictet) and world (UBS/DMS) figures and their assumed correlation.
  */
-function generateHistoricalPath(years: number, equityShare: number, rng: () => number): number[] {
-  const { equityRealReturn, equityVolatility, bondRealReturn, bondVolatility, equityBondCorrelation: rho } = MARKET;
-  const eqDrift = Math.log(1 + equityRealReturn) - 0.5 * equityVolatility * equityVolatility;
+export function blendedEquity(swissEquityShare: number): { mean: number; vol: number } {
+  const w = Math.min(1, Math.max(0, swissEquityShare));
+  const { equityRealReturn: sm, equityVolatility: ss, globalEquityRealReturn: gm, globalEquityVolatility: gs, swissGlobalEquityCorrelation: rho } = MARKET;
+  const mean = w * sm + (1 - w) * gm;
+  const variance = w * w * ss * ss + (1 - w) * (1 - w) * gs * gs + 2 * w * (1 - w) * rho * ss * gs;
+  return { mean, vol: Math.sqrt(variance) };
+}
+
+/**
+ * Two-asset path calibrated to real history (MARKET). The equity sleeve is a
+ * Swiss/global blend (`swissEquityShare`); equity and bond real returns are
+ * drawn lognormally from their historical means/vols, correlated via a
+ * Cholesky step, and blended by the equity share.
+ */
+function generateHistoricalPath(years: number, equityShare: number, swissEquityShare: number, rng: () => number): number[] {
+  const { bondRealReturn, bondVolatility, equityBondCorrelation: rho } = MARKET;
+  const eq = blendedEquity(swissEquityShare);
+  const eqDrift = Math.log(1 + eq.mean) - 0.5 * eq.vol * eq.vol;
   const bondDrift = Math.log(1 + bondRealReturn) - 0.5 * bondVolatility * bondVolatility;
   const path: number[] = [];
   for (let i = 0; i < years; i++) {
     const z1 = standardNormal(rng);
     const z2 = standardNormal(rng);
     const zBond = rho * z1 + Math.sqrt(1 - rho * rho) * z2;
-    const eqRet = Math.exp(eqDrift + equityVolatility * z1) - 1;
+    const eqRet = Math.exp(eqDrift + eq.vol * z1) - 1;
     const bondRet = Math.exp(bondDrift + bondVolatility * zBond) - 1;
     path.push(equityShare * eqRet + (1 - equityShare) * bondRet);
   }
@@ -115,9 +133,10 @@ function runMonteCarlo(opts: {
   mean: number;
   volatility: number;
   equityShare: number;
+  swissEquityShare: number;
   runOnce: (returnsPath: number[]) => PathOutcome;
 }): MonteCarloResult {
-  const { years, paths, mode, mean, volatility, equityShare, runOnce } = opts;
+  const { years, paths, mode, mean, volatility, equityShare, swissEquityShare, runOnce } = opts;
   const rng = mulberry32(opts.seed ?? Date.now());
 
   let successes = 0;
@@ -128,7 +147,7 @@ function runMonteCarlo(opts: {
     const returnsPath =
       mode === "parametric"
         ? generateParametricPath(years, mean, volatility, rng)
-        : generateHistoricalPath(years, equityShare, rng);
+        : generateHistoricalPath(years, equityShare, swissEquityShare, rng);
 
     const outcome = runOnce(returnsPath);
     if (!outcome.failed) successes++;
@@ -163,6 +182,7 @@ export function simulateMonteCarlo(inputs: MonteCarloInputs): MonteCarloResult {
     mean: params.expectedReturn,
     volatility: inputs.volatility,
     equityShare: inputs.equityShare,
+    swissEquityShare: inputs.swissEquityShare,
     runOnce: (returnsPath) => {
       const r = simulateDecumulation({ ...params, returnsPath });
       return { failed: r.failed, failedDuringBridge: r.failedDuringBridge, balances: r.years.map((y) => y.taxableBalance) };
@@ -181,6 +201,7 @@ export function simulateHouseholdMonteCarlo(inputs: HouseholdMonteCarloInputs): 
     mean: params.expectedReturn,
     volatility: inputs.volatility,
     equityShare: inputs.equityShare,
+    swissEquityShare: inputs.swissEquityShare,
     runOnce: (returnsPath) => {
       const r = simulateHousehold({ ...params, returnsPath });
       return { failed: r.failed, failedDuringBridge: r.failedDuringBridge, balances: r.years.map((y) => y.taxableBalance) };

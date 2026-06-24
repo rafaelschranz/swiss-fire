@@ -119,12 +119,17 @@ exemption, independent retirement), and Monte Carlo success-rate monotonicity.
 Two return models, both reusing the deterministic engines path-by-path:
 - **parametric** — lognormal annual real returns from the user's own expected
   return + volatility;
-- **historical** — a two-asset model **calibrated to real long-run Swiss data**
-  (Pictet, "Performance of Swiss equities and bonds 1900–2025"): Swiss equities
-  ≈4.6% real / σ19%, bonds ≈1.8% real / σ5.2%, drawn correlated and blended by
-  the equity share (`MARKET` in `constants.ts`, cited). The earlier synthetic
-  placeholder series has been removed. The equity/bond correlation is a flagged
-  modelling assumption, not a Pictet figure.
+- **historical** — a model **calibrated to real long-run data** (`MARKET` in
+  `constants.ts`, cited): Swiss equities ≈4.6% real / σ19% and Swiss bonds
+  ≈1.8% real / σ5.2% (Pictet, 1900–2025), plus **global equities** ≈5.2% real
+  / σ17% (UBS/Dimson-Marsh-Staunton Global Investment Returns Yearbook 2025).
+  The user sets the **equity geography split** (e.g. 40% Swiss / 60% global)
+  via `swissEquityShare`; the equity sleeve's mean/vol is blended from the two
+  (diversification lowers the blended vol), then blended with bonds by the
+  equity share. The earlier synthetic placeholder series has been removed. The
+  equity/bond and Swiss/global correlations are flagged modelling assumptions,
+  and the world figures are in the index's reporting basis (CHF strength not
+  modelled).
 
 Monte Carlo runs for both single people (decumulation, indexed from FIRE) and
 households (the calendar-timeline engine, indexed from today).

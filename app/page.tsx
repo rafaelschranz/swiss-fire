@@ -220,6 +220,7 @@ export default function Home() {
         householdParams,
         volatility: eff.volatility,
         equityShare: eff.equityShare,
+        swissEquityShare: eff.swissEquityShare,
         mode: mcMode,
         paths: 500,
       });
@@ -228,10 +229,11 @@ export default function Home() {
       decumulationParams,
       volatility: eff.volatility,
       equityShare: eff.equityShare,
+      swissEquityShare: eff.swissEquityShare,
       mode: mcMode,
       paths: 500,
     });
-  }, [mcMode, decumulationParams, householdParams, eff.volatility, eff.equityShare]);
+  }, [mcMode, decumulationParams, householdParams, eff.volatility, eff.equityShare, eff.swissEquityShare]);
 
   const balanceData: BalancePoint[] = useMemo(() => {
     if (household) {
@@ -460,7 +462,7 @@ export default function Home() {
           <p className="max-w-prose text-sm leading-relaxed text-muted">
             Wie robust ist der Plan gegenüber schwankenden Renditen?
             {mcMode === "historical"
-              ? " Der historische Modus zieht Aktien- und Obligationenrenditen aus den realen Schweizer Langfristkennzahlen (Pictet, 1900–2025) und mischt sie nach Aktienquote."
+              ? " Der historische Modus zieht Renditen aus realen Langfristkennzahlen — Schweizer Aktien & Obligationen (Pictet) und globale Aktien (UBS/DMS) — gemischt nach Aktienquote und Ihrem Schweiz-/Global-Anteil."
               : mcMode === "parametric"
                 ? " Der parametrische Modus verwendet Ihre erwartete Rendite und Volatilität (lognormal)."
                 : ""}

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import type { DecumulationParams } from "../decumulation";
-import { simulateMonteCarlo } from "../montecarlo";
+import { MARKET } from "../constants";
+import { blendedEquity, simulateMonteCarlo } from "../montecarlo";
 
 function baseParams(overrides: Partial<DecumulationParams> = {}): DecumulationParams {
   return {
@@ -24,12 +25,34 @@ function baseParams(overrides: Partial<DecumulationParams> = {}): DecumulationPa
   };
 }
 
+describe("Equity geography blend", () => {
+  it("returns the pure Swiss and pure global figures at the extremes", () => {
+    const swissOnly = blendedEquity(1);
+    expect(swissOnly.mean).toBeCloseTo(MARKET.equityRealReturn, 10);
+    expect(swissOnly.vol).toBeCloseTo(MARKET.equityVolatility, 10);
+
+    const globalOnly = blendedEquity(0);
+    expect(globalOnly.mean).toBeCloseTo(MARKET.globalEquityRealReturn, 10);
+    expect(globalOnly.vol).toBeCloseTo(MARKET.globalEquityVolatility, 10);
+  });
+
+  it("blends the mean linearly and diversifies the volatility below the linear mix", () => {
+    const w = 0.4; // 40% Swiss / 60% global
+    const blend = blendedEquity(w);
+    expect(blend.mean).toBeCloseTo(w * MARKET.equityRealReturn + (1 - w) * MARKET.globalEquityRealReturn, 10);
+    // With correlation < 1, the blended vol is below the naive weighted average.
+    const linearVol = w * MARKET.equityVolatility + (1 - w) * MARKET.globalEquityVolatility;
+    expect(blend.vol).toBeLessThan(linearVol);
+  });
+});
+
 describe("Monte Carlo: parametric mode", () => {
   it("success rate is monotonic in starting capital", () => {
     const low = simulateMonteCarlo({
       decumulationParams: baseParams({ startingTaxable: 200_000 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 300,
       seed: 42,
@@ -38,6 +61,7 @@ describe("Monte Carlo: parametric mode", () => {
       decumulationParams: baseParams({ startingTaxable: 2_000_000 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 300,
       seed: 42,
@@ -51,6 +75,7 @@ describe("Monte Carlo: parametric mode", () => {
       decumulationParams: baseParams({ startingTaxable: 700_000, expectedReturn: 0.01 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 300,
       seed: 7,
@@ -59,6 +84,7 @@ describe("Monte Carlo: parametric mode", () => {
       decumulationParams: baseParams({ startingTaxable: 700_000, expectedReturn: 0.06 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 300,
       seed: 7,
@@ -72,6 +98,7 @@ describe("Monte Carlo: parametric mode", () => {
       decumulationParams: baseParams(),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 200,
       seed: 1,
@@ -88,6 +115,7 @@ describe("Monte Carlo: parametric mode", () => {
       decumulationParams: baseParams(),
       volatility: 0.15,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "parametric",
       paths: 500,
       seed: 99,
@@ -106,6 +134,7 @@ describe("Monte Carlo: historical (real-data) mode", () => {
       decumulationParams: baseParams(),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 200,
       seed: 5,
@@ -120,6 +149,7 @@ describe("Monte Carlo: historical (real-data) mode", () => {
       decumulationParams: baseParams({ startingTaxable: 200_000 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 300,
       seed: 42,
@@ -128,6 +158,7 @@ describe("Monte Carlo: historical (real-data) mode", () => {
       decumulationParams: baseParams({ startingTaxable: 2_000_000 }),
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 300,
       seed: 42,
@@ -141,6 +172,7 @@ describe("Monte Carlo: historical (real-data) mode", () => {
       decumulationParams: baseParams(),
       volatility: 0.12,
       equityShare: 0.2,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 600,
       seed: 11,
@@ -149,6 +181,7 @@ describe("Monte Carlo: historical (real-data) mode", () => {
       decumulationParams: baseParams(),
       volatility: 0.12,
       equityShare: 0.9,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 600,
       seed: 11,
@@ -200,6 +233,7 @@ describe("Household Monte Carlo", () => {
       },
       volatility: 0.12,
       equityShare: 0.7,
+      swissEquityShare: 0.4,
       mode: "historical",
       paths: 200,
       seed: 3,
