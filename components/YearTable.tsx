@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { chfShort } from "@/lib/format";
 import type { DecumulationYearResult } from "@/lib/engine/types";
 
@@ -19,22 +21,25 @@ interface Row {
   depleted: boolean;
 }
 
-function toRows(years: DecumulationYearResult[]): Row[] {
-  return years.map((y) => ({
-    age: y.age,
-    total: y.taxableBalance + y.pillar3aBalance + y.pillar2Balance,
-    taxable: y.taxableBalance,
-    pillar3a: y.pillar3aBalance,
-    pillar2: y.pillar2Balance,
-    ahvPension: y.ahvPension,
-    pkPension: y.pillar2Pension,
-    employment: y.employmentIncome,
-    withdrawal: Math.max(0, y.netWithdrawal),
-    living: y.spend,
-    ahvContrib: y.ahvNonEmployedContribution,
-    taxes: y.dividendTax + y.wealthTax + y.lumpSumTax,
-    depleted: y.depleted,
-  }));
+function toRows(years: DecumulationYearResult[], baseAge: number, inflation: number, nominal: boolean): Row[] {
+  return years.map((y) => {
+    const f = nominal ? Math.pow(1 + inflation, y.age - baseAge) : 1;
+    return {
+      age: y.age,
+      total: (y.taxableBalance + y.pillar3aBalance + y.pillar2Balance) * f,
+      taxable: y.taxableBalance * f,
+      pillar3a: y.pillar3aBalance * f,
+      pillar2: y.pillar2Balance * f,
+      ahvPension: y.ahvPension * f,
+      pkPension: y.pillar2Pension * f,
+      employment: y.employmentIncome * f,
+      withdrawal: Math.max(0, y.netWithdrawal) * f,
+      living: y.spend * f,
+      ahvContrib: y.ahvNonEmployedContribution * f,
+      taxes: (y.dividendTax + y.wealthTax + y.lumpSumTax) * f,
+      depleted: y.depleted,
+    };
+  });
 }
 
 const CSV_HEADERS = [
@@ -43,13 +48,13 @@ const CSV_HEADERS = [
   "AHV_Beitraege", "Steuern",
 ] as const;
 
-function buildCsv(years: DecumulationYearResult[]): string {
-  const rows = toRows(years).map((r) =>
+function buildCsv(rows: Row[]): string {
+  const lines = rows.map((r) =>
     [r.age, r.total, r.taxable, r.pillar3a, r.pillar2, r.ahvPension, r.pkPension, r.employment, r.withdrawal, r.living, r.ahvContrib, r.taxes]
       .map((n) => Math.round(n))
       .join(";"),
   );
-  return [CSV_HEADERS.join(";"), ...rows].join("\n");
+  return [CSV_HEADERS.join(";"), ...lines].join("\n");
 }
 
 const Th = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
@@ -66,12 +71,22 @@ const Td = ({ children, right, dim, accent }: { children: React.ReactNode; right
 
 const cell = (v: number) => (v > 0 ? chfShort(v) : "—");
 
-export function YearTable({ years }: { years: DecumulationYearResult[] }) {
-  const rows = toRows(years);
+export function YearTable({
+  years,
+  baseAge,
+  inflation,
+}: {
+  years: DecumulationYearResult[];
+  /** Age "today" — base year for the optional nominal reflation. */
+  baseAge: number;
+  inflation: number;
+}) {
+  const [nominal, setNominal] = useState(false);
+  const rows = toRows(years, baseAge, inflation, nominal);
   const hasEmployment = rows.some((r) => r.employment > 0);
 
   const downloadCsv = () => {
-    const blob = new Blob([buildCsv(years)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -82,15 +97,37 @@ export function YearTable({ years }: { years: DecumulationYearResult[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <p className="eyebrow text-muted">Jahresverlauf · in heutiger Kaufkraft (real)</p>
-        <button
-          type="button"
-          onClick={downloadCsv}
-          className="eyebrow border border-line-2 px-3 py-1.5 text-muted transition hover:border-ink hover:text-ink"
-        >
-          CSV herunterladen
-        </button>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="eyebrow text-muted">
+          Jahresverlauf · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="flex" role="group" aria-label="Darstellung real oder nominal">
+            {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+              const active = (key === "nominal") === nominal;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setNominal(key === "nominal")}
+                  className={`eyebrow -ml-px border px-2.5 py-1 transition first:ml-0 ${
+                    active ? "border-ink bg-ink text-paper" : "border-line-2 text-muted hover:border-ink hover:text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={downloadCsv}
+            className="eyebrow border border-line-2 px-3 py-1.5 text-muted transition hover:border-ink hover:text-ink"
+          >
+            CSV
+          </button>
+        </div>
       </div>
       <div className="max-h-[28rem] overflow-auto">
         <table className="w-full border-collapse">

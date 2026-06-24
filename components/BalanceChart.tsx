@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   CartesianGrid,
   ComposedChart,
@@ -36,8 +37,29 @@ const TONE_COLOR: Record<MilestoneTone, string> = {
   partner: CHART.steel,
 };
 
-export function BalanceChart({ data, markers }: { data: BalancePoint[]; markers: BalanceMilestone[] }) {
-  const rows = data.map((d) => ({ ...d, total: d.taxable + d.pillar3a + d.pillar2 }));
+export function BalanceChart({
+  data,
+  markers,
+  baseAge,
+  inflation,
+}: {
+  data: BalancePoint[];
+  markers: BalanceMilestone[];
+  /** Age "today" — base year for the optional nominal reflation. */
+  baseAge: number;
+  inflation: number;
+}) {
+  const [nominal, setNominal] = useState(false);
+  const rows = data.map((d) => {
+    const f = nominal ? Math.pow(1 + inflation, d.age - baseAge) : 1;
+    return {
+      age: d.age,
+      taxable: d.taxable * f,
+      pillar3a: d.pillar3a * f,
+      pillar2: d.pillar2 * f,
+      total: (d.taxable + d.pillar3a + d.pillar2) * f,
+    };
+  });
   const minAge = data.length ? data[0].age : 0;
   const maxAge = data.length ? data[data.length - 1].age : 0;
 
@@ -52,7 +74,29 @@ export function BalanceChart({ data, markers }: { data: BalancePoint[]; markers:
 
   return (
     <div className="card p-5">
-      <p className="eyebrow mb-3 text-muted">Vermögen je Topf · in heutiger Kaufkraft (real)</p>
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <p className="eyebrow text-muted">
+          Vermögen je Topf · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+        </p>
+        <div className="flex" role="group" aria-label="Darstellung real oder nominal">
+          {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+            const active = (key === "nominal") === nominal;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setNominal(key === "nominal")}
+                className={`eyebrow -ml-px border px-2.5 py-1 transition first:ml-0 ${
+                  active ? "border-ink bg-ink text-paper" : "border-line-2 text-muted hover:border-ink hover:text-ink"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div
         className="h-72 w-full"
         role="img"

@@ -516,7 +516,7 @@ export default function Home() {
               Meilensteine gehören zur Partner:in (in Steel), Ihre eigenen in Brass/Grau.
             </p>
           )}
-          <BalanceChart data={balanceData} markers={balanceMarkers} />
+          <BalanceChart data={balanceData} markers={balanceMarkers} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
@@ -558,7 +558,7 @@ export default function Home() {
             Jedes Jahr im Detail — Vermögen je Topf, Renten, AHV-Beiträge und Steuern. Als CSV exportierbar
             zur Weiterverarbeitung in einer Tabellenkalkulation.
           </p>
-          <YearTable years={resultYears} />
+          <YearTable years={resultYears} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
