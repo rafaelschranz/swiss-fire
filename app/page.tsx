@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AffiliateSlot } from "@/components/AffiliateSlot";
 import { AnnualOutflowChart } from "@/components/AnnualOutflowChart";
@@ -22,6 +22,7 @@ import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@
 import { simulateHouseholdMonteCarlo, simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
 import { applyEstimates, ESTIMABLE_ORDER, estimatedValue, withManualSeed, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
+import { decodeShareHash, encodeShareHash } from "@/lib/share";
 
 function buildDecumulationParams(
   inputs: CalculatorInputs,
@@ -141,6 +142,18 @@ export default function Home() {
   const [step, setStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [mcMode, setMcMode] = useState<MonteCarloMode | "off">("off");
+  const [shared, setShared] = useState(false);
+
+  // Load a shared scenario from the URL hash on first mount (client-only, so no
+  // hydration mismatch — the initial render uses DEFAULT_INPUTS, then this
+  // one-time sync from the URL applies any shared state).
+  useEffect(() => {
+    const decoded = decodeShareHash(window.location.hash);
+    if (!decoded) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL (an external source) on mount
+    setInputs(decoded.inputs);
+    setAutoKeys(new Set(decoded.autoKeys));
+  }, []);
 
   // Effective inputs: manual values, with estimated fields resolved. This
   // is what both the engine and the displayed field values use.
@@ -294,6 +307,19 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const shareScenario = async () => {
+    const hash = encodeShareHash(inputs, autoKeys);
+    const url = `${window.location.origin}${window.location.pathname}${hash}`;
+    window.history.replaceState(null, "", hash);
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard may be blocked; the URL is in the address bar regardless.
+    }
+    setShared(true);
+    window.setTimeout(() => setShared(false), 2200);
+  };
+
   const mcButton = (mode: MonteCarloMode | "off", label: string) => (
     <button
       type="button"
@@ -404,13 +430,22 @@ export default function Home() {
             <p className="eyebrow text-brass-soft">Dossier · Ergebnis</p>
             <h1 className="display mt-3 text-[clamp(30px,5vw,48px)] text-paper">Ihre Brückenrechnung</h1>
           </div>
-          <button
-            type="button"
-            onClick={editInputs}
-            className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
-          >
-            Eingaben anpassen
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={shareScenario}
+              className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
+            >
+              {shared ? "Link kopiert ✓" : "Szenario teilen"}
+            </button>
+            <button
+              type="button"
+              onClick={editInputs}
+              className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
+            >
+              Eingaben anpassen
+            </button>
+          </div>
         </div>
       </section>
 

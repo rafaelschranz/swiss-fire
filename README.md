@@ -262,6 +262,13 @@ statically; `tsc --noEmit`, `eslint`, and `vitest run` (29 tests) pass.
 The canonical base URL comes from `NEXT_PUBLIC_SITE_URL` (localhost
 fallback) — set it to the real domain on deploy.
 
+Scenarios are **shareable/bookmarkable**: the "Szenario teilen" button encodes
+the full input state (inputs + auto-estimate flags) into the URL hash
+(base64url of JSON, `lib/share.ts`) and copies the link. Loading such a URL
+restores the scenario on mount. This is entirely client-side — no financial
+figures are sent anywhere — and decoding merges over defaults so older links
+survive added fields.
+
 Not yet done: i18n beyond German (the UI is German-only for now).
 
 Notes on data still needing real grounding:
