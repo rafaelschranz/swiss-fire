@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 
 export interface FieldProps {
   label: string;
@@ -29,18 +29,44 @@ export interface FieldProps {
  */
 export function Field({ label, value, onChange, percent, prefix, suffix, step, min, max, hint, onToggleAuto, auto }: FieldProps) {
   const id = useId();
-  // Guard against a transiently-undefined/NaN value (e.g. a newly-added input
-  // key during HMR) so the input never flips between uncontrolled and
-  // controlled.
-  const safeValue = Number.isFinite(value) ? value : 0;
-  const display = percent ? Math.round(safeValue * 1000) / 10 : safeValue;
+  // Convert the numeric value to its display string (percent shows 0.04 -> "4").
+  const toText = (v: number) => {
+    const safe = Number.isFinite(v) ? v : 0;
+    return String(percent ? Math.round(safe * 1000) / 10 : safe);
+  };
+
+  // Own the input text so the user can clear it (empty) and type freely without
+  // it snapping back to 0 on every keystroke. When `value` changes externally
+  // (estimate toggle, shared link, canton-driven Gemeinde reset), re-sync the
+  // text — using the React "adjust state during render" pattern (no effect).
+  const [text, setText] = useState(() => toText(value));
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    const parsed = text === "" ? NaN : Number(text);
+    const current = percent ? parsed / 100 : parsed;
+    if (!Number.isFinite(current) || Math.abs(current - value) > 1e-9) {
+      setText(toText(value));
+    }
+  }
+
   const effectiveStep = step ?? (percent ? 0.5 : 1);
   const unit = suffix ?? (percent ? "%" : undefined);
 
   const handle = (raw: string) => {
+    setText(raw);
+    if (raw === "") return; // allow an empty field while editing (don't coerce to 0)
     const n = Number(raw);
     if (Number.isNaN(n)) return;
     onChange(percent ? n / 100 : n);
+  };
+
+  // On blur, an empty/invalid field falls back to 0 so the model stays valid.
+  const handleBlur = () => {
+    if (text === "" || Number.isNaN(Number(text))) {
+      setText(toText(0));
+      onChange(0);
+    }
   };
 
   return (
@@ -84,11 +110,12 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
           className={`num w-full bg-transparent px-3 py-2.5 text-base outline-none ${
             auto ? "text-muted" : "text-ink"
           }`}
-          value={display}
+          value={text}
           step={effectiveStep}
           min={min}
           max={max}
           onChange={(e) => handle(e.target.value)}
+          onBlur={handleBlur}
         />
         {unit && (
           <span className="num flex items-center pr-3 text-sm text-muted" aria-hidden="true">
