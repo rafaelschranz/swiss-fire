@@ -158,6 +158,16 @@ describe("Staggered Säule 3a withdrawal", () => {
   });
 });
 
+describe("Church tax", () => {
+  it("adds church tax on top of the cantonal/communal income & wealth tax", () => {
+    const base = baseParams({ fireAge: 66, ahvClaimAge: 65, startingTaxable: 1_000_000, startingPillar3a: 0, startingPillar2: 0 });
+    const noChurch = simulateDecumulation(base).years[0];
+    const withChurch = simulateDecumulation({ ...base, churchTaxMultiplier: 0.08 }).years[0];
+    expect(withChurch.dividendTax).toBeGreaterThan(noChurch.dividendTax); // income tax line
+    expect(withChurch.wealthTax).toBeGreaterThan(noChurch.wealthTax);
+  });
+});
+
 describe("Other net wealth (real estate)", () => {
   it("raises the non-employed AHV contribution and wealth tax, but is not drawable", () => {
     const base = baseParams({

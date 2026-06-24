@@ -262,6 +262,17 @@ export const STEPS: StepDef[] = [
           }))}
           hint="Echte ESTV-Steuerfüsse 2026; in % des Kantonshauptorts. Skaliert die kantonalen/kommunalen Steuern exakt auf Ihre Gemeinde."
         />
+        <SelectField
+          label="Konfession (Kirchensteuer)"
+          value={inputs.confession}
+          onChange={(v) => set("confession", v as CalculatorInputs["confession"])}
+          options={[
+            { value: "none", label: "Keine / konfessionslos" },
+            { value: "protestant", label: "Evangelisch-reformiert" },
+            { value: "roman", label: "Römisch-katholisch" },
+          ]}
+          hint="Bei Kirchenmitgliedschaft kommt die Kirchensteuer Ihrer Gemeinde hinzu (echter ESTV-Steuerfuss)."
+        />
         <div className="border-t border-line pt-5">
           <SegmentedControl
             label="Gemeinsam planen"

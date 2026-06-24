@@ -84,10 +84,11 @@ export function simulateAccumulation(
     // context is supplied, so the pure-projection unit tests are unaffected.
     const tax = inputs.taxContext;
     if (tax) {
-      const { canton, married, gemeindeSteuerfuss, otherNetWealth = 0 } = tax;
+      const { canton, married, gemeindeSteuerfuss, otherNetWealth = 0, churchTaxMultiplier = 0 } = tax;
+      const church = 1 + churchTaxMultiplier;
       const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
-      const incomeTax = federalIncomeTax(dividendIncome, married) + cantonalIncomeTax(canton, dividendIncome, married) * gemeindeSteuerfuss;
-      const wealthTaxDue = cantonalWealthTax(canton, Math.max(0, taxable) + otherNetWealth, married) * gemeindeSteuerfuss;
+      const incomeTax = federalIncomeTax(dividendIncome, married) + cantonalIncomeTax(canton, dividendIncome, married) * gemeindeSteuerfuss * church;
+      const wealthTaxDue = cantonalWealthTax(canton, Math.max(0, taxable) + otherNetWealth, married) * gemeindeSteuerfuss * church;
       taxable = Math.max(0, taxable - incomeTax - wealthTaxDue);
     }
 

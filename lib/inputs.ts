@@ -100,6 +100,8 @@ export interface CalculatorInputs {
   swissEquityShare: number;
   /** Selected municipality (BFS number); drives `gemeindeSteuerfuss` from real ESTV Steuerfüsse. */
   gemeindeBfs: number;
+  /** Church-tax membership; drives the church tax from the municipality's real Kirchensteuerfuss. */
+  confession: "none" | "protestant" | "roman";
   /** Communal tax multiplier vs. the cantonal capital (1.0 = capital), from the selected Gemeinde. */
   gemeindeSteuerfuss: number;
   /** Assumed annual inflation, used only to show nominal (inflated) figures. */
@@ -163,6 +165,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   equityShare: 0.7,
   swissEquityShare: 0.4,
   gemeindeBfs: 261, // Zürich (cantonal capital → factor 1.0)
+  confession: "none",
   gemeindeSteuerfuss: 1.0,
   inflation: 0.01,
 

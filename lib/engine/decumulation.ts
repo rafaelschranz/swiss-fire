@@ -92,6 +92,12 @@ export interface DecumulationParams {
    * basis, but cannot be drawn on for spending. Real CHF, held constant.
    */
   otherNetWealth?: number;
+  /**
+   * Church tax as a fraction of the cantonal/communal income, wealth and capital
+   * tax (the municipality's Kirchensteuerfuss for the chosen confession).
+   * 0 = confessionless. Defaults to 0.
+   */
+  churchTaxMultiplier?: number;
 }
 
 /**
@@ -221,10 +227,11 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     // plus the federal one-fifth tariff on the same-year capital total.
     const married = params.maritalStatus === "married";
     const gemeinde = params.gemeindeSteuerfuss ?? 1;
+    const church = params.churchTaxMultiplier ?? 0;
     let lumpSumTaxPaid = 0;
     if (capitalThisYear > 0) {
       lumpSumTaxPaid =
-        lumpSumTax(params.canton, capitalThisYear) * gemeinde + federalCapitalTax(capitalThisYear, married);
+        lumpSumTax(params.canton, capitalThisYear) * gemeinde * (1 + church) + federalCapitalTax(capitalThisYear, married);
       taxable += capitalThisYear - lumpSumTaxPaid;
     }
 
@@ -248,9 +255,11 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     // recurring income tax, not only the dividend portion.
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
     const ordinaryIncome = pensionIncome + dividendIncome + employmentIncome;
-    const divTax =
-      federalIncomeTax(ordinaryIncome, married) + cantonalIncomeTax(params.canton, ordinaryIncome, married) * gemeinde;
-    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), married) * gemeinde;
+    const cantonalIncome = cantonalIncomeTax(params.canton, ordinaryIncome, married) * gemeinde;
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), married) * gemeinde * (1 + church);
+    // Church tax applies on top of the cantonal/communal income tax (the wealth
+    // portion is already in wTax above); the federal tax is church-free.
+    const divTax = federalIncomeTax(ordinaryIncome, married) + cantonalIncome * (1 + church);
 
     taxable -= divTax + wTax;
     if (taxable < 0) {

@@ -155,6 +155,7 @@ export interface AccumulationInputs {
     married: boolean;
     gemeindeSteuerfuss: number;
     otherNetWealth?: number;
+    churchTaxMultiplier?: number;
   };
 }
 

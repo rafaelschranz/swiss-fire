@@ -58,6 +58,8 @@ export interface HouseholdParams {
   gemeindeSteuerfuss?: number;
   /** Non-liquid net wealth (real estate etc.) counted for wealth tax + AHV-on-wealth. */
   otherNetWealth?: number;
+  /** Church tax as a fraction of the cantonal/communal tax. 0 = confessionless. */
+  churchTaxMultiplier?: number;
   oneOffInflows?: OneOffInflow[];
   /** Per-year real return sequence (indexed by years since today) for Monte Carlo. */
   returnsPath?: number[];
@@ -202,9 +204,10 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     // Couples are assessed jointly (married tariff). Cantonal/communal scaled by
     // the Gemeinde factor; federal one-fifth tariff added on the capital total.
     const gemeinde = params.gemeindeSteuerfuss ?? 1;
+    const church = params.churchTaxMultiplier ?? 0;
     let lumpSumTaxPaid = 0;
     if (capitalThisYear > 0) {
-      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear) * gemeinde + federalCapitalTax(capitalThisYear, true);
+      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear) * gemeinde * (1 + church) + federalCapitalTax(capitalThisYear, true);
       taxable += capitalThisYear - lumpSumTaxPaid;
     }
 
@@ -277,8 +280,8 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
     const ordinaryIncome = pensionIncome + dividendIncome;
     const divTax =
-      federalIncomeTax(ordinaryIncome, true) + cantonalIncomeTax(params.canton, ordinaryIncome, true) * gemeinde;
-    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), true) * gemeinde;
+      federalIncomeTax(ordinaryIncome, true) + cantonalIncomeTax(params.canton, ordinaryIncome, true) * gemeinde * (1 + church);
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), true) * gemeinde * (1 + church);
     taxable -= divTax + wTax;
     if (taxable < 0) {
       depleted = true;

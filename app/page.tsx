@@ -26,6 +26,14 @@ import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib
 import { municipalityByBfs } from "@/lib/municipalities";
 import { decodeShareHash, encodeShareHash } from "@/lib/share";
 
+/** Church tax as a fraction of cantonal/communal tax for the chosen Gemeinde + confession. */
+function churchMultiplier(inputs: CalculatorInputs): number {
+  if (inputs.confession === "none") return 0;
+  const m = municipalityByBfs(inputs.gemeindeBfs);
+  if (!m) return 0;
+  return inputs.confession === "protestant" ? m.churchProtestant : m.churchRoman;
+}
+
 function buildDecumulationParams(
   inputs: CalculatorInputs,
   startingTaxable: number,
@@ -59,6 +67,7 @@ function buildDecumulationParams(
     postFireIncome: inputs.postFireEmployment ? inputs.postFireIncome : 0,
     postFireWorkUntilAge: inputs.postFireWorkUntilAge,
     otherNetWealth: inputs.otherNetWealth,
+    churchTaxMultiplier: churchMultiplier(inputs),
   };
 }
 
@@ -139,6 +148,7 @@ function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
     oneOffInflows: inputs.oneOffInflows,
     gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
     otherNetWealth: inputs.otherNetWealth,
+    churchTaxMultiplier: churchMultiplier(inputs),
   };
 }
 
@@ -213,6 +223,7 @@ export default function Home() {
           married: eff.maritalStatus === "married",
           gemeindeSteuerfuss: eff.gemeindeSteuerfuss,
           otherNetWealth: eff.otherNetWealth,
+          churchTaxMultiplier: churchMultiplier(eff),
         },
       }),
     [eff],
