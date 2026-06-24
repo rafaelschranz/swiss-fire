@@ -91,7 +91,9 @@ export interface CalculatorInputs {
   equityShare: number;
   /** Swiss share of the equity sleeve (0..1); the rest is global equities. */
   swissEquityShare: number;
-  /** Communal tax multiplier vs. the canton baseline (1.0 = canton-typical Gemeinde). */
+  /** Selected municipality (BFS number); drives `gemeindeSteuerfuss` from real ESTV Steuerfüsse. */
+  gemeindeBfs: number;
+  /** Communal tax multiplier vs. the cantonal capital (1.0 = capital), from the selected Gemeinde. */
   gemeindeSteuerfuss: number;
   /** Assumed annual inflation, used only to show nominal (inflated) figures. */
   inflation: number;
@@ -148,6 +150,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   volatility: 0.12,
   equityShare: 0.7,
   swissEquityShare: 0.4,
+  gemeindeBfs: 261, // Zürich (cantonal capital → factor 1.0)
   gemeindeSteuerfuss: 1.0,
   inflation: 0.01,
 

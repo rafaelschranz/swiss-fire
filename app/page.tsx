@@ -22,6 +22,7 @@ import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@
 import { simulateHouseholdMonteCarlo, simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
 import { applyEstimates, ESTIMABLE_ORDER, estimatedValue, withManualSeed, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
+import { municipalityByBfs } from "@/lib/municipalities";
 import { decodeShareHash, encodeShareHash } from "@/lib/share";
 
 function buildDecumulationParams(
@@ -549,7 +550,11 @@ export default function Home() {
 
         <section className="space-y-5">
           <SectionHeader index="07" title="Annahmen & Quellen" />
-          <AssumptionsPanel canton={getCanton(eff.canton)} />
+          <AssumptionsPanel
+            canton={getCanton(eff.canton)}
+            gemeindeName={municipalityByBfs(eff.gemeindeBfs)?.name}
+            gemeindeFactor={eff.gemeindeSteuerfuss}
+          />
         </section>
 
         <section className="space-y-5">

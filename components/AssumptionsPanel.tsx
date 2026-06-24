@@ -22,7 +22,15 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
+export function AssumptionsPanel({
+  canton,
+  gemeindeName,
+  gemeindeFactor,
+}: {
+  canton: CantonTaxData;
+  gemeindeName?: string;
+  gemeindeFactor?: number;
+}) {
   return (
     <div className="card space-y-6 p-5">
       <Group title="Säule 3a">
@@ -59,8 +67,15 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
         <Row
           label="Kantonale/kommunale Einkommens- & Vermögenssteuer"
           value="ESTV 2026 (real)"
-          note="Echte ESTV-Werte (Kantonshauptort, ledig/verheiratet, Renteneinkommen inkl. Standardabzüge); zwischen Stützpunkten interpoliert und über den Gemeinde-Steuerfaktor auf andere Gemeinden skaliert."
+          note="Echte ESTV-Werte (Kantonshauptort, ledig/verheiratet, Renteneinkommen inkl. Standardabzüge); zwischen Stützpunkten interpoliert."
         />
+        {gemeindeName && gemeindeFactor !== undefined && (
+          <Row
+            label="Gemeinde"
+            value={`${gemeindeName} · ${Math.round(gemeindeFactor * 100)} %`}
+            note="Echter ESTV-Steuerfuss 2026 dieser Gemeinde, in % des Kantonshauptorts — skaliert die kantonalen/kommunalen Steuern exakt."
+          />
+        )}
         <Row
           label="Kapitalauszahlungssteuer Bund"
           value="⅕ des ordentlichen Tarifs"

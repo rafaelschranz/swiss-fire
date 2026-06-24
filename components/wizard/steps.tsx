@@ -12,6 +12,7 @@ import type { CantonCode, IncomePhase } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
 import { formatChf } from "@/lib/format";
 import type { CalculatorInputs, PartnerInputs } from "@/lib/inputs";
+import { municipalitiesForCanton } from "@/lib/municipalities";
 
 export interface StepProps {
   inputs: CalculatorInputs;
@@ -235,9 +236,31 @@ export const STEPS: StepDef[] = [
         <SelectField
           label="Steuerkanton"
           value={inputs.canton}
-          onChange={(v) => set("canton", v as CantonCode)}
+          onChange={(v) => {
+            const c = v as CantonCode;
+            const capital = municipalitiesForCanton(c).find((m) => m.factor === 1) ?? municipalitiesForCanton(c)[0];
+            set("canton", c);
+            if (capital) {
+              set("gemeindeBfs", capital.bfs);
+              set("gemeindeSteuerfuss", capital.factor);
+            }
+          }}
           options={cantonOptions}
-          hint="Einkommens-, Vermögens- und Kapitalsteuer: echte ESTV-Werte 2026 (Kantonshauptort). Für andere Gemeinden den Gemeinde-Steuerfaktor anpassen."
+          hint="Einkommens-, Vermögens- und Kapitalsteuer: echte ESTV-Werte 2026."
+        />
+        <SelectField
+          label="Gemeinde"
+          value={String(inputs.gemeindeBfs)}
+          onChange={(v) => {
+            const m = municipalitiesForCanton(inputs.canton).find((x) => x.bfs === Number(v));
+            set("gemeindeBfs", Number(v));
+            if (m) set("gemeindeSteuerfuss", m.factor);
+          }}
+          options={municipalitiesForCanton(inputs.canton).map((m) => ({
+            value: String(m.bfs),
+            label: `${m.name} (${Math.round(m.factor * 100)} %)`,
+          }))}
+          hint="Echte ESTV-Steuerfüsse 2026; in % des Kantonshauptorts. Skaliert die kantonalen/kommunalen Steuern exakt auf Ihre Gemeinde."
         />
         <div className="border-t border-line pt-5">
           <SegmentedControl
@@ -488,7 +511,6 @@ export const STEPS: StepDef[] = [
         <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent {...estimable(props, "volatility", "Für die Monte-Carlo-Simulation.")} />
         <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien vs. Obligationen. Bestimmt auch die geschätzte Rendite & Volatilität." />
         <Field label="Schweiz-Anteil der Aktien" value={inputs.swissEquityShare} onChange={(v) => set("swissEquityShare", v)} percent hint="z. B. 40 % Schweiz / 60 % global. Rest = globale Aktien (reale Kennzahlen Pictet & UBS/DMS)." />
-        <Field label="Gemeinde-Steuerfaktor" value={inputs.gemeindeSteuerfuss} onChange={(v) => set("gemeindeSteuerfuss", v)} percent min={40} max={300} hint="100 % = kantonsübliche Gemeinde. Skaliert die kantonalen/kommunalen Steuern (Einkommen, Vermögen, Kapital); die direkte Bundessteuer bleibt unverändert." />
         <Field label="Rendite Säule 3a" value={inputs.pillar3aReturn} onChange={(v) => set("pillar3aReturn", v)} percent />
         <Field label="PK-Verzinsung" value={inputs.pillar2InterestRate} onChange={(v) => set("pillar2InterestRate", v)} percent hint="Ø Zins auf dem PK-Guthaben." />
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />

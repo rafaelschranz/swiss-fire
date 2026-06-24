@@ -293,12 +293,18 @@ survive added fields.
 
 Not yet done: i18n beyond German (the UI is German-only for now).
 
+Per-municipality: a **Gemeinde selector** (`lib/municipalities.ts`, all 2,110
+municipalities) sets the tax level from the **real ESTV 2026 municipal
+Steuerfüsse** — `factor = (cantonRate + communalRate) / (cantonRate +
+capitalCommunalRate)`, i.e. the municipality's cantonal+communal tax relative
+to the cantonal capital (capital = 1.0). Picking your Gemeinde scales the
+cantonal income/wealth/capital tax exactly; the federal tax is unaffected.
+
 Notes on data still needing real grounding:
-- Cantonal **income, wealth and capital** tax are all real ESTV 2026 data now
-  (at each cantonal capital). The remaining approximation is the
-  **per-municipality** refinement within a canton, handled via the Gemeinde
-  factor rather than a full municipal tariff table — the ESTV municipal
-  Steuerfüsse are reachable via the same API to make this exact per Gemeinde.
+- Cantonal **income, wealth and capital** tax are real ESTV 2026 data, refined
+  per municipality via the real Steuerfuss factor above. Remaining
+  simplifications: church tax is not modelled, and the income curve uses
+  pension income type for the whole ordinary-income base (incl. dividends).
 - The Monte Carlo `historical` mode is now calibrated to real, cited Pictet
   long-run Swiss equity/bond statistics (`MARKET` in `constants.ts`); the
   former synthetic placeholder series has been removed. It models returns
