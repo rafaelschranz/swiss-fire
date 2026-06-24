@@ -203,6 +203,15 @@ export interface DecumulationYearResult {
   ahvPension: number;
   /** Annual Pillar 2 Rente once the PK is annuitised (0 in capital mode). */
   pillar2Pension: number;
+  /** Residual employment income earned this year (0 when fully retired). */
+  employmentIncome: number;
+  /**
+   * Net amount drawn from the portfolio (taxable account) to cover living costs
+   * this year, after pensions and employment income. Negative while still
+   * accumulating (a net contribution). The capital pillar settlements are
+   * separate inflows, not part of this figure.
+   */
+  netWithdrawal: number;
   depleted: boolean;
 }
 

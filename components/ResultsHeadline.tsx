@@ -77,7 +77,7 @@ export function ResultsHeadline({
       <div className="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4">
         <Tile caption="Brücken-Kapitalbedarf" value={formatChf(bridgeCapitalRequired)} inverted />
         <Tile
-          caption="Vermögen bei FIRE"
+          caption="Liquide Mittel bei FIRE"
           value={formatChf(taxableAtFire)}
           accent={coverage >= 1 ? "petrol" : "brass"}
         />

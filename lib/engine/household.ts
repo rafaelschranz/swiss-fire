@@ -229,15 +229,13 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     let nonEmployedContribution = 0;
     const someoneWorking = working.some(Boolean);
     if (!someoneWorking) {
-      // Income proxy for the contribution basis: actual pension income, or, for
-      // a pre-pension early retiree living off the portfolio, the household
-      // spending — matching the single-person engine's annualCashNeed.
-      const replacementIncome = pensionIncome > 0 ? pensionIncome : params.annualRealSpending;
+      // Basis = net wealth + 20× actual pension income (Renteneinkommen);
+      // portfolio withdrawals / spending do not count.
       for (const s of st) {
         const age = personAgeAt(s.p, primaryAge);
         const retired = age >= s.p.fireAge;
         if (retired && age < s.p.ahvReferenceAge) {
-          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), replacementIncome, "married");
+          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), pensionIncome, "married");
         }
       }
     }
@@ -315,6 +313,8 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       lumpSumTax: lumpSumTaxPaid,
       ahvPension: ahvPensionTotal,
       pillar2Pension: pillar2PensionTotal,
+      employmentIncome: 0,
+      netWithdrawal: netCashNeed,
       depleted,
     });
 

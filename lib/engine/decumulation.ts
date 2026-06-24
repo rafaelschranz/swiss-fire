@@ -117,10 +117,12 @@ function annualCashNeed(
   const employmentIncome =
     params.postFireIncome && age < (params.postFireWorkUntilAge ?? 0) ? params.postFireIncome : 0;
 
-  const replacementIncomeBasis = ahvPension > 0 ? ahvPension : params.annualRealSpending;
+  // Non-employed AHV basis = net wealth + 20× actual pension income (Renten-
+  // einkommen). A wealth-funded early retiree has no Renteneinkommen, so the
+  // basis is wealth only — portfolio withdrawals / spending do NOT count.
   let nonEmployedContribution =
     age < params.ahvReferenceAge
-      ? nonEmployedAhvContribution(taxableEstimate, replacementIncomeBasis, params.maritalStatus)
+      ? nonEmployedAhvContribution(taxableEstimate, ahvPension, params.maritalStatus)
       : 0;
 
   // A gainfully employed person is exempt from the non-employed contribution
@@ -271,6 +273,8 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       lumpSumTax: lumpSumTaxPaid,
       ahvPension,
       pillar2Pension,
+      employmentIncome,
+      netWithdrawal: netCashNeed,
       depleted,
     });
 

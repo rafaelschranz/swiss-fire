@@ -199,6 +199,14 @@ by the cantonal capital-tax curve × the Gemeinde factor **plus** the federal
 one-fifth tariff (Art. 38 DBG). The non-employed **AHV contribution**
 ("AHV on wealth") now includes the funds' 5 % administrative-cost surcharge.
 
+The non-employed AHV basis is **net wealth + 20× actual pension income**
+(Renteneinkommen) — a wealth-funded early retiree with no pension has a
+wealth-only basis; portfolio withdrawals / spending do **not** inflate it. The
+year-by-year table breaks the funding down per year (portfolio drawdown vs.
+AHV vs. PK pension vs. employment), and the headline's liquid-capital tile is
+labelled "Liquide Mittel bei FIRE" (it's the taxable amount available for the
+bridge — the full pot composition incl. 3a/PK is shown in "Vermögen bei FIRE").
+
 **Residual post-FIRE employment**: an optional toggle lets a single person keep
 earning part-time after FIRE (`postFireIncome` until `postFireWorkUntilAge`).
 The income offsets the portfolio draw and is income-taxed, and — applying the

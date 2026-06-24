@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "../decumulation";
-import { lumpSumTax } from "../tax";
+import { lumpSumTax, nonEmployedAhvContribution } from "../tax";
 
 function baseParams(overrides: Partial<DecumulationParams> = {}): DecumulationParams {
   return {
@@ -155,6 +155,30 @@ describe("Staggered Säule 3a withdrawal", () => {
     expect(totalLumpTax(split)).toBeLessThan(totalLumpTax(single));
     // Both fully draw the 3a down to ~0 within the horizon.
     expect(split.years[split.years.length - 1].pillar3aBalance).toBeCloseTo(0, 6);
+  });
+});
+
+describe("Non-employed AHV basis (wealth only, no spending proxy)", () => {
+  it("bases the contribution on wealth + actual pension income, not on spending", () => {
+    const params = baseParams({
+      fireAge: 45,
+      ahvClaimAge: 65, // no pension income in the first bridge year
+      startingTaxable: 1_000_000,
+      startingPillar3a: 0,
+      startingPillar2: 0,
+    });
+    const firstYear = simulateDecumulation(params).years[0]; // age 45, taxable = 1.0M, no pension
+    // Contribution is the wealth-only figure (with the 5% admin surcharge baked in),
+    // NOT inflated by 20× spending.
+    expect(firstYear.ahvNonEmployedContribution).toBeCloseTo(nonEmployedAhvContribution(1_000_000, 0, "single"), 0);
+  });
+
+  it("exposes the per-year funding split (pensions, employment, portfolio draw)", () => {
+    const y = simulateDecumulation(baseParams())
+      .years.find((r) => r.age === 70)!; // AHV flowing by 70
+    expect(y.ahvPension).toBeGreaterThan(0);
+    expect(typeof y.netWithdrawal).toBe("number");
+    expect(typeof y.employmentIncome).toBe("number");
   });
 });
 

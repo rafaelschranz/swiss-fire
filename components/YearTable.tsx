@@ -9,7 +9,10 @@ interface Row {
   taxable: number;
   pillar3a: number;
   pillar2: number;
-  pension: number;
+  ahvPension: number;
+  pkPension: number;
+  employment: number;
+  withdrawal: number; // net drawn from the portfolio for living (>= 0)
   living: number;
   ahvContrib: number;
   taxes: number;
@@ -23,7 +26,10 @@ function toRows(years: DecumulationYearResult[]): Row[] {
     taxable: y.taxableBalance,
     pillar3a: y.pillar3aBalance,
     pillar2: y.pillar2Balance,
-    pension: y.ahvPension + y.pillar2Pension,
+    ahvPension: y.ahvPension,
+    pkPension: y.pillar2Pension,
+    employment: y.employmentIncome,
+    withdrawal: Math.max(0, y.netWithdrawal),
     living: y.spend,
     ahvContrib: y.ahvNonEmployedContribution,
     taxes: y.dividendTax + y.wealthTax + y.lumpSumTax,
@@ -32,21 +38,15 @@ function toRows(years: DecumulationYearResult[]): Row[] {
 }
 
 const CSV_HEADERS = [
-  "Alter",
-  "Vermoegen_Total",
-  "Steuerbar",
-  "Saeule_3a",
-  "Pensionskasse",
-  "Renten_AHV_PK",
-  "Lebenshaltung",
-  "AHV_Beitraege",
-  "Steuern",
+  "Alter", "Vermoegen_Total", "Steuerbar", "Saeule_3a", "Pensionskasse",
+  "AHV_Rente", "PK_Rente", "Erwerb", "Portfolio_Bezug", "Lebenshaltung",
+  "AHV_Beitraege", "Steuern",
 ] as const;
 
 function buildCsv(years: DecumulationYearResult[]): string {
   const rows = toRows(years).map((r) =>
-    [r.age, r.total, r.taxable, r.pillar3a, r.pillar2, r.pension, r.living, r.ahvContrib, r.taxes]
-      .map((n) => (typeof n === "number" ? Math.round(n) : n))
+    [r.age, r.total, r.taxable, r.pillar3a, r.pillar2, r.ahvPension, r.pkPension, r.employment, r.withdrawal, r.living, r.ahvContrib, r.taxes]
+      .map((n) => Math.round(n))
       .join(";"),
   );
   return [CSV_HEADERS.join(";"), ...rows].join("\n");
@@ -58,14 +58,17 @@ const Th = ({ children, right }: { children: React.ReactNode; right?: boolean })
   </th>
 );
 
-const Td = ({ children, right, dim }: { children: React.ReactNode; right?: boolean; dim?: boolean }) => (
-  <td className={`num whitespace-nowrap px-2.5 py-1.5 text-sm ${right ? "text-right" : ""} ${dim ? "text-muted" : "text-ink"}`}>
+const Td = ({ children, right, dim, accent }: { children: React.ReactNode; right?: boolean; dim?: boolean; accent?: boolean }) => (
+  <td className={`num whitespace-nowrap px-2.5 py-1.5 text-sm ${right ? "text-right" : ""} ${accent ? "text-petrol" : dim ? "text-muted" : "text-ink"}`}>
     {children}
   </td>
 );
 
+const cell = (v: number) => (v > 0 ? chfShort(v) : "—");
+
 export function YearTable({ years }: { years: DecumulationYearResult[] }) {
   const rows = toRows(years);
+  const hasEmployment = rows.some((r) => r.employment > 0);
 
   const downloadCsv = () => {
     const blob = new Blob([buildCsv(years)], { type: "text/csv;charset=utf-8" });
@@ -98,8 +101,10 @@ export function YearTable({ years }: { years: DecumulationYearResult[] }) {
               <Th right>Steuerbar</Th>
               <Th right>3a</Th>
               <Th right>PK</Th>
-              <Th right>Renten</Th>
-              <Th right>Leben</Th>
+              <Th right>AHV-Rente</Th>
+              <Th right>PK-Rente</Th>
+              {hasEmployment && <Th right>Erwerb</Th>}
+              <Th right>Portfolio-Bezug</Th>
               <Th right>AHV-Beitr.</Th>
               <Th right>Steuern</Th>
             </tr>
@@ -110,20 +115,24 @@ export function YearTable({ years }: { years: DecumulationYearResult[] }) {
                 <Td>{r.age}</Td>
                 <Td right>{chfShort(r.total)}</Td>
                 <Td right dim>{chfShort(r.taxable)}</Td>
-                <Td right dim>{chfShort(r.pillar3a)}</Td>
-                <Td right dim>{chfShort(r.pillar2)}</Td>
-                <Td right>{r.pension > 0 ? chfShort(r.pension) : "—"}</Td>
-                <Td right dim>{chfShort(r.living)}</Td>
-                <Td right dim>{r.ahvContrib > 0 ? chfShort(r.ahvContrib) : "—"}</Td>
-                <Td right dim>{chfShort(r.taxes)}</Td>
+                <Td right dim>{cell(r.pillar3a)}</Td>
+                <Td right dim>{cell(r.pillar2)}</Td>
+                <Td right>{cell(r.ahvPension)}</Td>
+                <Td right>{cell(r.pkPension)}</Td>
+                {hasEmployment && <Td right>{cell(r.employment)}</Td>}
+                <Td right accent>{cell(r.withdrawal)}</Td>
+                <Td right dim>{cell(r.ahvContrib)}</Td>
+                <Td right dim>{cell(r.taxes)}</Td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="mt-3 text-xs leading-relaxed text-muted">
-        „Steuern“ umfasst Einkommens-, Vermögens- und Kapitalauszahlungssteuer (Bund + Kanton/Gemeinde).
-        Beträge gerundet; die CSV-Datei enthält die vollen Werte.
+        Mittelherkunft pro Jahr: die Lebenshaltung wird aus <span className="text-petrol">Portfolio-Bezug</span>
+        {" "}(Bezug aus dem investierten Vermögen), AHV-Rente, PK-Rente und ggf. Erwerb gedeckt. „Steuern“ umfasst
+        Einkommens-, Vermögens- und Kapitalauszahlungssteuer (Bund + Kanton/Gemeinde). Beträge gerundet; die
+        CSV-Datei enthält die vollen Werte.
       </p>
     </div>
   );
