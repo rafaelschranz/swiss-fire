@@ -49,9 +49,9 @@ const Grid = ({ children }: { children: ReactNode }) => (
   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">{children}</div>
 );
 
-/** Two side-by-side person columns (Sie / Partner:in) on wide screens. */
+/** Two side-by-side person columns (Sie / Partner:in). */
 const TwoCol = ({ children }: { children: ReactNode }) => (
-  <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">{children}</div>
+  <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">{children}</div>
 );
 
 const ColHeading = ({ children }: { children: ReactNode }) => (
@@ -74,8 +74,11 @@ interface WealthVals {
 
 type FieldSetter<T> = (key: keyof T, value: number | string) => void;
 
+/** Returns auto-estimate props for a field, or {} for a person without estimates. */
+type EstProvider = (key: EstimableKey, hint?: string) => Record<string, unknown>;
+
 /** One person's wealth/income column, shared by the primary and the partner. */
-function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<WealthVals>): ReactNode {
+function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<WealthVals>, est: EstProvider): ReactNode {
   return (
     <div className="space-y-4">
       <ColHeading>{title}</ColHeading>
@@ -85,7 +88,7 @@ function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<Wealth
       <Field label="Bruttosalär" value={v.currentSalary} onChange={(x) => setField("currentSalary", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
       <Field label="Salärwachstum (real)" value={v.salaryGrowth} onChange={(x) => setField("salaryGrowth", x)} percent />
       <Field label="Sparbetrag (steuerbar)" value={v.annualTaxableSavings} onChange={(x) => setField("annualTaxableSavings", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-      <Field label="3a-Einzahlung" value={v.annualPillar3aContribution} onChange={(x) => setField("annualPillar3aContribution", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+      <Field label="3a-Einzahlung" value={v.annualPillar3aContribution} onChange={(x) => setField("annualPillar3aContribution", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...est("annualPillar3aContribution")} />
       <div className="border-t border-line pt-4">
         <SegmentedControl
           label="PK-Aufbau"
@@ -121,9 +124,6 @@ interface RetVals {
   pillar2ConversionRate: number;
   pillar2CapitalShare: number;
 }
-
-/** Returns auto-estimate props for a field, or {} for a person without estimates. */
-type EstProvider = (key: EstimableKey, hint?: string) => Record<string, unknown>;
 
 /** One person's retirement column, shared by the primary and the partner. */
 function retirementColumn(title: string, v: RetVals, setField: FieldSetter<RetVals>, est: EstProvider): ReactNode {
@@ -244,12 +244,14 @@ export const STEPS: StepDef[] = [
         const p = inputs.partner;
         const setPrimaryW: FieldSetter<WealthVals> = (k, val) => set(k as keyof CalculatorInputs, val as never);
         const setPartnerW: FieldSetter<WealthVals> = (k, val) => set("partner", { ...p, [k]: val } as PartnerInputs);
+        const estPrimary: EstProvider = (key, hint) => estimable(props, key, hint);
+        const estPartner: EstProvider = (key, hint) => estimable(props, `partner:${key}` as EstimableKey, hint);
         return (
           <div className="space-y-6">
             {netWorthBanner(inputs)}
             <TwoCol>
-              {wealthColumn("Sie", inputs, setPrimaryW)}
-              {wealthColumn("Partner:in", p, setPartnerW)}
+              {wealthColumn("Sie", inputs, setPrimaryW, estPrimary)}
+              {wealthColumn("Partner:in", p, setPartnerW, estPartner)}
             </TwoCol>
             <p className="text-xs leading-relaxed text-muted">
               Im Haushaltsmodus wird für beide ein konstantes Salär mit realem Wachstum angenommen — die
@@ -373,13 +375,13 @@ export const STEPS: StepDef[] = [
         const setPrimaryR: FieldSetter<RetVals> = (k, val) => set(k as keyof CalculatorInputs, val as never);
         const setPartnerR: FieldSetter<RetVals> = (k, val) => set("partner", { ...p, [k]: val } as PartnerInputs);
         const estPrimary: EstProvider = (key, hint) => estimable(props, key, hint);
-        const estNone: EstProvider = () => ({});
+        const estPartner: EstProvider = (key, hint) => estimable(props, `partner:${key}` as EstimableKey, hint);
         return (
           <div className="space-y-6">
             <Field label="Lebenshaltungskosten (Haushalt)" value={inputs.annualRealSpending} onChange={(v) => set("annualRealSpending", v)} prefix="CHF" suffix="/Jahr" step={1000} min={0} hint="Gemeinsame Ausgaben in heutiger Kaufkraft (Krankenkasse je Person separat unten)." />
             <TwoCol>
               {retirementColumn("Sie", inputs, setPrimaryR, estPrimary)}
-              {retirementColumn("Partner:in", p, setPartnerR, estNone)}
+              {retirementColumn("Partner:in", p, setPartnerR, estPartner)}
             </TwoCol>
           </div>
         );

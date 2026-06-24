@@ -20,7 +20,7 @@ import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
 import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@/lib/engine/household";
 import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
-import { applyEstimates, ESTIMABLE_ORDER, type EstimableKey } from "@/lib/estimates";
+import { applyEstimates, ESTIMABLE_ORDER, estimatedValue, withManualSeed, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
 
 function buildDecumulationParams(
@@ -152,9 +152,10 @@ export default function Home() {
   const toggleAuto = (key: EstimableKey) => {
     const wasAuto = autoKeys.has(key);
     if (wasAuto) {
-      // Switching to manual: seed the editable value with the current estimate.
-      const seeded = eff[key];
-      setInputs((prev) => ({ ...prev, [key]: seeded }));
+      // Switching to manual: seed the editable value with the current estimate
+      // (handles both primary and partner: keys).
+      const seeded = estimatedValue(eff, key);
+      setInputs((prev) => withManualSeed(prev, key, seeded));
     }
     setAutoKeys((prev) => {
       const nextKeys = new Set(prev);
@@ -313,8 +314,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* The instrument: form card overlapping the masthead */}
-        <div className="col -mt-16 pb-20">
+        {/* The instrument: form card overlapping the masthead. Widens for the
+            two-column household layout so both partners sit side by side. */}
+        <div className={`${eff.hasPartner ? "col-wide" : "col"} -mt-16 pb-20`}>
           <div className="instrument p-6 sm:p-8">
             <StepProgress steps={STEPS} current={step} onJump={setStep} />
 

@@ -205,12 +205,22 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       }
     }
 
-    // --- Shared spending, funded from the combined taxable account ------------
+    // --- Cash flow on the shared taxable account ------------------------------
+    // While anyone is still working, their salary covers the household's living
+    // costs and the surplus (annualTaxableSavings, plus any already-retired
+    // partner's pension) is added to the pot — this is the accumulation phase.
+    // Once both are retired, living costs are drawn from the portfolio net of
+    // pensions and the non-employed AHV contribution.
     const spend = params.annualRealSpending + s0health(st);
-    const netCashNeed = spend + nonEmployedContribution - pensionIncome - workingSavings;
-
-    if (primaryAge >= firstFirePrimaryAge && primaryAge < firstUnlockPrimaryAge) {
-      bridgeCapitalRequired += netCashNeed / Math.pow(1 + params.expectedReturn, primaryAge - firstFirePrimaryAge);
+    let netCashNeed: number;
+    if (someoneWorking) {
+      netCashNeed = -(workingSavings + pensionIncome);
+    } else {
+      netCashNeed = spend + nonEmployedContribution - pensionIncome;
+      if (primaryAge < firstUnlockPrimaryAge) {
+        const discountYears = Math.max(0, primaryAge - firstFirePrimaryAge);
+        bridgeCapitalRequired += Math.max(0, netCashNeed) / Math.pow(1 + params.expectedReturn, discountYears);
+      }
     }
 
     taxable -= netCashNeed;

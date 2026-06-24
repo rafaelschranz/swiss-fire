@@ -87,6 +87,29 @@ describe("Non-employed AHV (AHV on wealth)", () => {
   });
 });
 
+describe("Accumulation phase", () => {
+  it("does not draw down the portfolio while both partners are still working", () => {
+    // Both work until 60 and save; the household must not deplete during the
+    // working years (regression: living costs were wrongly drawn from the pot
+    // before retirement, depleting it in the 40s).
+    const result = simulateHousehold(
+      baseParams({
+        primary: person({ currentAge: 35, fireAge: 60, currentSalary: 110_000, annualTaxableSavings: 25_000 }),
+        partner: person({ currentAge: 35, fireAge: 60, currentSalary: 90_000, annualTaxableSavings: 15_000 }),
+        startingTaxable: 120_000,
+        annualRealSpending: 58_000,
+        horizonAge: 90,
+      }),
+    );
+
+    // The taxable pot grows through the working years rather than depleting.
+    const at40 = result.years.find((y) => y.age === 40)!;
+    const at55 = result.years.find((y) => y.age === 55)!;
+    expect(at55.taxableBalance).toBeGreaterThan(at40.taxableBalance);
+    expect(at55.depleted).toBe(false);
+  });
+});
+
 describe("Independent retirement timing", () => {
   it("keeps the still-working partner contributing to the taxable pot after the primary retires", () => {
     const withWorkingPartner = simulateHousehold(
