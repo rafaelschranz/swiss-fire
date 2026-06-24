@@ -18,6 +18,7 @@ export function Lifeline({
   earliestPkAge,
   ahvClaimAge,
   horizonAge,
+  title,
 }: {
   currentAge: number;
   fireAge: number;
@@ -25,6 +26,8 @@ export function Lifeline({
   earliestPkAge: number;
   ahvClaimAge: number;
   horizonAge: number;
+  /** Optional heading shown above the track (e.g. "Sie" / "Partner:in"). */
+  title?: string;
 }) {
   const firstUnlockAge = Math.min(pillar3aUnlockAge, earliestPkAge);
   const span = Math.max(1, horizonAge - currentAge);
@@ -32,6 +35,7 @@ export function Lifeline({
 
   return (
     <div className="card p-5">
+      {title && <p className="eyebrow mb-4 text-brass">{title}</p>}
       <div className="relative h-2 bg-stone/40">
         {/* Bridge phase — the caution stretch, in brass */}
         <div

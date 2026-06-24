@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { AffiliateSlot } from "@/components/AffiliateSlot";
 import { AnnualOutflowChart } from "@/components/AnnualOutflowChart";
 import { AssumptionsPanel } from "@/components/AssumptionsPanel";
-import { BalanceChart, type BalancePoint } from "@/components/BalanceChart";
+import { BalanceChart, type BalanceMilestone, type BalancePoint } from "@/components/BalanceChart";
 import { Disclaimer } from "@/components/Disclaimer";
 import { Lifeline } from "@/components/Lifeline";
 import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
@@ -377,6 +377,25 @@ export default function Home() {
     { label: "Pensionskasse", value: pillar2AtFire, color: "bg-steel" },
   ];
 
+  // Balance-chart milestones on the primary person's age axis. For couples, the
+  // partner's milestones are mapped onto that axis and tagged "·P".
+  const ptr = eff.partner;
+  const toPrimaryAxis = (partnerAge: number) => eff.currentAge + (partnerAge - ptr.currentAge);
+  const balanceMarkers: BalanceMilestone[] = [
+    { age: eff.fireAge, label: "FIRE", tone: "fire" },
+    { age: eff.pillar3aUnlockAge, label: "3a", tone: "default" },
+    { age: eff.earliestPkAge, label: "PK", tone: "default" },
+    { age: eff.ahvClaimAge, label: "AHV", tone: "default" },
+    ...(eff.hasPartner
+      ? [
+          { age: toPrimaryAxis(ptr.fireAge), label: "FIRE·P", tone: "partner" as const },
+          { age: toPrimaryAxis(ptr.pillar3aUnlockAge), label: "3a·P", tone: "partner" as const },
+          { age: toPrimaryAxis(ptr.earliestPkAge), label: "PK·P", tone: "partner" as const },
+          { age: toPrimaryAxis(ptr.ahvClaimAge), label: "AHV·P", tone: "partner" as const },
+        ]
+      : []),
+  ];
+
   return (
     <main id="hauptinhalt">
       <section className="bg-ink text-paper">
@@ -415,27 +434,48 @@ export default function Home() {
 
         <section className="space-y-5">
           <SectionHeader index="03" title="Zeitlinie" />
-          <Lifeline
-            currentAge={eff.currentAge}
-            fireAge={eff.fireAge}
-            pillar3aUnlockAge={eff.pillar3aUnlockAge}
-            earliestPkAge={eff.earliestPkAge}
-            ahvClaimAge={eff.ahvClaimAge}
-            horizonAge={eff.horizonAge}
-          />
+          {eff.hasPartner ? (
+            <div className="space-y-4">
+              <Lifeline
+                title="Sie"
+                currentAge={eff.currentAge}
+                fireAge={eff.fireAge}
+                pillar3aUnlockAge={eff.pillar3aUnlockAge}
+                earliestPkAge={eff.earliestPkAge}
+                ahvClaimAge={eff.ahvClaimAge}
+                horizonAge={eff.horizonAge}
+              />
+              <Lifeline
+                title="Partner:in"
+                currentAge={ptr.currentAge}
+                fireAge={ptr.fireAge}
+                pillar3aUnlockAge={ptr.pillar3aUnlockAge}
+                earliestPkAge={ptr.earliestPkAge}
+                ahvClaimAge={ptr.ahvClaimAge}
+                horizonAge={ptr.currentAge + (eff.horizonAge - eff.currentAge)}
+              />
+            </div>
+          ) : (
+            <Lifeline
+              currentAge={eff.currentAge}
+              fireAge={eff.fireAge}
+              pillar3aUnlockAge={eff.pillar3aUnlockAge}
+              earliestPkAge={eff.earliestPkAge}
+              ahvClaimAge={eff.ahvClaimAge}
+              horizonAge={eff.horizonAge}
+            />
+          )}
         </section>
 
         <section className="space-y-5">
           <SectionHeader index="04" title="Vermögensverlauf" />
-          <BalanceChart
-            data={balanceData}
-            markers={{
-              fireAge: eff.fireAge,
-              pillar3aUnlockAge: eff.pillar3aUnlockAge,
-              earliestPkAge: eff.earliestPkAge,
-              ahvClaimAge: eff.ahvClaimAge,
-            }}
-          />
+          {eff.hasPartner && (
+            <p className="max-w-prose text-sm leading-relaxed text-muted">
+              Gezeigt wird das gemeinsame Haushaltsvermögen auf Ihrer Alters-Achse. Mit „·P“ markierte
+              Meilensteine gehören zur Partner:in (in Steel), Ihre eigenen in Brass/Grau.
+            </p>
+          )}
+          <BalanceChart data={balanceData} markers={balanceMarkers} />
         </section>
 
         <section className="space-y-5">

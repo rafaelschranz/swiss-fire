@@ -21,25 +21,34 @@ export interface BalancePoint {
   pillar2: number;
 }
 
-export interface BalanceMarkers {
-  fireAge: number;
-  pillar3aUnlockAge: number;
-  earliestPkAge: number;
-  ahvClaimAge: number;
+export type MilestoneTone = "fire" | "default" | "partner";
+
+export interface BalanceMilestone {
+  /** Position on the chart's (primary) age axis. */
+  age: number;
+  label: string;
+  tone?: MilestoneTone;
 }
 
-export function BalanceChart({ data, markers }: { data: BalancePoint[]; markers: BalanceMarkers }) {
+const TONE_COLOR: Record<MilestoneTone, string> = {
+  fire: CHART.brass,
+  default: CHART.muted,
+  partner: CHART.steel,
+};
+
+export function BalanceChart({ data, markers }: { data: BalancePoint[]; markers: BalanceMilestone[] }) {
   const rows = data.map((d) => ({ ...d, total: d.taxable + d.pillar3a + d.pillar2 }));
   const minAge = data.length ? data[0].age : 0;
   const maxAge = data.length ? data[data.length - 1].age : 0;
 
-  // One labelled vertical marker per milestone, de-duplicated and clipped to range.
-  const milestones = [
-    { age: markers.fireAge, label: "FIRE" },
-    { age: markers.earliestPkAge, label: "PK" },
-    { age: markers.pillar3aUnlockAge, label: "3a" },
-    { age: markers.ahvClaimAge, label: "AHV" },
-  ].filter((m, i, arr) => m.age >= minAge && m.age <= maxAge && arr.findIndex((x) => x.age === m.age) === i);
+  // One labelled vertical marker per milestone, de-duplicated (by age+label) and
+  // clipped to range.
+  const milestones = markers.filter(
+    (m, i, arr) =>
+      m.age >= minAge &&
+      m.age <= maxAge &&
+      arr.findIndex((x) => x.age === m.age && x.label === m.label) === i,
+  );
 
   return (
     <div className="card p-5">
@@ -67,15 +76,18 @@ export function BalanceChart({ data, markers }: { data: BalancePoint[]; markers:
               iconType="plainline"
               wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}
             />
-            {milestones.map((m) => (
-              <ReferenceLine
-                key={m.label}
-                x={m.age}
-                stroke={m.label === "FIRE" ? CHART.brass : CHART.muted}
-                strokeDasharray="3 3"
-                label={{ value: m.label, position: "top", fontSize: 10, fill: m.label === "FIRE" ? CHART.brass : CHART.muted, fontFamily: "var(--font-mono)" }}
-              />
-            ))}
+            {milestones.map((m) => {
+              const color = TONE_COLOR[m.tone ?? "default"];
+              return (
+                <ReferenceLine
+                  key={`${m.label}-${m.age}`}
+                  x={m.age}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  label={{ value: m.label, position: "top", fontSize: 10, fill: color, fontFamily: "var(--font-mono)" }}
+                />
+              );
+            })}
             <Line type="monotone" dataKey="total" name="Gesamt" stroke={CHART.ink} strokeWidth={2.5} dot={false} />
             <Line type="monotone" dataKey="taxable" name="Steuerbar" stroke={CHART.petrol} strokeWidth={1.5} dot={false} />
             <Line type="monotone" dataKey="pillar3a" name="Säule 3a" stroke={CHART.brass} strokeWidth={1.5} dot={false} />
