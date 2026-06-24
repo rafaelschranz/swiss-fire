@@ -10,6 +10,7 @@ import { Disclaimer } from "@/components/Disclaimer";
 import { Lifeline } from "@/components/Lifeline";
 import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
 import { ResultsHeadline } from "@/components/ResultsHeadline";
+import { YearTable } from "@/components/YearTable";
 import { LedgerBar } from "@/components/ui/LedgerBar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StepProgress } from "@/components/wizard/StepProgress";
@@ -551,7 +552,16 @@ export default function Home() {
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="07" title="Annahmen & Quellen" />
+          <SectionHeader index="07" title="Jahresverlauf" />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">
+            Jedes Jahr im Detail — Vermögen je Topf, Renten, AHV-Beiträge und Steuern. Als CSV exportierbar
+            zur Weiterverarbeitung in einer Tabellenkalkulation.
+          </p>
+          <YearTable years={resultYears} />
+        </section>
+
+        <section className="space-y-5">
+          <SectionHeader index="08" title="Annahmen & Quellen" />
           <AssumptionsPanel
             canton={getCanton(eff.canton)}
             gemeindeName={municipalityByBfs(eff.gemeindeBfs)?.name}
@@ -560,7 +570,7 @@ export default function Home() {
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="08" title="Anbieter" />
+          <SectionHeader index="09" title="Anbieter" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
             <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
