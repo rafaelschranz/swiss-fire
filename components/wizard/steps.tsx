@@ -8,7 +8,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { IncomePhasesEditor } from "@/components/wizard/IncomePhasesEditor";
 import { OneOffInflowsEditor } from "@/components/wizard/OneOffInflowsEditor";
 import { CANTONS } from "@/lib/engine/cantons";
-import type { CantonCode } from "@/lib/engine/types";
+import type { CantonCode, IncomePhase } from "@/lib/engine/types";
 import { ESTIMATE_LABELS, type EstimableKey } from "@/lib/estimates";
 import { formatChf } from "@/lib/format";
 import type { CalculatorInputs, PartnerInputs } from "@/lib/inputs";
@@ -77,18 +77,50 @@ type FieldSetter<T> = (key: keyof T, value: number | string) => void;
 /** Returns auto-estimate props for a field, or {} for a person without estimates. */
 type EstProvider = (key: EstimableKey, hint?: string) => Record<string, unknown>;
 
+/** Per-person income-mode configuration (constant salary vs age-banded phases). */
+interface IncomeConfig {
+  use: boolean;
+  phases: IncomePhase[];
+  startAge: number;
+  fireAge: number;
+  setUse: (b: boolean) => void;
+  setPhases: (p: IncomePhase[]) => void;
+}
+
 /** One person's wealth/income column, shared by the primary and the partner. */
-function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<WealthVals>, est: EstProvider): ReactNode {
+function wealthColumn(title: string, v: WealthVals, setField: FieldSetter<WealthVals>, est: EstProvider, income: IncomeConfig): ReactNode {
   return (
     <div className="space-y-4">
       <ColHeading>{title}</ColHeading>
       <Field label="Steuerbares Vermögen heute" value={v.currentTaxableBalance} onChange={(x) => setField("currentTaxableBalance", x)} prefix="CHF" step={1000} min={0} />
       <Field label="Säule-3a-Guthaben heute" value={v.currentPillar3aBalance} onChange={(x) => setField("currentPillar3aBalance", x)} prefix="CHF" step={1000} min={0} />
       <Field label="Pensionskasse-Guthaben heute" value={v.currentPillar2Balance} onChange={(x) => setField("currentPillar2Balance", x)} prefix="CHF" step={1000} min={0} />
-      <Field label="Bruttosalär" value={v.currentSalary} onChange={(x) => setField("currentSalary", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-      <Field label="Salärwachstum (real)" value={v.salaryGrowth} onChange={(x) => setField("salaryGrowth", x)} percent />
-      <Field label="Sparbetrag (steuerbar)" value={v.annualTaxableSavings} onChange={(x) => setField("annualTaxableSavings", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-      <Field label="3a-Einzahlung" value={v.annualPillar3aContribution} onChange={(x) => setField("annualPillar3aContribution", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...est("annualPillar3aContribution")} />
+
+      <div className="border-t border-line pt-4">
+        <SegmentedControl
+          label="Salär & Sparrate"
+          ariaLabel={`Einkommensmodus ${title}`}
+          value={income.use ? "phases" : "simple"}
+          onChange={(x) => income.setUse(x === "phases")}
+          options={[
+            { value: "simple", label: "Konstant" },
+            { value: "phases", label: "Phasen" },
+          ]}
+        />
+        <div className="mt-4">
+          {income.use ? (
+            <IncomePhasesEditor phases={income.phases} startAge={income.startAge} fireAge={income.fireAge} onChange={income.setPhases} />
+          ) : (
+            <div className="space-y-4">
+              <Field label="Bruttosalär" value={v.currentSalary} onChange={(x) => setField("currentSalary", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+              <Field label="Salärwachstum (real)" value={v.salaryGrowth} onChange={(x) => setField("salaryGrowth", x)} percent />
+              <Field label="Sparbetrag (steuerbar)" value={v.annualTaxableSavings} onChange={(x) => setField("annualTaxableSavings", x)} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
+              <Field label="3a-Einzahlung" value={v.annualPillar3aContribution} onChange={(x) => setField("annualPillar3aContribution", x)} prefix="CHF" suffix="/Jahr" step={100} min={0} {...est("annualPillar3aContribution")} />
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="border-t border-line pt-4">
         <SegmentedControl
           label="PK-Aufbau"
@@ -244,19 +276,33 @@ export const STEPS: StepDef[] = [
         const p = inputs.partner;
         const setPrimaryW: FieldSetter<WealthVals> = (k, val) => set(k as keyof CalculatorInputs, val as never);
         const setPartnerW: FieldSetter<WealthVals> = (k, val) => set("partner", { ...p, [k]: val } as PartnerInputs);
+        const setPartnerField = <K extends keyof PartnerInputs>(k: K, val: PartnerInputs[K]) =>
+          set("partner", { ...p, [k]: val });
         const estPrimary: EstProvider = (key, hint) => estimable(props, key, hint);
         const estPartner: EstProvider = (key, hint) => estimable(props, `partner:${key}` as EstimableKey, hint);
+        const incomePrimary: IncomeConfig = {
+          use: inputs.useIncomePhases,
+          phases: inputs.incomePhases,
+          startAge: inputs.currentAge,
+          fireAge: inputs.fireAge,
+          setUse: (b) => set("useIncomePhases", b),
+          setPhases: (next) => set("incomePhases", next),
+        };
+        const incomePartner: IncomeConfig = {
+          use: p.useIncomePhases,
+          phases: p.incomePhases,
+          startAge: p.currentAge,
+          fireAge: p.fireAge,
+          setUse: (b) => setPartnerField("useIncomePhases", b),
+          setPhases: (next) => setPartnerField("incomePhases", next),
+        };
         return (
           <div className="space-y-6">
             {netWorthBanner(inputs)}
             <TwoCol>
-              {wealthColumn("Sie", inputs, setPrimaryW, estPrimary)}
-              {wealthColumn("Partner:in", p, setPartnerW, estPartner)}
+              {wealthColumn("Sie", inputs, setPrimaryW, estPrimary, incomePrimary)}
+              {wealthColumn("Partner:in", p, setPartnerW, estPartner, incomePartner)}
             </TwoCol>
-            <p className="text-xs leading-relaxed text-muted">
-              Im Haushaltsmodus wird für beide ein konstantes Salär mit realem Wachstum angenommen — die
-              Altersphasen-Eingabe ist hier nicht verfügbar.
-            </p>
             <div className="border-t border-line pt-5">
               <p className="text-sm font-medium text-ink">Einmalige Zuflüsse (z. B. Erbschaft)</p>
               <p className="mt-1 mb-4 text-xs leading-relaxed text-muted">
@@ -442,7 +488,7 @@ export const STEPS: StepDef[] = [
         <Field label="Salärwachstum (real)" value={inputs.salaryGrowth} onChange={(v) => set("salaryGrowth", v)} percent />
         <Field label="Teuerung (Inflation)" value={inputs.inflation} onChange={(v) => set("inflation", v)} percent hint="Nur für die nominale Darstellung der Jahresausgaben." />
         <Field label="Volatilität" value={inputs.volatility} onChange={(v) => set("volatility", v)} percent hint="Für die Monte-Carlo-Simulation." />
-        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Für den Bootstrap-Mix." />
+        <Field label="Aktienanteil" value={inputs.equityShare} onChange={(v) => set("equityShare", v)} percent hint="Aktien-/Obligationen-Mix für den historischen Monte-Carlo-Modus (reale Pictet-Kennzahlen)." />
       </Grid>
     ),
   },

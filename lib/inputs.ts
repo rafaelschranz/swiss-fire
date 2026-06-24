@@ -14,6 +14,9 @@ export interface PartnerInputs {
   currentSalary: number;
   salaryGrowth: number;
   annualTaxableSavings: number;
+  /** When true, salary/savings come from `incomePhases` rather than the flat fields. */
+  useIncomePhases: boolean;
+  incomePhases: IncomePhase[];
   currentTaxableBalance: number;
   currentPillar3aBalance: number;
   annualPillar3aContribution: number;
@@ -149,6 +152,11 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
     currentSalary: 90_000,
     salaryGrowth: 0.01,
     annualTaxableSavings: 15_000,
+    useIncomePhases: false,
+    incomePhases: [
+      { fromAge: 33, salary: 90_000, annualTaxableSavings: 15_000, annualPillar3aContribution: 7_258 },
+      { fromAge: 45, salary: 120_000, annualTaxableSavings: 30_000, annualPillar3aContribution: 7_258 },
+    ],
     currentTaxableBalance: 40_000,
     currentPillar3aBalance: 25_000,
     annualPillar3aContribution: 7_258,

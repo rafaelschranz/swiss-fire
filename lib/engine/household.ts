@@ -1,8 +1,8 @@
-import { inflowAt } from "./accumulation";
+import { activeIncomePhase, inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
 import type { Pillar2PayoutMode } from "./decumulation";
 import { dividendIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate, wealthTax } from "./tax";
-import type { CantonTaxData, DecumulationYearResult, OneOffInflow, Pillar2Plan } from "./types";
+import type { CantonTaxData, DecumulationYearResult, IncomePhase, OneOffInflow, Pillar2Plan } from "./types";
 
 /**
  * One member of a household. Each person ages on their own clock and retires
@@ -20,6 +20,12 @@ export interface HouseholdPerson {
   salaryGrowth: number;
   /** Savings this person adds to the shared taxable account each working year. */
   annualTaxableSavings: number;
+  /**
+   * Optional age-banded salary/savings schedule for this person. When present
+   * (non-empty), it overrides the flat salary/savings/3a fields each year —
+   * exactly like the single-person accumulation engine.
+   */
+  incomePhases?: IncomePhase[];
   currentPillar3a: number;
   annualPillar3aContribution: number;
   pillar3aUnlockAge: number;
@@ -77,6 +83,25 @@ interface PersonState {
   pillar2Pension: number;
   tranchesLeft: number;
   salary: number;
+  /** Sorted income phases, or null when the flat salary model applies. */
+  phases: IncomePhase[] | null;
+}
+
+/** This year's economics for one person (flat fields or active income phase). */
+function personEconomics(s: PersonState, age: number): {
+  working: boolean;
+  salary: number;
+  taxableSavings: number;
+  pillar3aContribution: number;
+} {
+  const working = age < s.p.fireAge;
+  const phase = s.phases ? activeIncomePhase(s.phases, age) : null;
+  return {
+    working,
+    salary: phase ? phase.salary : s.salary,
+    taxableSavings: working ? (phase ? phase.annualTaxableSavings : s.p.annualTaxableSavings) : 0,
+    pillar3aContribution: working ? (phase ? phase.annualPillar3aContribution : s.p.annualPillar3aContribution) : 0,
+  };
 }
 
 /**
@@ -110,6 +135,7 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     pillar2Pension: 0,
     tranchesLeft: Math.max(1, Math.floor(p.pillar3aTranches)),
     salary: p.currentSalary,
+    phases: p.incomePhases && p.incomePhases.length > 0 ? [...p.incomePhases].sort((a, b) => a.fromAge - b.fromAge) : null,
   }));
 
   // Map a person's own age to the primary person's age axis.
@@ -176,18 +202,18 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     }
 
     // --- Incomes: AHV, PK Rente, and still-working salaries -------------------
+    const econ = st.map((s) => personEconomics(s, personAgeAt(s.p, primaryAge)));
     let ahvPensionTotal = 0;
     let pillar2PensionTotal = 0;
     let workingSavings = 0;
-    const working = st.map((s) => {
+    const working = st.map((s, i) => {
       const age = personAgeAt(s.p, primaryAge);
-      const isWorking = age < s.p.fireAge;
       if (age >= s.p.ahvClaimAge) {
         ahvPensionTotal += adjustedAhvPension(s.p.ahvAnnualPension, s.p.ahvClaimAge, s.p.ahvReferenceAge);
       }
       pillar2PensionTotal += s.pillar2Pension;
-      if (isWorking) workingSavings += s.p.annualTaxableSavings;
-      return isWorking;
+      workingSavings += econ[i].taxableSavings;
+      return econ[i].working;
     });
     const pensionIncome = ahvPensionTotal + pillar2PensionTotal;
 
@@ -250,22 +276,23 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     const yearReturn = params.returnsPath?.[t] ?? params.expectedReturn;
     taxable *= 1 + yearReturn;
 
-    for (const s of st) {
+    st.forEach((s, i) => {
       const age = personAgeAt(s.p, primaryAge);
-      const isWorking = age < s.p.fireAge;
-      s.pillar3a = s.pillar3a * (1 + params.pillar3aReturn) + (isWorking ? s.p.annualPillar3aContribution : 0);
+      const e = econ[i];
+      s.pillar3a = s.pillar3a * (1 + params.pillar3aReturn) + e.pillar3aContribution;
 
       const interest = s.p.pillar2Plan.interestRate;
       let credit = 0;
-      if (isWorking) {
+      if (e.working) {
         const ceiling = s.p.pillar2Plan.model === "rate" ? s.p.pillar2Plan.insuredCeiling : PILLAR_2.upperInsuredSalaryLimit;
-        const insured = insuredSalary(s.salary, ceiling);
+        const insured = insuredSalary(e.salary, ceiling);
         const rate = s.p.pillar2Plan.model === "rate" ? s.p.pillar2Plan.savingsRate : retirementCreditRate(age + 1);
         credit = insured * rate;
-        s.salary *= 1 + s.p.salaryGrowth;
+        // Flat model advances the tracked salary; phase model reads the phase each year.
+        if (!s.phases) s.salary *= 1 + s.p.salaryGrowth;
       }
       s.pillar2 = s.pillar2 * (1 + interest) + credit;
-    }
+    });
 
     years.push({
       age: primaryAge,

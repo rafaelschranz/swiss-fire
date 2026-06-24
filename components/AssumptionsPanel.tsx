@@ -1,4 +1,4 @@
-import { AHV, DEFAULTS, GENERAL_TAX, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
+import { AHV, DEFAULTS, GENERAL_TAX, MARKET, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
 import type { CantonTaxData } from "@/lib/engine/types";
 
 function Row({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -48,6 +48,23 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
           value="Kapital / Rente / gemischt"
           note="Die Säule 3a wird gesetzlich als Kapital bezogen; die PK wahlweise als Kapital, lebenslange Rente (Guthaben × Umwandlungssatz) oder Mischung. Rentenbezug (AHV + PK) wird als Reduktion des Mittelbedarfs modelliert, nicht separat als Einkommen besteuert."
         />
+      </Group>
+
+      <Group title="Monte-Carlo — reale Marktdaten">
+        <Row
+          label="Aktien Schweiz (real)"
+          value={`${(MARKET.equityRealReturn * 100).toFixed(1)}% · σ ${(MARKET.equityVolatility * 100).toFixed(0)}%`}
+        />
+        <Row
+          label="Obligationen Schweiz (real)"
+          value={`${(MARKET.bondRealReturn * 100).toFixed(1)}% · σ ${(MARKET.bondVolatility * 100).toFixed(1)}%`}
+        />
+        <Row
+          label="Aktien/Obligationen-Korrelation"
+          value={MARKET.equityBondCorrelation.toFixed(2)}
+          note="Annahme (keine Pictet-Kennzahl). Der historische Modus zieht Renditen aus diesen Verteilungen, gemischt nach Aktienquote."
+        />
+        <Row label="Quelle" value={MARKET.source} />
       </Group>
 
       <Group title="AHV">

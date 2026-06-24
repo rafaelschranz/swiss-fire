@@ -19,7 +19,7 @@ import { simulateAccumulation } from "@/lib/engine/accumulation";
 import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
 import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@/lib/engine/household";
-import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
+import { simulateHouseholdMonteCarlo, simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
 import { applyEstimates, ESTIMABLE_ORDER, estimatedValue, withManualSeed, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
 
@@ -64,6 +64,7 @@ function primaryPerson(inputs: CalculatorInputs): HouseholdPerson {
     currentSalary: inputs.currentSalary,
     salaryGrowth: inputs.salaryGrowth,
     annualTaxableSavings: inputs.annualTaxableSavings,
+    incomePhases: inputs.useIncomePhases ? inputs.incomePhases : undefined,
     currentPillar3a: inputs.currentPillar3aBalance,
     annualPillar3aContribution: inputs.annualPillar3aContribution,
     pillar3aUnlockAge: inputs.pillar3aUnlockAge,
@@ -95,6 +96,7 @@ function partnerPerson(p: PartnerInputs, sharedPillar2Interest: number): Househo
     currentSalary: p.currentSalary,
     salaryGrowth: p.salaryGrowth,
     annualTaxableSavings: p.annualTaxableSavings,
+    incomePhases: p.useIncomePhases ? p.incomePhases : undefined,
     currentPillar3a: p.currentPillar3aBalance,
     annualPillar3aContribution: p.annualPillar3aContribution,
     pillar3aUnlockAge: p.pillar3aUnlockAge,
@@ -199,10 +201,8 @@ export default function Home() {
 
   // Household path: a two-person calendar-timeline simulation when a partner
   // is added. Replaces the single-person accumulation + decumulation outputs.
-  const household = useMemo(
-    () => (eff.hasPartner ? simulateHousehold(buildHouseholdParams(eff)) : null),
-    [eff],
-  );
+  const householdParams = useMemo(() => (eff.hasPartner ? buildHouseholdParams(eff) : null), [eff]);
+  const household = useMemo(() => (householdParams ? simulateHousehold(householdParams) : null), [householdParams]);
 
   // Household-aware result values (fall back to the single-person engine).
   const taxableAtFire = household ? household.taxableAtFire : accumulation.taxableAtFire;
@@ -213,9 +213,17 @@ export default function Home() {
   const failedDuringBridge = household ? household.failedDuringBridge : decumulation.failedDuringBridge;
   const resultYears = household ? household.years : decumulation.years;
 
-  // Monte Carlo is single-person only for now (no stochastic household path yet).
   const monteCarlo = useMemo(() => {
-    if (mcMode === "off" || eff.hasPartner) return null;
+    if (mcMode === "off") return null;
+    if (householdParams) {
+      return simulateHouseholdMonteCarlo({
+        householdParams,
+        volatility: eff.volatility,
+        equityShare: eff.equityShare,
+        mode: mcMode,
+        paths: 500,
+      });
+    }
     return simulateMonteCarlo({
       decumulationParams,
       volatility: eff.volatility,
@@ -223,7 +231,7 @@ export default function Home() {
       mode: mcMode,
       paths: 500,
     });
-  }, [mcMode, decumulationParams, eff.volatility, eff.equityShare, eff.hasPartner]);
+  }, [mcMode, decumulationParams, householdParams, eff.volatility, eff.equityShare]);
 
   const balanceData: BalancePoint[] = useMemo(() => {
     if (household) {
@@ -255,13 +263,15 @@ export default function Home() {
 
   const fanData: FanPoint[] = useMemo(() => {
     if (!monteCarlo) return [];
+    // Household paths run from today; single-person paths from FIRE.
+    const baseAge = eff.hasPartner ? eff.currentAge : eff.fireAge;
     return monteCarlo.percentile50.map((p50, i) => ({
-      age: eff.fireAge + i,
+      age: baseAge + i,
       p10: monteCarlo.percentile10[i],
       p50,
       p90: monteCarlo.percentile90[i],
     }));
-  }, [monteCarlo, eff.fireAge]);
+  }, [monteCarlo, eff.fireAge, eff.currentAge, eff.hasPartner]);
 
   const isLastStep = step === STEPS.length - 1;
   const activeStep = STEPS[step];
@@ -440,21 +450,20 @@ export default function Home() {
             index="06"
             title="Monte-Carlo"
             action={
-              eff.hasPartner ? undefined : (
-                <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
-                  {mcButton("off", "Aus")}
-                  {mcButton("parametric", "Parametrisch")}
-                  {mcButton("bootstrap", "Bootstrap")}
-                </div>
-              )
+              <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
+                {mcButton("off", "Aus")}
+                {mcButton("parametric", "Parametrisch")}
+                {mcButton("historical", "Historisch")}
+              </div>
             }
           />
           <p className="max-w-prose text-sm leading-relaxed text-muted">
-            {eff.hasPartner
-              ? "Die Monte-Carlo-Simulation ist vorerst nur für Einzelpersonen verfügbar; die Haushaltsrechnung ist deterministisch."
-              : "Wie robust ist der Plan gegenüber schwankenden Renditen?"}
-            {!eff.hasPartner && mcMode === "bootstrap" &&
-              " Der Bootstrap-Modus verwendet eine synthetische Platzhalter-Renditeserie (noch keine echten historischen Daten)."}
+            Wie robust ist der Plan gegenüber schwankenden Renditen?
+            {mcMode === "historical"
+              ? " Der historische Modus zieht Aktien- und Obligationenrenditen aus den realen Schweizer Langfristkennzahlen (Pictet, 1900–2025) und mischt sie nach Aktienquote."
+              : mcMode === "parametric"
+                ? " Der parametrische Modus verwendet Ihre erwartete Rendite und Volatilität (lognormal)."
+                : ""}
           </p>
           {monteCarlo && <MonteCarloFan data={fanData} />}
         </section>

@@ -20,7 +20,7 @@ export function inflowAt(inflows: OneOffInflow[] | undefined, age: number): numb
  * back to the lowest phase, so coverage is always continuous. Assumes
  * `phases` is sorted ascending by `fromAge`.
  */
-function activeIncomePhase(phases: IncomePhase[], age: number): IncomePhase {
+export function activeIncomePhase(phases: IncomePhase[], age: number): IncomePhase {
   let chosen = phases[0];
   for (const phase of phases) {
     if (phase.fromAge <= age) chosen = phase;

@@ -25,10 +25,10 @@ imports, so it can be unit-tested and reused independently of the UI.
   types.ts             # Shared engine types
   tax.ts               # (Phase 2) income/wealth/lump-sum tax functions
   accumulation.ts       # (Phase 2) year-by-year accumulation simulator
-  decumulation.ts       # (Phase 2) year-by-year decumulation + withdrawal sequencing
-  montecarlo.ts         # (Phase 2) parametric + block-bootstrap Monte Carlo
+  decumulation.ts       # year-by-year decumulation + withdrawal sequencing
+  household.ts          # two-person calendar-timeline simulator (couples)
+  montecarlo.ts         # parametric + real-data (Pictet-calibrated) Monte Carlo
   __tests__/            # Vitest golden tests
-/data/returns          # Embedded real-return proxy series for the bootstrap mode
 /locales               # de (default), en
 ```
 
@@ -107,13 +107,27 @@ npm run lint       # ESLint
 
 **Phase 0/1/2/3/4 complete**: project scaffolded, engine types/constants/
 canton table seeded, `tax.ts` / `accumulation.ts` / `decumulation.ts`
-implemented, and `montecarlo.ts` (parametric lognormal + block-bootstrap)
-added on top of the same deterministic decumulation engine via an
-injectable per-year `returnsPath`. 28 Vitest golden/sanity tests cover §5:
-3a capping, coordinated salary, PK projection, non-employed AHV brackets,
-the Schwyz lump-sum tax curve, bridge-depletion failure, tax-optimal
-withdrawal staggering, and Monte Carlo success-rate monotonicity in
-starting capital and expected return.
+implemented, and `montecarlo.ts` added on top of the same deterministic
+engines via an injectable per-year `returnsPath`. Vitest golden/sanity tests
+cover 3a capping, coordinated salary, PK projection, non-employed AHV
+brackets, the Schwyz lump-sum tax curve, bridge-depletion failure, tax-optimal
+withdrawal staggering, the household engine (income phases, spouse AHV
+exemption, independent retirement), and Monte Carlo success-rate monotonicity.
+
+### Monte Carlo — real data
+
+Two return models, both reusing the deterministic engines path-by-path:
+- **parametric** — lognormal annual real returns from the user's own expected
+  return + volatility;
+- **historical** — a two-asset model **calibrated to real long-run Swiss data**
+  (Pictet, "Performance of Swiss equities and bonds 1900–2025"): Swiss equities
+  ≈4.6% real / σ19%, bonds ≈1.8% real / σ5.2%, drawn correlated and blended by
+  the equity share (`MARKET` in `constants.ts`, cited). The earlier synthetic
+  placeholder series has been removed. The equity/bond correlation is a flagged
+  modelling assumption, not a Pictet figure.
+
+Monte Carlo runs for both single people (decumulation, indexed from FIRE) and
+households (the calendar-timeline engine, indexed from today).
 
 Phase 4 (UI) is built and was reworked in Phase 6 into a guided
 experience: `app/page.tsx` is a client component that runs a four-step
@@ -188,11 +202,16 @@ points modelled:
 - Same-year capital withdrawals by either partner are aggregated for the
   progressive lump-sum tax (joint assessment of married couples).
 
-Simplifications in the household model (v1): the primary person's income uses
-the flat salary model (not age-banded phases) and the partner's fields are
-entered manually (no auto-estimates); the AHV 150 %-of-max couple cap is left
-to the user; market assumptions (returns, 3a/PK interest, inflation, canton)
-are shared; and Monte Carlo is single-person only for now.
+Both people support **age-banded income phases** and **auto-estimates**
+(`partner:`-namespaced estimable keys), and the household has its own **Monte
+Carlo** path (calendar-timeline, indexed from today). Remaining household
+simplifications: the AHV 150 %-of-max couple cap is left to the user; market
+assumptions (returns, 3a/PK interest, inflation, canton) are shared; the
+spouse AHV exemption is coarse (a still-working partner exempts the other
+regardless of the exact 2×-minimum test); and charts/markers are anchored to
+the primary person's age axis. Note the household engine applies the annual
+wealth/dividend tax during the accumulation years too, which the single-person
+accumulation engine omits — a small known inconsistency.
 
 The Pensionskasse (Pillar 2) projection is income-driven and configurable
 via an optional `pillar2Plan`: either the statutory **BVG minimum**
@@ -238,8 +257,9 @@ Notes on data still needing real grounding:
   (swisstaxcalculator.estv.admin.ch) couldn't be reached from this
   sandbox's network allowlist. Swap in real reference points there
   before relying on those curves.
-- `data/returns/proxy-returns.ts` is an explicitly-flagged SYNTHETIC
-  placeholder return series for the Monte Carlo bootstrap mode — not real
-  historical data. Replace with a cited CHF real-return series (e.g. a
-  Global Investment Returns Yearbook-style series) before relying on
-  bootstrap results.
+- The Monte Carlo `historical` mode is now calibrated to real, cited Pictet
+  long-run Swiss equity/bond statistics (`MARKET` in `constants.ts`); the
+  former synthetic placeholder series has been removed. It models returns
+  parametrically from those real means/volatilities (plus an assumed
+  correlation) rather than resampling an actual year-by-year sequence — drop
+  in a real annual series if true historical block-bootstrap is wanted.

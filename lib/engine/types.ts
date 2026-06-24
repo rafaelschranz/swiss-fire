@@ -143,7 +143,7 @@ export interface SpendingInputs {
 export interface AssumptionsInputs {
   expectedReturn: number;
   volatility: number;
-  equityShare: number; // 0..1, for bootstrap mix
+  equityShare: number; // 0..1, equity/bond mix for the historical (real-data) Monte Carlo
 }
 
 export interface FireInputs {

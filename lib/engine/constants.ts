@@ -118,6 +118,32 @@ export const GENERAL_TAX = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Capital-market history — Swiss real (inflation-adjusted) asset returns.
+// Source: Pictet, "The long-term performance of Swiss equities and bonds
+// (1900–2025)", pictet.com (study update 2025). Real returns, volatility and
+// inflation are the published long-run figures since 1900.
+//   - Swiss equities: ~6.8% nominal / ~4.6% real, volatility ~19%.
+//   - Swiss government bonds: ~3.9% nominal / ~1.8% real, volatility ~5.2%.
+//   - Average Swiss inflation since 1900: ~2.1%.
+// The equity/bond correlation is NOT given by Pictet as a single figure; the
+// modest positive value here is a documented modelling assumption (Swiss
+// stock/bond real returns have been roughly uncorrelated to mildly positive
+// over the long run). Used to calibrate the Monte Carlo to real data instead
+// of a synthetic series.
+// ---------------------------------------------------------------------------
+export const MARKET = {
+  equityRealReturn: 0.046,
+  equityVolatility: 0.19,
+  bondRealReturn: 0.018,
+  bondVolatility: 0.052,
+  /** ASSUMPTION (not a Pictet figure): long-run equity/bond real-return correlation. */
+  equityBondCorrelation: 0.1,
+  /** Average annual Swiss inflation since 1900 (Pictet) — context for nominal views. */
+  historicalInflation: 0.021,
+  source: "Pictet, Performance of Swiss equities and bonds since 1900 (2025 update)",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Default model assumptions (real terms throughout).
 // ---------------------------------------------------------------------------
 export const DEFAULTS = {
@@ -128,7 +154,6 @@ export const DEFAULTS = {
   equityShare: 0.7,
   healthInsuranceAnnualPremium: 5_000,
   monteCarloPaths: 2_000,
-  bootstrapBlockYears: { min: 3, max: 5 },
   /**
    * ASSUMPTION (not given in the project brief): share of the taxable
    * portfolio's total real return paid out as dividends/distributions

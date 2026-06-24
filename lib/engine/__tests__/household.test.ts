@@ -110,6 +110,37 @@ describe("Accumulation phase", () => {
   });
 });
 
+describe("Income phases", () => {
+  it("uses a person's age-banded income phases instead of the flat fields", () => {
+    const result = simulateHousehold(
+      baseParams({
+        primary: person({
+          currentAge: 30,
+          fireAge: 40,
+          annualTaxableSavings: 999_999, // must be ignored in favour of phases
+          incomePhases: [
+            { fromAge: 30, salary: 80_000, annualTaxableSavings: 10_000, annualPillar3aContribution: 0 },
+            { fromAge: 35, salary: 100_000, annualTaxableSavings: 20_000, annualPillar3aContribution: 0 },
+          ],
+        }),
+        partner: person({ currentAge: 30, fireAge: 40, annualTaxableSavings: 0 }),
+        startingTaxable: 0,
+        annualRealSpending: 0,
+        expectedReturn: 0,
+        pillar3aReturn: 0,
+        horizonAge: 41,
+      }),
+    );
+
+    // 5 years at 10k (30-34) + 5 years at 20k (35-39), no returns/spend = 150k
+    // before the annual wealth/dividend tax shaves a little off — and far below
+    // what the ignored flat 999_999 field would have produced.
+    const at39 = result.years.find((y) => y.age === 39)!;
+    expect(at39.taxableBalance).toBeGreaterThan(140_000);
+    expect(at39.taxableBalance).toBeLessThan(150_000);
+  });
+});
+
 describe("Independent retirement timing", () => {
   it("keeps the still-working partner contributing to the taxable pot after the primary retires", () => {
     const withWorkingPartner = simulateHousehold(
