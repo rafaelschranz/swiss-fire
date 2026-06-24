@@ -112,12 +112,17 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
           value={GENERAL_TAX.capitalGainsTaxed ? "Ja" : "Nein"}
           note="Für Privatanleger auf bewegliches Vermögen."
         />
-        <Row label="Quelle Kapitalauszahlungssteuer" value={canton.source} />
+        <Row
+          label="Kapitalauszahlungssteuer"
+          value="ESTV 2026 (real)"
+          note="Echte ESTV-Referenzwerte (kantonal + kommunal, Kantonshauptort, ledig, ohne Kirchensteuer); zwischen den Stützpunkten interpoliert und über den Gemeinde-Steuerfaktor skaliert."
+        />
+        <Row label="Quelle" value={canton.source} />
         {!canton.verified && (
           <p className="mt-3 border-l-2 border-brass bg-brass/5 p-3 text-xs leading-relaxed text-ink">
-            Für {canton.name} liegen noch keine gegengeprüften Kapitalauszahlungs-Referenzwerte vor — die Kurve
-            ist ein grober, von Schwyz skalierter Platzhalter. Bitte mit dem offiziellen ESTV- oder kantonalen
-            Steuerrechner verifizieren.
+            Für {canton.name} ist die Kapitalauszahlungssteuer mit echten ESTV-Werten hinterlegt; die
+            Vermögens- und ordentliche Einkommenssteuer beruhen jedoch noch auf einer generischen Näherung.
+            Für exakte Werte den offiziellen ESTV-Steuerrechner nutzen.
           </p>
         )}
       </Group>

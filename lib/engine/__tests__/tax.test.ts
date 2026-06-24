@@ -85,12 +85,13 @@ describe("Non-employed AHV contribution", () => {
 describe("Lump-sum withdrawal tax (Schwyz)", () => {
   const sz = CANTONS.SZ;
 
-  it("matches the documented reference point at 250,000", () => {
-    expect(lumpSumTax(sz, 250_000)).toBeCloseTo(13_147, 0);
+  // ESTV 2026 capital tax (cantonal + communal, Schwyz town, single, no church).
+  it("matches the ESTV reference point at 250,000", () => {
+    expect(lumpSumTax(sz, 250_000)).toBeCloseTo(8_140, 0);
   });
 
-  it("matches the documented reference point at 100,000", () => {
-    expect(lumpSumTax(sz, 100_000)).toBeCloseTo(2_151, 0);
+  it("matches the ESTV reference point at 100,000", () => {
+    expect(lumpSumTax(sz, 100_000)).toBeCloseTo(1_389, 0);
   });
 
   it("is monotonically increasing in amount", () => {
