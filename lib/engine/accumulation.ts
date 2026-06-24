@@ -1,5 +1,5 @@
-import { PILLAR_2 } from "./constants";
-import { insuredSalary, retirementCreditRate } from "./tax";
+import { DEFAULTS, PILLAR_2 } from "./constants";
+import { cantonalIncomeTax, cantonalWealthTax, federalIncomeTax, insuredSalary, retirementCreditRate } from "./tax";
 import type {
   AccumulationInputs,
   AccumulationResult,
@@ -77,6 +77,19 @@ export function simulateAccumulation(
 
     taxable = taxable * (1 + inputs.expectedReturn) + taxableSavings + inflowAt(inputs.oneOffInflows, age + 1);
     pillar3a = pillar3a * (1 + inputs.pillar3aReturn) + pillar3aContribution;
+
+    // Annual wealth + dividend tax on the taxable portfolio during accumulation
+    // (consistent with the household engine). Salary income tax is not modelled
+    // here (savings are treated as the net surplus). Only applied when a tax
+    // context is supplied, so the pure-projection unit tests are unaffected.
+    const tax = inputs.taxContext;
+    if (tax) {
+      const { canton, married, gemeindeSteuerfuss, otherNetWealth = 0 } = tax;
+      const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
+      const incomeTax = federalIncomeTax(dividendIncome, married) + cantonalIncomeTax(canton, dividendIncome, married) * gemeindeSteuerfuss;
+      const wealthTaxDue = cantonalWealthTax(canton, Math.max(0, taxable) + otherNetWealth, married) * gemeindeSteuerfuss;
+      taxable = Math.max(0, taxable - incomeTax - wealthTaxDue);
+    }
 
     // PK savings credit: a flat average savings rate (if a "rate" plan is
     // given) or the statutory age-banded BVG credits, applied to the

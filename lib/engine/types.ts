@@ -145,6 +145,17 @@ export interface AccumulationInputs {
    * at the given age. Those at age <= fireAge land during accumulation.
    */
   oneOffInflows?: OneOffInflow[];
+  /**
+   * Optional tax context. When supplied, the annual wealth + dividend tax is
+   * applied to the taxable portfolio during the accumulation years too (the
+   * household engine already does this). Omit to get the tax-free projection.
+   */
+  taxContext?: {
+    canton: CantonTaxData;
+    married: boolean;
+    gemeindeSteuerfuss: number;
+    otherNetWealth?: number;
+  };
 }
 
 export interface PillarUnlockInputs {

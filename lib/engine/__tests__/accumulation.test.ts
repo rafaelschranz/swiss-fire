@@ -1,6 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { simulateAccumulation } from "../accumulation";
+import { CANTONS } from "../cantons";
 import { PILLAR_2 } from "../constants";
+
+describe("Accumulation tax context", () => {
+  it("applies wealth + dividend tax during accumulation when a tax context is supplied", () => {
+    const inputs = {
+      currentSalary: 120_000,
+      salaryGrowth: 0,
+      currentTaxableBalance: 500_000,
+      annualTaxableSavings: 30_000,
+      currentPillar3aBalance: 0,
+      annualPillar3aContribution: 0,
+      pillar3aReturn: 0,
+      currentPillar2Balance: 0,
+      expectedReturn: 0.04,
+    };
+    const untaxed = simulateAccumulation(40, 55, inputs);
+    const taxed = simulateAccumulation(40, 55, {
+      ...inputs,
+      taxContext: { canton: CANTONS.ZH, married: false, gemeindeSteuerfuss: 1 },
+    });
+    expect(taxed.taxableAtFire).toBeLessThan(untaxed.taxableAtFire);
+  });
+});
 
 describe("PK projection", () => {
   it("accrues 10% credits on coordinated salary + 1.25% interest for a 35-year-old over N years", () => {

@@ -208,6 +208,12 @@ export default function Home() {
           interestRate: eff.pillar2InterestRate,
         },
         oneOffInflows: eff.oneOffInflows,
+        taxContext: {
+          canton: getCanton(eff.canton),
+          married: eff.maritalStatus === "married",
+          gemeindeSteuerfuss: eff.gemeindeSteuerfuss,
+          otherNetWealth: eff.otherNetWealth,
+        },
       }),
     [eff],
   );
