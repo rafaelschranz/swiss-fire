@@ -80,15 +80,14 @@ describe("Coordinated salary", () => {
 });
 
 describe("Non-employed AHV contribution", () => {
-  // Figures include the 5% administrative-cost surcharge added by the funds.
-  it("is at (or near) the minimum bracket at wealth 350k", () => {
+  it("is at the minimum bracket (CHF 530) at wealth 350k", () => {
     const contribution = nonEmployedAhvContribution(350_000, 0, "single");
-    expect(contribution).toBeCloseTo(530 * 1.05, 0); // 556.5
+    expect(contribution).toBeCloseTo(530, 0);
   });
 
-  it("hits the CHF 26,500 cap (+admin) at wealth >= ~8.8M", () => {
+  it("hits the CHF 26,500 cap at wealth >= ~8.8M", () => {
     const contribution = nonEmployedAhvContribution(8_800_000, 0, "single");
-    expect(contribution).toBeCloseTo(26_500 * 1.05, 0); // 27'825
+    expect(contribution).toBe(26_500);
   });
 
   it("is monotonically increasing with wealth between the anchors", () => {

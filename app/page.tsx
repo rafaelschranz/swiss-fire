@@ -522,8 +522,9 @@ export default function Home() {
         <section className="space-y-5">
           <SectionHeader index="05" title="Mittelverwendung pro Jahr" />
           <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Wie viel Geld wird im Ruhestand jährlich verbraucht — in nominalen Franken inklusive Teuerung,
-            damit die reale Brückenrechnung greifbar wird. Die AHV-Rente reduziert ab Bezug den Eigenbedarf.
+            Wie viel Geld wird im Ruhestand jährlich verbraucht und woraus es gedeckt wird. Standardmässig in
+            heutiger Kaufkraft (real) — alle Berechnungen laufen real, daher beeinflusst die Teuerung nur die
+            optionale nominale Darstellung. Die AHV-Rente reduziert ab Bezug den Eigenbedarf.
           </p>
           <AnnualOutflowChart years={resultYears} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>

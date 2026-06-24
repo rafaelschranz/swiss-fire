@@ -101,23 +101,17 @@ export function nonEmployedAhvContribution(
     netWealth + annualPensionOrReplacementIncome * AHV.nonEmployed.pensionIncomeMultiplier;
   const effectiveBasis = maritalStatus === "married" ? basis / 2 : basis;
 
-  const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold, maxAdminSurchargeRate } =
+  const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold } =
     AHV.nonEmployed;
-  // Compensation funds add an administrative-cost surcharge (up to 5%) on top
-  // of the AHV/IV/EO contribution; modelled at the maximum.
-  const surcharge = 1 + maxAdminSurchargeRate;
+  // The AHV/IV/EO contribution itself, CHF 530 to CHF 26,500 (the official cap).
+  // The compensation funds' administrative-cost surcharge (up to 5%) varies by
+  // fund and is not part of this headline figure, so it is not added.
+  if (effectiveBasis <= firstBracketThreshold) return minAnnualContribution;
+  if (effectiveBasis >= upperBracketThreshold) return maxAnnualContribution;
 
-  let contribution: number;
-  if (effectiveBasis <= firstBracketThreshold) {
-    contribution = minAnnualContribution;
-  } else if (effectiveBasis >= upperBracketThreshold) {
-    contribution = maxAnnualContribution;
-  } else {
-    const fraction =
-      (effectiveBasis - firstBracketThreshold) / (upperBracketThreshold - firstBracketThreshold);
-    contribution = minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
-  }
-  return contribution * surcharge;
+  const fraction =
+    (effectiveBasis - firstBracketThreshold) / (upperBracketThreshold - firstBracketThreshold);
+  return minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
 }
 
 /** Dividend income, taxed as ordinary income at the canton's effective rate. */

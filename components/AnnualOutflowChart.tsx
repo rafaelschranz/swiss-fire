@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -27,9 +28,12 @@ export function AnnualOutflowChart({
   /** Annual inflation used to convert real → nominal for display. */
   inflation: number;
 }) {
-  // Reflate each real figure to nominal francs of that future year.
+  // The engine is real-terms; default to real (consistent with the other views).
+  // The user can switch to nominal francs to see the inflation effect.
+  const [nominal, setNominal] = useState(false);
+
   const rows = years.map((y) => {
-    const factor = Math.pow(1 + inflation, y.age - baseAge);
+    const factor = nominal ? Math.pow(1 + inflation, y.age - baseAge) : 1;
     return {
       age: y.age,
       living: y.spend * factor,
@@ -44,11 +48,33 @@ export function AnnualOutflowChart({
 
   return (
     <div className="card p-5">
-      <p className="eyebrow mb-3 text-muted">Mittelverwendung pro Jahr · nominal, inkl. {Math.round(inflation * 100)} % Teuerung</p>
+      <div className="mb-3 flex items-center justify-between gap-4">
+        <p className="eyebrow text-muted">
+          Mittelverwendung pro Jahr · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+        </p>
+        <div className="flex" role="group" aria-label="Darstellung real oder nominal">
+          {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+            const active = (key === "nominal") === nominal;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setNominal(key === "nominal")}
+                className={`eyebrow -ml-px border px-2.5 py-1 transition first:ml-0 ${
+                  active ? "border-ink bg-ink text-paper" : "border-line-2 text-muted hover:border-ink hover:text-ink"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div
         className="h-72 w-full"
         role="img"
-        aria-label="Gestapeltes Balkendiagramm der jährlichen Ausgaben (Lebenshaltung, AHV-Beiträge, Steuern) in nominalen Franken, mit AHV-Rente und – falls verrentet – PK-Rente als Linien."
+        aria-label="Gestapeltes Balkendiagramm der jährlichen Ausgaben (Lebenshaltung, AHV-Beiträge, Steuern), mit AHV-Rente und – falls verrentet – PK-Rente als Linien."
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
