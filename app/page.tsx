@@ -58,6 +58,7 @@ function buildDecumulationParams(
     gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
     postFireIncome: inputs.postFireEmployment ? inputs.postFireIncome : 0,
     postFireWorkUntilAge: inputs.postFireWorkUntilAge,
+    otherNetWealth: inputs.otherNetWealth,
   };
 }
 
@@ -137,6 +138,7 @@ function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
     horizonAge: inputs.horizonAge,
     oneOffInflows: inputs.oneOffInflows,
     gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
+    otherNetWealth: inputs.otherNetWealth,
   };
 }
 

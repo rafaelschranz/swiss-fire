@@ -327,6 +327,9 @@ export const STEPS: StepDef[] = [
               {wealthColumn("Partner:in", p, setPartnerW, estPartner, incomePartner)}
             </TwoCol>
             <div className="border-t border-line pt-5">
+              <Field label="Übriges Nettovermögen (Haushalt)" value={inputs.otherNetWealth} onChange={(v) => set("otherNetWealth", v)} prefix="CHF" step={10000} min={0} hint="Z. B. Liegenschaft abzüglich Hypothek. Zählt für Vermögenssteuer & AHV aufs Vermögen, ist aber nicht liquide." />
+            </div>
+            <div className="border-t border-line pt-5">
               <p className="text-sm font-medium text-ink">Einmalige Zuflüsse (z. B. Erbschaft)</p>
               <p className="mt-1 mb-4 text-xs leading-relaxed text-muted">
                 Optionale Einmalbeträge, die in einem bestimmten Alter dem gemeinsamen steuerbaren Vermögen
@@ -348,6 +351,7 @@ export const STEPS: StepDef[] = [
             <Field label="Steuerbares Vermögen heute" value={inputs.currentTaxableBalance} onChange={(v) => set("currentTaxableBalance", v)} prefix="CHF" step={1000} min={0} />
             <Field label="Säule-3a-Guthaben heute" value={inputs.currentPillar3aBalance} onChange={(v) => set("currentPillar3aBalance", v)} prefix="CHF" step={1000} min={0} />
             <Field label="Pensionskasse-Guthaben heute" value={inputs.currentPillar2Balance} onChange={(v) => set("currentPillar2Balance", v)} prefix="CHF" step={1000} min={0} />
+            <Field label="Übriges Nettovermögen" value={inputs.otherNetWealth} onChange={(v) => set("otherNetWealth", v)} prefix="CHF" step={10000} min={0} hint="Z. B. Liegenschaft abzüglich Hypothek. Zählt für Vermögenssteuer & AHV aufs Vermögen, ist aber nicht liquide." />
           </Grid>
 
           <div className="border-t border-line pt-5">

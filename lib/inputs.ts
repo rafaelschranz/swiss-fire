@@ -56,6 +56,8 @@ export interface CalculatorInputs {
   annualPillar3aContribution: number;
   pillar3aReturn: number;
   currentPillar2Balance: number;
+  /** Other net wealth (real estate minus mortgage, etc.) — counts for wealth tax + AHV-on-wealth, not drawable. */
+  otherNetWealth: number;
 
   /** When true, salary/savings come from `incomePhases` rather than the flat fields above. */
   useIncomePhases: boolean;
@@ -123,6 +125,7 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   annualPillar3aContribution: 7_258,
   pillar3aReturn: 0.04,
   currentPillar2Balance: 90_000,
+  otherNetWealth: 0,
 
   useIncomePhases: false,
   incomePhases: [

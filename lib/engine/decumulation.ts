@@ -86,6 +86,12 @@ export interface DecumulationParams {
    */
   postFireIncome?: number;
   postFireWorkUntilAge?: number;
+  /**
+   * Other net wealth (e.g. real estate minus mortgage) that is NOT liquid: it
+   * counts towards the wealth tax and the non-employed AHV ("AHV on wealth")
+   * basis, but cannot be drawn on for spending. Real CHF, held constant.
+   */
+  otherNetWealth?: number;
 }
 
 /**
@@ -117,12 +123,14 @@ function annualCashNeed(
   const employmentIncome =
     params.postFireIncome && age < (params.postFireWorkUntilAge ?? 0) ? params.postFireIncome : 0;
 
-  // Non-employed AHV basis = net wealth + 20× actual pension income (Renten-
-  // einkommen). A wealth-funded early retiree has no Renteneinkommen, so the
-  // basis is wealth only — portfolio withdrawals / spending do NOT count.
+  // Non-employed AHV basis = net wealth (liquid + other, e.g. real estate) +
+  // 20× actual pension income (Renteneinkommen). A wealth-funded early retiree
+  // has no Renteneinkommen, so the basis is wealth only — portfolio withdrawals
+  // / spending do NOT count.
+  const netWealth = taxableEstimate + (params.otherNetWealth ?? 0);
   let nonEmployedContribution =
     age < params.ahvReferenceAge
-      ? nonEmployedAhvContribution(taxableEstimate, ahvPension, params.maritalStatus)
+      ? nonEmployedAhvContribution(netWealth, ahvPension, params.maritalStatus)
       : 0;
 
   // A gainfully employed person is exempt from the non-employed contribution
@@ -242,7 +250,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     const ordinaryIncome = pensionIncome + dividendIncome + employmentIncome;
     const divTax =
       federalIncomeTax(ordinaryIncome, married) + cantonalIncomeTax(params.canton, ordinaryIncome, married) * gemeinde;
-    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable), married) * gemeinde;
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), married) * gemeinde;
 
     taxable -= divTax + wTax;
     if (taxable < 0) {

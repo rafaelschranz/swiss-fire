@@ -158,6 +158,26 @@ describe("Staggered Säule 3a withdrawal", () => {
   });
 });
 
+describe("Other net wealth (real estate)", () => {
+  it("raises the non-employed AHV contribution and wealth tax, but is not drawable", () => {
+    const base = baseParams({
+      fireAge: 45,
+      ahvClaimAge: 65,
+      startingTaxable: 500_000,
+      startingPillar3a: 0,
+      startingPillar2: 0,
+    });
+    const without = simulateDecumulation(base).years[0];
+    const withProperty = simulateDecumulation({ ...base, otherNetWealth: 1_000_000 }).years[0];
+
+    // Property raises the AHV-on-wealth basis and the wealth tax...
+    expect(withProperty.ahvNonEmployedContribution).toBeGreaterThan(without.ahvNonEmployedContribution);
+    expect(withProperty.wealthTax).toBeGreaterThan(without.wealthTax);
+    // ...but does not add to the liquid (drawable) taxable balance.
+    expect(withProperty.taxableBalance).toBeLessThan(without.taxableBalance); // slightly lower due to extra tax
+  });
+});
+
 describe("Non-employed AHV basis (wealth only, no spending proxy)", () => {
   it("bases the contribution on wealth + actual pension income, not on spending", () => {
     const params = baseParams({

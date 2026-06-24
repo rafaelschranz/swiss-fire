@@ -56,6 +56,8 @@ export interface HouseholdParams {
   horizonAge: number;
   /** Communal tax multiplier vs. the canton baseline (1.0 = typical). See DecumulationParams. */
   gemeindeSteuerfuss?: number;
+  /** Non-liquid net wealth (real estate etc.) counted for wealth tax + AHV-on-wealth. */
+  otherNetWealth?: number;
   oneOffInflows?: OneOffInflow[];
   /** Per-year real return sequence (indexed by years since today) for Monte Carlo. */
   returnsPath?: number[];
@@ -232,14 +234,15 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     // spouse exemption.
     let nonEmployedContribution = 0;
     const someoneWorking = working.some(Boolean);
+    const netWealth = Math.max(0, taxable) + (params.otherNetWealth ?? 0);
     if (!someoneWorking) {
-      // Basis = net wealth + 20× actual pension income (Renteneinkommen);
-      // portfolio withdrawals / spending do not count.
+      // Basis = net wealth (liquid + other) + 20× actual pension income
+      // (Renteneinkommen); portfolio withdrawals / spending do not count.
       for (const s of st) {
         const age = personAgeAt(s.p, primaryAge);
         const retired = age >= s.p.fireAge;
         if (retired && age < s.p.ahvReferenceAge) {
-          nonEmployedContribution += nonEmployedAhvContribution(Math.max(0, taxable), pensionIncome, "married");
+          nonEmployedContribution += nonEmployedAhvContribution(netWealth, pensionIncome, "married");
         }
       }
     }
@@ -275,7 +278,7 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     const ordinaryIncome = pensionIncome + dividendIncome;
     const divTax =
       federalIncomeTax(ordinaryIncome, true) + cantonalIncomeTax(params.canton, ordinaryIncome, true) * gemeinde;
-    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable), true) * gemeinde;
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), true) * gemeinde;
     taxable -= divTax + wTax;
     if (taxable < 0) {
       depleted = true;
