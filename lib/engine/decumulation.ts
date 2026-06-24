@@ -1,6 +1,6 @@
 import { inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
-import { dividendIncomeTax, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution, wealthTax } from "./tax";
+import { cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "./tax";
 import type { CantonTaxData, DecumulationResult, DecumulationYearResult, OneOffInflow } from "./types";
 
 /** How the occupational pension (Pillar 2) is taken at retirement. */
@@ -216,8 +216,8 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
     const ordinaryIncome = pensionIncome + dividendIncome;
     const divTax =
-      federalIncomeTax(ordinaryIncome, married) + dividendIncomeTax(params.canton, ordinaryIncome) * gemeinde;
-    const wTax = wealthTax(params.canton, Math.max(0, taxable)) * gemeinde;
+      federalIncomeTax(ordinaryIncome, married) + cantonalIncomeTax(params.canton, ordinaryIncome, married) * gemeinde;
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable), married) * gemeinde;
 
     taxable -= divTax + wTax;
     if (taxable < 0) {

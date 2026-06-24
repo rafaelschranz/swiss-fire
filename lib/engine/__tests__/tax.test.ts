@@ -1,7 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import { PILLAR_2, PILLAR_3A } from "../constants";
-import { cappedPillar3aContribution, coordinatedSalary, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "../tax";
+import { cantonalIncomeTax, cantonalWealthTax, cappedPillar3aContribution, coordinatedSalary, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "../tax";
+
+describe("Cantonal income & wealth tax (real ESTV 2026 curves)", () => {
+  it("matches the embedded ESTV reference points (Zürich)", () => {
+    expect(cantonalIncomeTax(CANTONS.ZH, 100_000, false)).toBeCloseTo(12_356, 0); // single
+    expect(cantonalIncomeTax(CANTONS.ZH, 100_000, true)).toBeCloseTo(8_767, 0); // married
+    expect(cantonalWealthTax(CANTONS.ZH, 500_000, false)).toBeCloseTo(639, 0);
+  });
+
+  it("interpolates between points and is monotonic", () => {
+    const a = cantonalIncomeTax(CANTONS.ZH, 60_000, false);
+    const b = cantonalIncomeTax(CANTONS.ZH, 80_000, false);
+    expect(b).toBeGreaterThan(a);
+    // 60k lies between the 50k and 75k points (3670 and 7666).
+    expect(a).toBeGreaterThan(3_670);
+    expect(a).toBeLessThan(7_666);
+  });
+
+  it("married income tax is below single at the same income; low-tax cantons rank below high-tax", () => {
+    expect(cantonalIncomeTax(CANTONS.ZG, 100_000, false)).toBeLessThan(cantonalIncomeTax(CANTONS.ZH, 100_000, false));
+    expect(cantonalIncomeTax(CANTONS.BE, 100_000, false)).toBeGreaterThan(cantonalIncomeTax(CANTONS.ZG, 100_000, false));
+  });
+});
 
 describe("Federal direct income tax (2026 tariff)", () => {
   it("matches the ESTV tariff at reference incomes (single)", () => {

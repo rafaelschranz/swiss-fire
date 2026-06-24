@@ -1,7 +1,7 @@
 import { activeIncomePhase, inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
 import type { Pillar2PayoutMode } from "./decumulation";
-import { dividendIncomeTax, federalCapitalTax, federalIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate, wealthTax } from "./tax";
+import { cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate } from "./tax";
 import type { CantonTaxData, DecumulationYearResult, IncomePhase, OneOffInflow, Pillar2Plan } from "./types";
 
 /**
@@ -272,8 +272,8 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
     const ordinaryIncome = pensionIncome + dividendIncome;
     const divTax =
-      federalIncomeTax(ordinaryIncome, true) + dividendIncomeTax(params.canton, ordinaryIncome) * gemeinde;
-    const wTax = wealthTax(params.canton, Math.max(0, taxable)) * gemeinde;
+      federalIncomeTax(ordinaryIncome, true) + cantonalIncomeTax(params.canton, ordinaryIncome, true) * gemeinde;
+    const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable), true) * gemeinde;
     taxable -= divTax + wTax;
     if (taxable < 0) {
       depleted = true;

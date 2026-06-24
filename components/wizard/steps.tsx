@@ -237,7 +237,7 @@ export const STEPS: StepDef[] = [
           value={inputs.canton}
           onChange={(v) => set("canton", v as CantonCode)}
           options={cantonOptions}
-          hint="Kapitalauszahlungssteuer: echte ESTV-Werte (2026, alle Kantone). Vermögens- & Einkommenssteuer sind genähert — Details unter „Annahmen“."
+          hint="Einkommens-, Vermögens- und Kapitalsteuer: echte ESTV-Werte 2026 (Kantonshauptort). Für andere Gemeinden den Gemeinde-Steuerfaktor anpassen."
         />
         <div className="border-t border-line pt-5">
           <SegmentedControl

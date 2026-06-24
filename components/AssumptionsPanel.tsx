@@ -50,21 +50,21 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
         />
       </Group>
 
-      <Group title={`Einkommens- & Kapitalsteuer — ${FEDERAL_INCOME_TAX.source}`}>
+      <Group title="Einkommens- & Kapitalsteuer">
         <Row
           label="Direkte Bundessteuer"
           value={`Tarif ${FEDERAL_INCOME_TAX.year}`}
-          note="Exakter eidgenössischer Tarif (ledig/verheiratet). Renten (AHV + PK) und Dividenden werden als Einkommen besteuert; Abzüge sind nicht modelliert (leicht konservativ)."
+          note="Exakter eidgenössischer Tarif (ledig/verheiratet). Renten (AHV + PK) und Dividenden werden als Einkommen besteuert."
+        />
+        <Row
+          label="Kantonale/kommunale Einkommens- & Vermögenssteuer"
+          value="ESTV 2026 (real)"
+          note="Echte ESTV-Werte (Kantonshauptort, ledig/verheiratet, Renteneinkommen inkl. Standardabzüge); zwischen Stützpunkten interpoliert und über den Gemeinde-Steuerfaktor auf andere Gemeinden skaliert."
         />
         <Row
           label="Kapitalauszahlungssteuer Bund"
           value="⅕ des ordentlichen Tarifs"
           note="Art. 38 DBG, auf 3a-/PK-Kapitalbezügen — zusätzlich zur kantonalen/kommunalen Kapitalsteuer."
-        />
-        <Row
-          label="Kantonal/kommunal"
-          value="Gemeinde-Steuerfaktor"
-          note="Kantonale Effektivsätze × Ihrem Gemeinde-Steuerfaktor (100 % = Kantonsmittel) — Näherung; für exakte Gemeindewerte den ESTV-Steuerrechner nutzen."
         />
       </Group>
 

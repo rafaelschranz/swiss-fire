@@ -27,6 +27,18 @@ export interface LumpSumTaxParams {
   referencePoints: Array<{ amount: number; tax: number }>;
 }
 
+/** A point on a piecewise-linear tax curve: total `tax` (CHF) at base `amount`. */
+export interface TaxCurvePoint {
+  amount: number;
+  tax: number;
+}
+
+/** Real ESTV tax curves for single vs married, interpolated by the engine. */
+export interface TaxCurve {
+  single: TaxCurvePoint[];
+  married: TaxCurvePoint[];
+}
+
 export interface CantonTaxData {
   code: CantonCode;
   name: string;
@@ -36,8 +48,17 @@ export interface CantonTaxData {
    * that still needs grounding (false). See README "January re-verification".
    */
   verified: boolean;
+  /**
+   * Real ESTV 2026 cantonal+communal income tax (at the cantonal capital,
+   * pension income type, no church), interpolated by the engine and scaled by
+   * the Gemeinde factor.
+   */
+  incomeTaxCurve: TaxCurve;
+  /** Real ESTV 2026 cantonal+communal wealth tax curve. */
+  wealthTaxCurve: TaxCurve;
+  /** @deprecated legacy flat-rate fields, retained for the wealthTax/dividend helpers + tests. */
   wealthTaxBrackets: WealthTaxBracket[];
-  /** Flat effective rate applied to ordinary income (dividends) as a simplification. */
+  /** @deprecated flat effective income-tax rate (superseded by `incomeTaxCurve`). */
   incomeTaxEffectiveRate: number;
   lumpSumTax: LumpSumTaxParams;
   source: string;

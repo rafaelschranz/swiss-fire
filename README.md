@@ -21,7 +21,7 @@ imports, so it can be unit-tested and reused independently of the UI.
 /components            # UI components
 /lib/engine            # Pure TS financial engine
   constants.ts         # Dated 2026 Swiss pension/tax parameters, sourced in comments
-  cantons.ts           # 26-canton tax table (capital tax = real ESTV 2026; wealth/income approx.)
+  cantons.ts           # 26-canton tax table (income/wealth/capital = real ESTV 2026 curves)
   types.ts             # Shared engine types
   tax.ts               # (Phase 2) income/wealth/lump-sum tax functions
   accumulation.ts       # (Phase 2) year-by-year accumulation simulator
@@ -51,12 +51,16 @@ dated **2026** and sourced inline as code comments:
   (`API_calculateManyCapitalTaxes`). The engine interpolates between the
   points, scales them by the Gemeinde factor for other municipalities, and
   adds the federal one-fifth tariff.
-- **Cantonal wealth tax and ordinary-income effective rate**: still
-  approximations — seeded "approximate effective curves" for SZ/ZG/ZH/LU and
-  generic mid-range placeholders for the other 22 (`verified: false`). These
-  remain the next grounding target (the ESTV income/wealth scales + municipal
-  Steuerfüsse are reachable via the same API, but reproducing every canton's
-  scale, splitting and deductions exactly is a larger effort).
+- **Cantonal income & wealth tax**: also grounded in **real ESTV figures for
+  all 26 cantons** now. `cantons.ts` carries `incomeTaxCurve` and
+  `wealthTaxCurve` (single/married) — the ESTV 2026 cantonal + communal tax at
+  each cantonal capital, for pension income (ESTV applies its standard
+  deductions). The engine interpolates these, scales by the Gemeinde factor for
+  other municipalities, and adds the exact federal direct tax. Remaining
+  approximations: per-municipality differences within a canton (handled via the
+  Gemeinde factor rather than a full municipal tariff table), church tax (not
+  modelled), and income type (the curve uses pension income for the whole
+  ordinary-income base, including dividends).
 
 ### January re-verification checklist
 
@@ -290,12 +294,11 @@ survive added fields.
 Not yet done: i18n beyond German (the UI is German-only for now).
 
 Notes on data still needing real grounding:
-- The cantonal **capital-withdrawal** tax is now real ESTV 2026 data for all
-  26 cantons (see above). Still approximate: each canton's **wealth tax** and
-  **ordinary-income effective rate**, and the per-municipality refinement
-  beyond the cantonal capital (handled via the Gemeinde factor rather than a
-  full municipal tariff table). The ESTV income/wealth scales + Steuerfüsse
-  are reachable via the same API for a future exact implementation.
+- Cantonal **income, wealth and capital** tax are all real ESTV 2026 data now
+  (at each cantonal capital). The remaining approximation is the
+  **per-municipality** refinement within a canton, handled via the Gemeinde
+  factor rather than a full municipal tariff table — the ESTV municipal
+  Steuerfüsse are reachable via the same API to make this exact per Gemeinde.
 - The Monte Carlo `historical` mode is now calibrated to real, cited Pictet
   long-run Swiss equity/bond statistics (`MARKET` in `constants.ts`); the
   former synthetic placeholder series has been removed. It models returns

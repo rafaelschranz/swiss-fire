@@ -1,5 +1,5 @@
 import { AHV, DEFAULTS, FEDERAL_INCOME_TAX, PILLAR_2, PILLAR_3A } from "./constants";
-import type { CantonTaxData } from "./types";
+import type { CantonTaxData, TaxCurvePoint } from "./types";
 
 /**
  * Direct federal income tax (direkte Bundessteuer) on taxable income, using the
@@ -141,16 +141,13 @@ export function wealthTax(canton: CantonTaxData, netWealth: number): number {
 }
 
 /**
- * One-off lump-sum (capital withdrawal) pension tax, calibrated to a
- * canton's documented reference points via piecewise-linear interpolation
- * over (0,0) and the reference points, extrapolated beyond the last point
- * using its segment's marginal rate. This keeps the curve monotonic and,
- * as long as reference points are themselves progressive, convex.
+ * Piecewise-linear interpolation over (0,0) + the reference points, extrapolated
+ * beyond the last point using its segment's marginal rate. Shared by the
+ * capital, income and wealth tax curves (all ESTV reference points).
  */
-export function lumpSumTax(canton: CantonTaxData, amount: number): number {
+function interpolateTaxCurve(refPoints: ReadonlyArray<TaxCurvePoint>, amount: number): number {
   if (amount <= 0) return 0;
-  const points = [{ amount: 0, tax: 0 }, ...canton.lumpSumTax.referencePoints]
-    .sort((a, b) => a.amount - b.amount);
+  const points = [{ amount: 0, tax: 0 }, ...refPoints].sort((a, b) => a.amount - b.amount);
 
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i];
@@ -165,6 +162,25 @@ export function lumpSumTax(canton: CantonTaxData, amount: number): number {
   const prev = points[points.length - 2];
   const marginalRate = (last.tax - prev.tax) / (last.amount - prev.amount);
   return last.tax + (amount - last.amount) * marginalRate;
+}
+
+/** One-off lump-sum (capital withdrawal) cantonal+communal tax, from ESTV points. */
+export function lumpSumTax(canton: CantonTaxData, amount: number): number {
+  return interpolateTaxCurve(canton.lumpSumTax.referencePoints, amount);
+}
+
+/**
+ * Cantonal + communal ordinary income tax from the canton's real ESTV curve
+ * (pension income type, cantonal capital). The federal direct tax is added
+ * separately; the engine scales this by the Gemeinde factor.
+ */
+export function cantonalIncomeTax(canton: CantonTaxData, income: number, married: boolean): number {
+  return interpolateTaxCurve(married ? canton.incomeTaxCurve.married : canton.incomeTaxCurve.single, income);
+}
+
+/** Cantonal + communal wealth tax from the canton's real ESTV curve. */
+export function cantonalWealthTax(canton: CantonTaxData, wealth: number, married: boolean): number {
+  return interpolateTaxCurve(married ? canton.wealthTaxCurve.married : canton.wealthTaxCurve.single, wealth);
 }
 
 /**

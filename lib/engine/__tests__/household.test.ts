@@ -133,11 +133,11 @@ describe("Income phases", () => {
     );
 
     // 5 years at 10k (30-34) + 5 years at 20k (35-39), no returns/spend = 150k
-    // before the annual wealth/dividend tax shaves a little off — and far below
-    // what the ignored flat 999_999 field would have produced.
+    // (SZ levies ~no wealth tax below 250k and negligible tax on tiny dividends)
+    // — and far below what the ignored flat 999_999 field would have produced.
     const at39 = result.years.find((y) => y.age === 39)!;
-    expect(at39.taxableBalance).toBeGreaterThan(140_000);
-    expect(at39.taxableBalance).toBeLessThan(150_000);
+    expect(at39.taxableBalance).toBeGreaterThan(145_000);
+    expect(at39.taxableBalance).toBeLessThanOrEqual(150_000);
   });
 });
 
