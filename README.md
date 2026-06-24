@@ -108,6 +108,17 @@ npm run test       # run Vitest engine tests
 npm run lint       # ESLint
 ```
 
+## Deployment
+
+```bash
+cp .env.example .env.local      # then set NEXT_PUBLIC_SITE_URL to the real domain
+npm run build && npm start      # or deploy to any Next.js host (e.g. Vercel)
+```
+
+`NEXT_PUBLIC_SITE_URL` feeds the canonical URL, sitemap, robots and OpenGraph
+tags. A branded share image is generated at `/opengraph-image` (see
+`app/opengraph-image.tsx`) and wired into the OG/Twitter metadata automatically.
+
 ## Status
 
 **Phase 0/1/2/3/4 complete**: project scaffolded, engine types/constants/

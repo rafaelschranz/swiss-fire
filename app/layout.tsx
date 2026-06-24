@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${SITE_NAME} | Frühpensionierung & Pensionskasse`,
     description: SITE_DESCRIPTION,
   },
