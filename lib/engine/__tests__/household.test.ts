@@ -110,6 +110,36 @@ describe("Accumulation phase", () => {
   });
 });
 
+describe("AHV couple plafonierung", () => {
+  it("caps the combined AHV at 150% of the max single pension when both draw it", () => {
+    // Both partners with a full single pension (30'240) would sum to 60'480,
+    // but a married couple is capped at 1.5 × 30'240 = 45'360.
+    const result = simulateHousehold(
+      baseParams({
+        primary: person({ currentAge: 64, fireAge: 64, ahvClaimAge: 65, ahvReferenceAge: 65, ahvAnnualPension: 30_240 }),
+        partner: person({ currentAge: 64, fireAge: 64, ahvClaimAge: 65, ahvReferenceAge: 65, ahvAnnualPension: 30_240 }),
+        horizonAge: 80,
+      }),
+    );
+    const bothDrawing = result.years.find((y) => y.age === 70)!; // both past claim age
+    expect(bothDrawing.ahvPension).toBeCloseTo(45_360, 0);
+  });
+
+  it("does not cap when only one partner draws a pension", () => {
+    const result = simulateHousehold(
+      baseParams({
+        primary: person({ currentAge: 66, fireAge: 60, ahvClaimAge: 65, ahvReferenceAge: 65, ahvAnnualPension: 30_240 }),
+        partner: person({ currentAge: 55, fireAge: 60, ahvClaimAge: 65, ahvReferenceAge: 65, ahvAnnualPension: 30_240 }),
+        horizonAge: 80,
+      }),
+    );
+    // At primary age 67 the partner (age 56) is not yet drawing AHV → only the
+    // primary's full single pension, no plafonierung.
+    const onlyOne = result.years.find((y) => y.age === 67)!;
+    expect(onlyOne.ahvPension).toBeCloseTo(30_240, 0);
+  });
+});
+
 describe("Income phases", () => {
   it("uses a person's age-banded income phases instead of the flat fields", () => {
     const result = simulateHousehold(

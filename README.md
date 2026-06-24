@@ -255,8 +255,9 @@ points modelled:
 
 Both people support **age-banded income phases** and **auto-estimates**
 (`partner:`-namespaced estimable keys), and the household has its own **Monte
-Carlo** path (calendar-timeline, indexed from today). Remaining household
-simplifications: the AHV 150 %-of-max couple cap is left to the user; market
+Carlo** path (calendar-timeline, indexed from today). The combined AHV is
+**plafoniert** — when both spouses draw a pension it is capped at 150% of the
+maximum single pension. Remaining household simplifications: market
 assumptions (returns, 3a/PK interest, inflation, canton) are shared; the
 spouse AHV exemption is coarse (a still-working partner exempts the other
 regardless of the exact 2×-minimum test); and charts/markers are anchored to

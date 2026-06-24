@@ -208,18 +208,22 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
 
     // --- Incomes: AHV, PK Rente, and still-working salaries -------------------
     const econ = st.map((s) => personEconomics(s, personAgeAt(s.p, primaryAge)));
-    let ahvPensionTotal = 0;
     let pillar2PensionTotal = 0;
     let workingSavings = 0;
+    const ahvEach: number[] = [];
     const working = st.map((s, i) => {
       const age = personAgeAt(s.p, primaryAge);
-      if (age >= s.p.ahvClaimAge) {
-        ahvPensionTotal += adjustedAhvPension(s.p.ahvAnnualPension, s.p.ahvClaimAge, s.p.ahvReferenceAge);
-      }
+      ahvEach.push(age >= s.p.ahvClaimAge ? adjustedAhvPension(s.p.ahvAnnualPension, s.p.ahvClaimAge, s.p.ahvReferenceAge) : 0);
       pillar2PensionTotal += s.pillar2Pension;
       workingSavings += econ[i].taxableSavings;
       return econ[i].working;
     });
+    // AHV couple plafonierung: when both spouses draw a pension, their combined
+    // AHV is capped at 150% of the maximum single pension.
+    let ahvPensionTotal = ahvEach[0] + ahvEach[1];
+    if (ahvEach[0] > 0 && ahvEach[1] > 0) {
+      ahvPensionTotal = Math.min(ahvPensionTotal, AHV.coupleMaxPensionFactor * AHV.maxAnnualPension);
+    }
     const pensionIncome = ahvPensionTotal + pillar2PensionTotal;
 
     // --- Non-employed AHV ("AHV on wealth") per person ------------------------

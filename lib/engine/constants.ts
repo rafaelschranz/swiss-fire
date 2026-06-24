@@ -69,6 +69,11 @@ export const PILLAR_2 = {
 export const AHV = {
   /** Maximum annual full AHV pension, 2026 (CHF 2,520/month). */
   maxAnnualPension: 30_240,
+  /**
+   * Plafonierung: a married couple's combined AHV pension is capped at 150% of
+   * the maximum single pension (i.e. CHF 45,360/year at the 2026 maximum).
+   */
+  coupleMaxPensionFactor: 1.5,
   /** Minimum full AHV pension ~= half of max. */
   minAnnualPension: 15_120,
   /** Reference age, men. Women transitioning 64 -> 65 (65 from 2028). Model as a parameter. */
