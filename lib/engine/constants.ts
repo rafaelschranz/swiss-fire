@@ -107,6 +107,35 @@ export const AHV = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Direct federal income tax (direkte Bundessteuer), tariff 2026.
+// Source: ESTV official tax data (swisstaxcalculator.estv.admin.ch,
+// API_exportManyTaxScales, TaxYear 2026), "EINKOMMENSSTEUER" / "BUND".
+// Each bracket is [threshold (CHF, cumulative), baseTax (CHF at threshold),
+// marginalPercent above the threshold]. The federal tax is national (no
+// municipal multiplier). The single tariff applies to unmarried taxpayers; the
+// married/family tariff (Verheiratetentarif) to couples — children/other
+// deductions are NOT modelled (we tax the income as given).
+// ---------------------------------------------------------------------------
+export const FEDERAL_INCOME_TAX = {
+  year: 2026,
+  source: "ESTV direkte Bundessteuer Tarif 2026",
+  single: [
+    [0, 0, 0], [15200, 0, 0.77], [33200, 138.6, 0.88], [43500, 229.2, 2.64],
+    [58000, 612, 2.97], [76200, 1152.5, 5.94], [82100, 1502.95, 6.6],
+    [108900, 3271.75, 8.8], [141500, 6140.55, 11], [185100, 10936.55, 13.2],
+    [793900, 91298.15, 13.2], [794000, 91310, 11.5],
+  ] as ReadonlyArray<readonly [number, number, number]>,
+  married: [
+    [0, 0, 0], [29700, 0, 1], [53400, 237, 2], [61300, 395, 3], [79100, 929, 4],
+    [94900, 1561, 5], [108700, 2251, 6], [120600, 2965, 7], [130500, 3658, 8],
+    [138400, 4290, 9], [144300, 4821, 10], [148300, 5221, 11], [150400, 5452, 12],
+    [152400, 5692, 13], [941300, 108249, 13], [941400, 108261, 11.5],
+  ] as ReadonlyArray<readonly [number, number, number]>,
+  /** Capital benefits (3a/PK lump sums) are taxed at one-fifth of the ordinary tariff (Art. 38 DBG). */
+  capitalFraction: 1 / 5,
+} as const;
+
+// ---------------------------------------------------------------------------
 // General tax facts baked into engine assumptions.
 // Source: DBG / StHG general principles; ESTV.
 // ---------------------------------------------------------------------------

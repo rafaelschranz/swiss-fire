@@ -1,7 +1,7 @@
 import { activeIncomePhase, inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
 import type { Pillar2PayoutMode } from "./decumulation";
-import { dividendIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate, wealthTax } from "./tax";
+import { dividendIncomeTax, federalCapitalTax, federalIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate, wealthTax } from "./tax";
 import type { CantonTaxData, DecumulationYearResult, IncomePhase, OneOffInflow, Pillar2Plan } from "./types";
 
 /**
@@ -54,6 +54,8 @@ export interface HouseholdParams {
   pillar3aReturn: number;
   /** Planning horizon, on the PRIMARY person's age axis. */
   horizonAge: number;
+  /** Communal tax multiplier vs. the canton baseline (1.0 = typical). See DecumulationParams. */
+  gemeindeSteuerfuss?: number;
   oneOffInflows?: OneOffInflow[];
   /** Per-year real return sequence (indexed by years since today) for Monte Carlo. */
   returnsPath?: number[];
@@ -195,9 +197,12 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       }
     }
 
+    // Couples are assessed jointly (married tariff). Cantonal/communal scaled by
+    // the Gemeinde factor; federal one-fifth tariff added on the capital total.
+    const gemeinde = params.gemeindeSteuerfuss ?? 1;
     let lumpSumTaxPaid = 0;
     if (capitalThisYear > 0) {
-      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear);
+      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear) * gemeinde + federalCapitalTax(capitalThisYear, true);
       taxable += capitalThisYear - lumpSumTaxPaid;
     }
 
@@ -262,9 +267,13 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       taxable = 0;
     }
 
+    // Recurring income tax on the household's ordinary income (AHV + PK Rente +
+    // portfolio dividends): joint federal direct tax + cantonal/communal.
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
-    const divTax = dividendIncomeTax(params.canton, dividendIncome);
-    const wTax = wealthTax(params.canton, Math.max(0, taxable));
+    const ordinaryIncome = pensionIncome + dividendIncome;
+    const divTax =
+      federalIncomeTax(ordinaryIncome, true) + dividendIncomeTax(params.canton, ordinaryIncome) * gemeinde;
+    const wTax = wealthTax(params.canton, Math.max(0, taxable)) * gemeinde;
     taxable -= divTax + wTax;
     if (taxable < 0) {
       depleted = true;

@@ -1,4 +1,4 @@
-import { AHV, DEFAULTS, GENERAL_TAX, MARKET, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
+import { AHV, DEFAULTS, FEDERAL_INCOME_TAX, GENERAL_TAX, MARKET, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
 import type { CantonTaxData } from "@/lib/engine/types";
 
 function Row({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -46,7 +46,25 @@ export function AssumptionsPanel({ canton }: { canton: CantonTaxData }) {
         <Row
           label="Bezug"
           value="Kapital / Rente / gemischt"
-          note="Die Säule 3a wird gesetzlich als Kapital bezogen; die PK wahlweise als Kapital, lebenslange Rente (Guthaben × Umwandlungssatz) oder Mischung. Rentenbezug (AHV + PK) wird als Reduktion des Mittelbedarfs modelliert, nicht separat als Einkommen besteuert."
+          note="Die Säule 3a wird gesetzlich als Kapital bezogen; die PK wahlweise als Kapital, lebenslange Rente (Guthaben × Umwandlungssatz) oder Mischung. Rentenbezüge (AHV + PK) werden als Einkommen besteuert (siehe Einkommenssteuer)."
+        />
+      </Group>
+
+      <Group title={`Einkommens- & Kapitalsteuer — ${FEDERAL_INCOME_TAX.source}`}>
+        <Row
+          label="Direkte Bundessteuer"
+          value={`Tarif ${FEDERAL_INCOME_TAX.year}`}
+          note="Exakter eidgenössischer Tarif (ledig/verheiratet). Renten (AHV + PK) und Dividenden werden als Einkommen besteuert; Abzüge sind nicht modelliert (leicht konservativ)."
+        />
+        <Row
+          label="Kapitalauszahlungssteuer Bund"
+          value="⅕ des ordentlichen Tarifs"
+          note="Art. 38 DBG, auf 3a-/PK-Kapitalbezügen — zusätzlich zur kantonalen/kommunalen Kapitalsteuer."
+        />
+        <Row
+          label="Kantonal/kommunal"
+          value="Gemeinde-Steuerfaktor"
+          note="Kantonale Effektivsätze × Ihrem Gemeinde-Steuerfaktor (100 % = Kantonsmittel) — Näherung; für exakte Gemeindewerte den ESTV-Steuerrechner nutzen."
         />
       </Group>
 

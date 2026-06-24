@@ -1,6 +1,6 @@
 import { inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
-import { dividendIncomeTax, lumpSumTax, nonEmployedAhvContribution, wealthTax } from "./tax";
+import { dividendIncomeTax, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution, wealthTax } from "./tax";
 import type { CantonTaxData, DecumulationResult, DecumulationYearResult, OneOffInflow } from "./types";
 
 /** How the occupational pension (Pillar 2) is taken at retirement. */
@@ -62,6 +62,13 @@ export interface DecumulationParams {
   pillar2CapitalShare?: number;
   /** Conversion rate (Umwandlungssatz) applied to the annuitised portion. */
   pillar2ConversionRate?: number;
+  /**
+   * Communal tax multiplier relative to the canton's baseline effective rates
+   * (1.0 = canton-typical municipality). Scales the cantonal/communal income,
+   * wealth and capital tax — a transparent proxy for the Gemeinde Steuerfuss
+   * (the federal direct tax is unaffected). Defaults to 1.0.
+   */
+  gemeindeSteuerfuss?: number;
   /**
    * Number of Säule-3a accounts the balance is split across. Each account is
    * closed in its own calendar year (one per year from `pillar3aUnlockAge`),
@@ -177,9 +184,14 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       pillar3aTranchesLeft -= 1;
     }
 
+    // Capital-withdrawal tax: cantonal/communal (scaled by the Gemeinde factor)
+    // plus the federal one-fifth tariff on the same-year capital total.
+    const married = params.maritalStatus === "married";
+    const gemeinde = params.gemeindeSteuerfuss ?? 1;
     let lumpSumTaxPaid = 0;
     if (capitalThisYear > 0) {
-      lumpSumTaxPaid = lumpSumTax(params.canton, capitalThisYear);
+      lumpSumTaxPaid =
+        lumpSumTax(params.canton, capitalThisYear) * gemeinde + federalCapitalTax(capitalThisYear, married);
       taxable += capitalThisYear - lumpSumTaxPaid;
     }
 
@@ -197,9 +209,15 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       taxable = 0;
     }
 
+    // Recurring income tax on ordinary income = pension income (AHV + PK Rente)
+    // plus portfolio dividends: federal direct tax + cantonal/communal (canton
+    // effective rate × Gemeinde factor). `divTax` therefore now holds the total
+    // recurring income tax, not only the dividend portion.
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
-    const divTax = dividendIncomeTax(params.canton, dividendIncome);
-    const wTax = wealthTax(params.canton, Math.max(0, taxable));
+    const ordinaryIncome = pensionIncome + dividendIncome;
+    const divTax =
+      federalIncomeTax(ordinaryIncome, married) + dividendIncomeTax(params.canton, ordinaryIncome) * gemeinde;
+    const wTax = wealthTax(params.canton, Math.max(0, taxable)) * gemeinde;
 
     taxable -= divTax + wTax;
     if (taxable < 0) {

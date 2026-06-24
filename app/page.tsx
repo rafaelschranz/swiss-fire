@@ -53,6 +53,7 @@ function buildDecumulationParams(
     pillar2CapitalShare: inputs.pillar2CapitalShare,
     pillar2ConversionRate: inputs.pillar2ConversionRate,
     pillar3aTranches: inputs.pillar3aTranches,
+    gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
   };
 }
 
@@ -131,6 +132,7 @@ function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
     pillar3aReturn: inputs.pillar3aReturn,
     horizonAge: inputs.horizonAge,
     oneOffInflows: inputs.oneOffInflows,
+    gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
   };
 }
 

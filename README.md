@@ -180,10 +180,27 @@ lifelong Rente (capital × Umwandlungssatz) / a mix (`pillar2PayoutMode`,
 `pillar2CapitalShare`, `pillar2ConversionRate`; default capital, BVG-minimum
 6.8 % conversion). Capital withdrawals falling in the same calendar year are
 aggregated for the progressive lump-sum tax — so staggering 3a and PK across
-different years lowers the bill. **Simplification:** recurring pension income
-(AHV plus any PK Rente) is modelled as a net offset to the annual cash need
-and is *not* separately taxed as ordinary income — flagged here and in the
-assumptions panel, consistent with the existing AHV treatment.
+different years lowers the bill.
+
+### Taxes and AHV contributions
+
+Income is taxed properly: recurring **ordinary income** (AHV + PK Rente +
+portfolio dividends) is subject to the **exact federal direct tax** (direkte
+Bundessteuer, ESTV 2026 tariff, single/married, embedded in `constants.ts` and
+validated against the official figures) plus a **cantonal/communal** layer
+(canton effective rate × a user-set **Gemeinde-Steuerfaktor**, 100 % =
+canton-typical municipality). Lump-sum capital withdrawals (3a/PK) are taxed
+by the cantonal capital-tax curve × the Gemeinde factor **plus** the federal
+one-fifth tariff (Art. 38 DBG). The non-employed **AHV contribution**
+("AHV on wealth") now includes the funds' 5 % administrative-cost surcharge.
+
+The ESTV API (swisstaxcalculator.estv.admin.ch) was used to source the exact
+federal tariff and is reachable for the per-municipality cantonal scales +
+Steuerfüsse; reproducing every canton's cantonal/communal tariff and the
+canton-specific capital-payout rules exactly is a documented next step — for
+now the cantonal layer is the seeded effective-rate model scaled by the
+Gemeinde factor, and deductions/church tax are not modelled (slightly
+conservative). Use the ESTV calculator for exact municipal figures.
 
 The results carry two charts: a **balance chart** (unstacked lines per
 pot — total, taxable, 3a, PK — with FIRE / PK / 3a / AHV milestone

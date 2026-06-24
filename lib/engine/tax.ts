@@ -1,5 +1,32 @@
-import { AHV, DEFAULTS, PILLAR_2, PILLAR_3A } from "./constants";
+import { AHV, DEFAULTS, FEDERAL_INCOME_TAX, PILLAR_2, PILLAR_3A } from "./constants";
 import type { CantonTaxData } from "./types";
+
+/**
+ * Direct federal income tax (direkte Bundessteuer) on taxable income, using the
+ * exact 2026 ESTV tariff. Walks the cumulative bracket table: tax at the bracket
+ * threshold plus the marginal rate on the excess. The federal tax is national —
+ * there is no municipal multiplier.
+ */
+export function federalIncomeTax(taxableIncome: number, married: boolean): number {
+  if (taxableIncome <= 0) return 0;
+  const table = married ? FEDERAL_INCOME_TAX.married : FEDERAL_INCOME_TAX.single;
+  let bracket = table[0];
+  for (const row of table) {
+    if (row[0] <= taxableIncome) bracket = row;
+    else break;
+  }
+  const [threshold, baseTax, marginalPercent] = bracket;
+  return baseTax + (taxableIncome - threshold) * (marginalPercent / 100);
+}
+
+/**
+ * Federal tax on a one-off capital benefit (3a / Pillar 2 lump sum): one-fifth
+ * of the ordinary federal tariff applied to the amount (Art. 38 DBG).
+ */
+export function federalCapitalTax(amount: number, married: boolean): number {
+  if (amount <= 0) return 0;
+  return federalIncomeTax(amount, married) * FEDERAL_INCOME_TAX.capitalFraction;
+}
 
 /**
  * Coordinated salary = clamp(salary - coordinationDeduction, minCoordinatedSalary, maxCoordinatedSalary).
@@ -74,14 +101,23 @@ export function nonEmployedAhvContribution(
     netWealth + annualPensionOrReplacementIncome * AHV.nonEmployed.pensionIncomeMultiplier;
   const effectiveBasis = maritalStatus === "married" ? basis / 2 : basis;
 
-  const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold } =
+  const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold, maxAdminSurchargeRate } =
     AHV.nonEmployed;
-  if (effectiveBasis <= firstBracketThreshold) return minAnnualContribution;
-  if (effectiveBasis >= upperBracketThreshold) return maxAnnualContribution;
+  // Compensation funds add an administrative-cost surcharge (up to 5%) on top
+  // of the AHV/IV/EO contribution; modelled at the maximum.
+  const surcharge = 1 + maxAdminSurchargeRate;
 
-  const fraction =
-    (effectiveBasis - firstBracketThreshold) / (upperBracketThreshold - firstBracketThreshold);
-  return minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
+  let contribution: number;
+  if (effectiveBasis <= firstBracketThreshold) {
+    contribution = minAnnualContribution;
+  } else if (effectiveBasis >= upperBracketThreshold) {
+    contribution = maxAnnualContribution;
+  } else {
+    const fraction =
+      (effectiveBasis - firstBracketThreshold) / (upperBracketThreshold - firstBracketThreshold);
+    contribution = minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
+  }
+  return contribution * surcharge;
 }
 
 /** Dividend income, taxed as ordinary income at the canton's effective rate. */

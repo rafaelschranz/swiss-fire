@@ -1,7 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import { PILLAR_2, PILLAR_3A } from "../constants";
-import { cappedPillar3aContribution, coordinatedSalary, lumpSumTax, nonEmployedAhvContribution } from "../tax";
+import { cappedPillar3aContribution, coordinatedSalary, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "../tax";
+
+describe("Federal direct income tax (2026 tariff)", () => {
+  it("matches the ESTV tariff at reference incomes (single)", () => {
+    expect(federalIncomeTax(60_000, false)).toBeCloseTo(671.4, 1);
+    expect(federalIncomeTax(100_000, false)).toBeCloseTo(2684.35, 1);
+    expect(federalIncomeTax(150_000, false)).toBeCloseTo(7075.55, 1);
+  });
+
+  it("matches the ESTV tariff at reference incomes (married)", () => {
+    expect(federalIncomeTax(100_000, true)).toBeCloseTo(1816, 1);
+    expect(federalIncomeTax(150_000, true)).toBeCloseTo(5408, 1);
+  });
+
+  it("is zero below the tax-free threshold and married is below single", () => {
+    expect(federalIncomeTax(14_000, false)).toBe(0);
+    expect(federalIncomeTax(120_000, true)).toBeLessThan(federalIncomeTax(120_000, false));
+  });
+
+  it("taxes capital benefits at one-fifth of the ordinary tariff (Art. 38 DBG)", () => {
+    expect(federalCapitalTax(100_000, false)).toBeCloseTo(federalIncomeTax(100_000, false) / 5, 6);
+  });
+});
 
 describe("Pillar 3a contribution capping", () => {
   it("caps at the statutory maximum with a pension fund", () => {
@@ -36,14 +58,15 @@ describe("Coordinated salary", () => {
 });
 
 describe("Non-employed AHV contribution", () => {
+  // Figures include the 5% administrative-cost surcharge added by the funds.
   it("is at (or near) the minimum bracket at wealth 350k", () => {
     const contribution = nonEmployedAhvContribution(350_000, 0, "single");
-    expect(contribution).toBeCloseTo(530, 0);
+    expect(contribution).toBeCloseTo(530 * 1.05, 0); // 556.5
   });
 
-  it("hits the CHF 26,500 cap at wealth >= ~8.8M", () => {
+  it("hits the CHF 26,500 cap (+admin) at wealth >= ~8.8M", () => {
     const contribution = nonEmployedAhvContribution(8_800_000, 0, "single");
-    expect(contribution).toBe(26_500);
+    expect(contribution).toBeCloseTo(26_500 * 1.05, 0); // 27'825
   });
 
   it("is monotonically increasing with wealth between the anchors", () => {
