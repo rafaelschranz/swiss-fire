@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { IBM_Plex_Mono, Inter, Spectral } from "next/font/google";
 import "./globals.css";
 import { JsonLd } from "@/components/JsonLd";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { SiteHeader } from "@/components/site/SiteHeader";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const spectral = Spectral({
@@ -75,46 +76,31 @@ export default function RootLayout({
         <JsonLd
           data={{
             "@context": "https://schema.org",
-            "@type": "WebApplication",
+            "@type": "Organization",
             name: SITE_NAME,
             url: SITE_URL,
-            applicationCategory: "FinanceApplication",
-            operatingSystem: "Web",
             description: SITE_DESCRIPTION,
+            logo: `${SITE_URL}/opengraph-image`,
+          }}
+        />
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: SITE_URL,
             inLanguage: "de-CH",
-            offers: { "@type": "Offer", price: "0", priceCurrency: "CHF" },
           }}
         />
         <a href="#hauptinhalt" className="skip-link">
           Zum Hauptinhalt springen
         </a>
 
-        <header className="bg-ink text-paper">
-          <div className="col flex items-center justify-between py-3.5">
-            <Link href="/" className="eyebrow text-brass-soft no-underline">
-              Private Dossier · Swiss FIRE
-            </Link>
-            <Link
-              href="/ratgeber"
-              className="eyebrow text-paper/70 no-underline transition hover:text-paper"
-            >
-              Ratgeber
-            </Link>
-          </div>
-        </header>
+        <SiteHeader />
 
         {children}
 
-        <footer className="mt-auto bg-ink-2 text-paper/70">
-          <div className="col space-y-2 py-8 text-xs leading-relaxed">
-            <p className="eyebrow text-brass-soft">Hinweis</p>
-            <p className="max-w-prose">
-              Ausschliesslich zu Bildungszwecken. Keine Finanz-, Steuer- oder Anlageberatung.
-              Alle Steuerangaben sind Schätzungen ohne Gewähr. Berechnungen laufen lokal im
-              Browser; es werden keine Eingaben an einen Server übertragen.
-            </p>
-          </div>
-        </footer>
+        <SiteFooter />
       </body>
     </html>
   );
