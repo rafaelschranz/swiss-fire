@@ -69,6 +69,11 @@ export const PILLAR_2 = {
 export const AHV = {
   /** Maximum annual full AHV pension, 2026 (CHF 2,520/month). */
   maxAnnualPension: 30_240,
+  /**
+   * Plafonierung: a married couple's combined AHV pension is capped at 150% of
+   * the maximum single pension (i.e. CHF 45,360/year at the 2026 maximum).
+   */
+  coupleMaxPensionFactor: 1.5,
   /** Minimum full AHV pension ~= half of max. */
   minAnnualPension: 15_120,
   /** Reference age, men. Women transitioning 64 -> 65 (65 from 2028). Model as a parameter. */
@@ -104,6 +109,43 @@ export const AHV = {
     /** A non-employed spouse is exempt if the working spouse pays at least this multiple of the minimum. */
     spouseExemptionMultiple: 2,
   },
+  /**
+   * Total AHV/IV/EO contribution rate on employment income (employee + employer),
+   * 2026: AHV 8.7% + IV 1.4% + EO 0.5% = 10.6%. A gainfully employed person is
+   * exempt from the non-employed contribution if their employment contributions
+   * reach at least half of what they would owe as non-employed.
+   */
+  employmentContributionRate: 0.106,
+  nonEmployedExemptionShare: 0.5,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Direct federal income tax (direkte Bundessteuer), tariff 2026.
+// Source: ESTV official tax data (swisstaxcalculator.estv.admin.ch,
+// API_exportManyTaxScales, TaxYear 2026), "EINKOMMENSSTEUER" / "BUND".
+// Each bracket is [threshold (CHF, cumulative), baseTax (CHF at threshold),
+// marginalPercent above the threshold]. The federal tax is national (no
+// municipal multiplier). The single tariff applies to unmarried taxpayers; the
+// married/family tariff (Verheiratetentarif) to couples — children/other
+// deductions are NOT modelled (we tax the income as given).
+// ---------------------------------------------------------------------------
+export const FEDERAL_INCOME_TAX = {
+  year: 2026,
+  source: "ESTV direkte Bundessteuer Tarif 2026",
+  single: [
+    [0, 0, 0], [15200, 0, 0.77], [33200, 138.6, 0.88], [43500, 229.2, 2.64],
+    [58000, 612, 2.97], [76200, 1152.5, 5.94], [82100, 1502.95, 6.6],
+    [108900, 3271.75, 8.8], [141500, 6140.55, 11], [185100, 10936.55, 13.2],
+    [793900, 91298.15, 13.2], [794000, 91310, 11.5],
+  ] as ReadonlyArray<readonly [number, number, number]>,
+  married: [
+    [0, 0, 0], [29700, 0, 1], [53400, 237, 2], [61300, 395, 3], [79100, 929, 4],
+    [94900, 1561, 5], [108700, 2251, 6], [120600, 2965, 7], [130500, 3658, 8],
+    [138400, 4290, 9], [144300, 4821, 10], [148300, 5221, 11], [150400, 5452, 12],
+    [152400, 5692, 13], [941300, 108249, 13], [941400, 108261, 11.5],
+  ] as ReadonlyArray<readonly [number, number, number]>,
+  /** Capital benefits (3a/PK lump sums) are taxed at one-fifth of the ordinary tariff (Art. 38 DBG). */
+  capitalFraction: 1 / 5,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -118,6 +160,35 @@ export const GENERAL_TAX = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Capital-market history — real (inflation-adjusted) asset returns.
+// Sources (real long-run figures):
+//   - Swiss equities & bonds: Pictet, "Performance of Swiss equities and bonds
+//     (1900–2025)". Swiss equities ~6.8% nominal / ~4.6% real, σ ~19%; Swiss
+//     government bonds ~3.9% nominal / ~1.8% real, σ ~5.2%; CH inflation ~2.1%.
+//   - Global (world) equities: UBS / Dimson-Marsh-Staunton Global Investment
+//     Returns Yearbook 2025, world index ~5.2% real since 1900, σ ~17%.
+// The world-index figure is in the index's reporting basis (broadly USD); a
+// CHF investor's realised global return is affected by CHF strength — a
+// documented simplification. The correlations are modelling ASSUMPTIONS, not
+// published single figures. Used to calibrate the Monte Carlo to real data.
+// ---------------------------------------------------------------------------
+export const MARKET = {
+  equityRealReturn: 0.046, // Swiss equities (Pictet)
+  equityVolatility: 0.19,
+  globalEquityRealReturn: 0.052, // world equities (UBS/DMS)
+  globalEquityVolatility: 0.17,
+  bondRealReturn: 0.018,
+  bondVolatility: 0.052,
+  /** ASSUMPTION: long-run equity/bond real-return correlation. */
+  equityBondCorrelation: 0.1,
+  /** ASSUMPTION: correlation between Swiss and global equity real returns (high). */
+  swissGlobalEquityCorrelation: 0.8,
+  /** Average annual Swiss inflation since 1900 (Pictet) — context for nominal views. */
+  historicalInflation: 0.021,
+  source: "Pictet (Swiss equities/bonds, 1900–2025) & UBS/DMS Global Investment Returns Yearbook 2025 (world equities)",
+} as const;
+
+// ---------------------------------------------------------------------------
 // Default model assumptions (real terms throughout).
 // ---------------------------------------------------------------------------
 export const DEFAULTS = {
@@ -128,7 +199,6 @@ export const DEFAULTS = {
   equityShare: 0.7,
   healthInsuranceAnnualPremium: 5_000,
   monteCarloPaths: 2_000,
-  bootstrapBlockYears: { min: 3, max: 5 },
   /**
    * ASSUMPTION (not given in the project brief): share of the taxable
    * portfolio's total real return paid out as dividends/distributions

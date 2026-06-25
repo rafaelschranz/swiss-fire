@@ -1,214 +1,236 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { useMemo, useState } from "react";
+import { JsonLd } from "@/components/JsonLd";
+import { POSTS_SORTED } from "@/lib/blog";
+import { BRAND } from "@/lib/site";
 
-import { AffiliateSlot } from "@/components/AffiliateSlot";
-import { AssumptionsPanel } from "@/components/AssumptionsPanel";
-import { BalanceChart, type BalancePoint } from "@/components/BalanceChart";
-import { Disclaimer } from "@/components/Disclaimer";
-import { InputsPanel, type CalculatorInputs } from "@/components/InputsPanel";
-import { Lifeline } from "@/components/Lifeline";
-import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
-import { ResultsHeadline } from "@/components/ResultsHeadline";
-import { AFFILIATE_SLOTS } from "@/lib/affiliates";
-import { getCanton } from "@/lib/engine/cantons";
-import { simulateAccumulation } from "@/lib/engine/accumulation";
-import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
-import { simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
-
-const DEFAULT_INPUTS: CalculatorInputs = {
-  currentAge: 35,
-  fireAge: 55,
-  horizonAge: 95,
-  maritalStatus: "single",
-  canton: "ZH",
-
-  currentSalary: 110_000,
-  salaryGrowth: 0.01,
-  currentTaxableBalance: 80_000,
-  annualTaxableSavings: 25_000,
-  currentPillar3aBalance: 40_000,
-  annualPillar3aContribution: 7_258,
-  pillar3aReturn: 0.04,
-  currentPillar2Balance: 90_000,
-
-  pillar3aUnlockAge: 60,
-  earliestPkAge: 58,
-  ahvReferenceAge: 65,
-  ahvClaimAge: 65,
-  ahvAnnualPension: 24_000,
-
-  annualRealSpending: 48_000,
-  healthInsuranceAnnualPremium: 5_000,
-
-  expectedReturn: 0.04,
-  volatility: 0.12,
-  equityShare: 0.7,
+export const metadata: Metadata = {
+  title: "Frühpensionierung in der Schweiz berechnen",
+  description:
+    "Vorzeit zeigt Ihnen in vier Schritten, ob Ihr Kapital für die Frühpensionierung reicht — " +
+    "Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Kostenlos und privat.",
+  alternates: { canonical: "/" },
 };
 
-function buildDecumulationParams(inputs: CalculatorInputs, startingTaxable: number, startingPillar3a: number, startingPillar2: number): DecumulationParams {
-  return {
-    fireAge: inputs.fireAge,
-    horizonAge: inputs.horizonAge,
-    pillar3aUnlockAge: inputs.pillar3aUnlockAge,
-    earliestPkAge: inputs.earliestPkAge,
-    ahvReferenceAge: inputs.ahvReferenceAge,
-    ahvClaimAge: inputs.ahvClaimAge,
-    ahvAnnualPension: inputs.ahvAnnualPension,
-    annualRealSpending: inputs.annualRealSpending,
-    healthInsuranceAnnualPremium: inputs.healthInsuranceAnnualPremium,
-    maritalStatus: inputs.maritalStatus,
-    canton: getCanton(inputs.canton),
-    expectedReturn: inputs.expectedReturn,
-    startingTaxable,
-    startingPillar3a,
-    startingPillar2,
-  };
-}
+const FEATURES: { title: string; body: string }[] = [
+  {
+    title: "Brückenkapital",
+    body: "Wie viel liquides Vermögen Sie brauchen, um die Jahre bis zum ersten Vorsorge-Bezug zu überbrücken.",
+  },
+  {
+    title: "Echte Steuern pro Gemeinde",
+    body: "Einkommens-, Vermögens- und Kapitalsteuer mit realen ESTV-Werten 2026 — für jede der 2'110 Gemeinden.",
+  },
+  {
+    title: "Säule 3a · PK · AHV",
+    body: "Gestaffelter 3a-Bezug, Pensionskasse als Kapital oder Rente, AHV-Vorbezug und die AHV-Beiträge aufs Vermögen.",
+  },
+  {
+    title: "Monte-Carlo mit echten Daten",
+    body: "Wie robust ist der Plan? Simulation auf Basis realer Schweizer Aktien- und Obligationenrenditen seit 1900.",
+  },
+  {
+    title: "Auch für Paare",
+    body: "Zwei Profile mit eigenem Ausstiegsalter, eigener Vorsorge — als Haushalt durchgerechnet, inkl. AHV-Plafonierung.",
+  },
+  {
+    title: "Lokal & privat",
+    body: "Alle Berechnungen laufen in Ihrem Browser. Es werden keine Eingaben an einen Server übertragen.",
+  },
+];
+
+const STEPS: { n: string; title: string; body: string }[] = [
+  { n: "01", title: "Über Sie", body: "Alter, geplantes Ausstiegsalter, Kanton und Gemeinde." },
+  { n: "02", title: "Vermögen & Einkommen", body: "Depot, Säule 3a, Pensionskasse, Salär und Sparrate." },
+  { n: "03", title: "Ruhestand", body: "Ausgaben, Renten, Bezugsalter und Bezugsart der Vorsorge." },
+  { n: "04", title: "Ergebnis", body: "Reicht das Kapital? Mit Zeitlinie, Steuern und Jahresverlauf." },
+];
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: "Was kostet Vorzeit?",
+    a: "Nichts. Der Rechner ist kostenlos und ohne Anmeldung nutzbar. Es gibt keine kostenpflichtige Version.",
+  },
+  {
+    q: "Werden meine Eingaben gespeichert?",
+    a: "Nein. Sämtliche Berechnungen laufen lokal in Ihrem Browser. Es werden keine Finanzdaten an einen Server übertragen.",
+  },
+  {
+    q: "Wie genau sind die Steuern?",
+    a: "Die Kapital-, Einkommens- und Vermögenssteuer beruhen auf echten Werten des offiziellen ESTV-Steuerrechners (2026), pro Gemeinde skaliert. Die direkte Bundessteuer wird mit dem exakten Tarif berechnet. Es bleiben Vereinfachungen (z. B. Abzüge) — die Angaben sind Schätzungen ohne Gewähr.",
+  },
+  {
+    q: "Ist das eine Finanzberatung?",
+    a: "Nein. Vorzeit ist ein Bildungstool. Es ersetzt keine persönliche Finanz-, Steuer- oder Vorsorgeberatung.",
+  },
+];
 
 export default function Home() {
-  const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
-  const [mcMode, setMcMode] = useState<MonteCarloMode | "off">("off");
-
-  const accumulation = useMemo(
-    () =>
-      simulateAccumulation(inputs.currentAge, inputs.fireAge, {
-        currentSalary: inputs.currentSalary,
-        salaryGrowth: inputs.salaryGrowth,
-        currentTaxableBalance: inputs.currentTaxableBalance,
-        annualTaxableSavings: inputs.annualTaxableSavings,
-        currentPillar3aBalance: inputs.currentPillar3aBalance,
-        annualPillar3aContribution: inputs.annualPillar3aContribution,
-        pillar3aReturn: inputs.pillar3aReturn,
-        currentPillar2Balance: inputs.currentPillar2Balance,
-        expectedReturn: inputs.expectedReturn,
-      }),
-    [inputs],
-  );
-
-  const decumulationParams = useMemo(
-    () => buildDecumulationParams(inputs, accumulation.taxableAtFire, accumulation.pillar3aAtFire, accumulation.pillar2AtFire),
-    [inputs, accumulation],
-  );
-
-  const decumulation = useMemo(() => simulateDecumulation(decumulationParams), [decumulationParams]);
-  const bridgeCapitalRequired = useMemo(() => computeBridgeCapitalRequired(decumulationParams), [decumulationParams]);
-
-  const monteCarlo = useMemo(() => {
-    if (mcMode === "off") return null;
-    return simulateMonteCarlo({
-      decumulationParams,
-      volatility: inputs.volatility,
-      equityShare: inputs.equityShare,
-      mode: mcMode,
-      paths: 500,
-    });
-  }, [mcMode, decumulationParams, inputs.volatility, inputs.equityShare]);
-
-  const balanceData: BalancePoint[] = useMemo(() => {
-    const accPoints = accumulation.years.map((y) => ({
-      age: y.age,
-      taxable: y.taxableBalance,
-      pillar3a: y.pillar3aBalance,
-      pillar2: y.pillar2Balance,
-    }));
-    const decPoints = decumulation.years.map((y) => ({
-      age: y.age,
-      taxable: y.taxableBalance,
-      pillar3a: y.pillar3aBalance,
-      pillar2: y.pillar2Balance,
-    }));
-    return [...accPoints, ...decPoints];
-  }, [accumulation, decumulation]);
-
-  const fanData: FanPoint[] = useMemo(() => {
-    if (!monteCarlo) return [];
-    return monteCarlo.percentile50.map((p50, i) => ({
-      age: inputs.fireAge + i,
-      p10: monteCarlo.percentile10[i],
-      p50,
-      p90: monteCarlo.percentile90[i],
-    }));
-  }, [monteCarlo, inputs.fireAge]);
-
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          Swiss FIRE Brücken-Rechner
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Modelliert die Brückenphase zwischen FIRE-Ausstieg und dem Zugriff auf Säule 3a, Pensionskasse
-          und AHV — inklusive Steuerschätzung pro Kanton.
-        </p>
-      </header>
+    <main id="hauptinhalt">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: FAQ.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        }}
+      />
 
-      <Disclaimer />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
-        <InputsPanel inputs={inputs} onChange={setInputs} />
-
-        <div className="space-y-6">
-          <Lifeline
-            currentAge={inputs.currentAge}
-            fireAge={inputs.fireAge}
-            pillar3aUnlockAge={inputs.pillar3aUnlockAge}
-            earliestPkAge={inputs.earliestPkAge}
-            ahvClaimAge={inputs.ahvClaimAge}
-            horizonAge={inputs.horizonAge}
-          />
-
-          <ResultsHeadline
-            bridgeCapitalRequired={bridgeCapitalRequired}
-            taxableAtFire={accumulation.taxableAtFire}
-            feasible={!decumulation.failed}
-            failedDuringBridge={decumulation.failedDuringBridge}
-            monteCarloSuccessRate={monteCarlo?.successRate}
-          />
-
-          <BalanceChart data={balanceData} fireAge={inputs.fireAge} />
-
-          <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-            <p className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Monte-Carlo-Simulation</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setMcMode("off")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "off" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
-              >
-                Aus
-              </button>
-              <button
-                type="button"
-                onClick={() => setMcMode("parametric")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "parametric" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
-              >
-                Parametrisch
-              </button>
-              <button
-                type="button"
-                onClick={() => setMcMode("bootstrap")}
-                className={`rounded-md px-3 py-1.5 text-sm ${mcMode === "bootstrap" ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 dark:border-zinc-700"}`}
-              >
-                Block-Bootstrap (synthetisch)
-              </button>
-            </div>
-            {mcMode === "bootstrap" && (
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                Verwendet eine synthetische Platzhalter-Renditeserie (data/returns/proxy-returns.ts), keine
-                echten historischen Daten.
-              </p>
-            )}
+      {/* Hero */}
+      <section className="bg-ink text-paper">
+        <div className="col pt-16 pb-24 sm:pt-24">
+          <p className="eyebrow text-brass-soft">{BRAND} · Schweizer FIRE</p>
+          <h1 className="display mt-5 max-w-4xl text-[clamp(38px,7vw,72px)] text-paper">
+            Reicht Ihr Kapital für die Frühpensionierung?
+          </h1>
+          <p className="mt-6 max-w-prose text-[16px] leading-relaxed text-paper/70">
+            Vorzeit rechnet die Brücke zwischen Ihrem Ausstieg und dem Zugriff auf Säule 3a,
+            Pensionskasse und AHV — inklusive echter ESTV-Steuern für Ihre Gemeinde. In vier Schritten,
+            kostenlos und vollständig privat.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center gap-3">
+            <Link
+              href="/rechner"
+              className="bg-brass px-6 py-3 text-sm font-semibold text-[#1a1205] no-underline transition hover:bg-brass-soft"
+            >
+              Jetzt kostenlos rechnen →
+            </Link>
+            <Link
+              href="/ratgeber"
+              className="eyebrow border border-paper/30 px-5 py-3 text-paper no-underline transition hover:bg-paper hover:text-ink"
+            >
+              Zum Ratgeber
+            </Link>
           </div>
-
-          {monteCarlo && <MonteCarloFan data={fanData} />}
-
-          <AssumptionsPanel canton={getCanton(inputs.canton)} />
-
-          <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
-          <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
+          <p className="mt-6 text-xs text-paper/50">
+            Bildungstool, keine Finanzberatung · keine Anmeldung · keine Daten verlassen den Browser
+          </p>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* The problem */}
+      <section className="col-wide py-20">
+        <p className="eyebrow text-brass">Das Problem</p>
+        <h2 className="serif mt-3 max-w-3xl text-[clamp(24px,4vw,38px)] leading-tight text-ink">
+          Ihr Vorsorgevermögen ist gesperrt — genau dann, wenn Sie es brauchen.
+        </h2>
+        <p className="mt-4 max-w-prose text-sm leading-relaxed text-muted">
+          Wer früh aufhört, muss die Jahre bis 58–65 überbrücken, bevor die drei Säulen greifen. Diese
+          Brückenphase entscheidet, ob die Frühpension trägt.
+        </p>
+        <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-3">
+          {[
+            { k: "Brückenphase", v: "Ausstieg → 58/60", d: "Nur das frei verfügbare Vermögen steht zur Verfügung. Säule 3a und PK sind gesperrt." },
+            { k: "Vorsorge-Bezug", v: "ab 58–60", d: "Pensionskasse und Säule 3a werden zugänglich — gestaffelt geplant, spart das Steuern." },
+            { k: "AHV", v: "ab 63–65", d: "Die AHV-Rente setzt ein und reduziert den Bedarf aus dem eigenen Vermögen." },
+          ].map((c) => (
+            <div key={c.k} className="bg-paper p-6">
+              <p className="eyebrow text-muted">{c.k}</p>
+              <p className="num mt-2 text-xl font-semibold text-ink">{c.v}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted">{c.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="bg-porcelain">
+        <div className="col-wide py-20">
+          <p className="eyebrow text-brass">Was Vorzeit rechnet</p>
+          <h2 className="serif mt-3 text-[clamp(24px,4vw,38px)] text-ink">Alles, was die Schweizer Frühpension ausmacht.</h2>
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="card p-6">
+                <h3 className="serif text-lg text-ink">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="col-wide py-20">
+        <p className="eyebrow text-brass">So funktioniert&rsquo;s</p>
+        <h2 className="serif mt-3 text-[clamp(24px,4vw,38px)] text-ink">In vier Schritten zum Ergebnis.</h2>
+        <div className="mt-10 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((s) => (
+            <div key={s.n} className="bg-paper p-6">
+              <p className="eyebrow text-brass">{s.n}</p>
+              <h3 className="serif mt-2 text-lg text-ink">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8">
+          <Link href="/rechner" className="eyebrow text-brass no-underline transition hover:text-ink">
+            Rechner öffnen →
+          </Link>
+        </div>
+      </section>
+
+      {/* Blog teasers */}
+      <section className="bg-porcelain">
+        <div className="col-wide py-20">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow text-brass">Aus dem Blog</p>
+              <h2 className="serif mt-3 text-[clamp(24px,4vw,38px)] text-ink">Wissen für die Frühpension.</h2>
+            </div>
+            <Link href="/blog" className="eyebrow hidden text-brass no-underline transition hover:text-ink sm:inline">
+              Alle Beiträge →
+            </Link>
+          </div>
+          <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {POSTS_SORTED.slice(0, 3).map((post) => (
+              <Link key={post.slug} href={`/blog/${post.slug}`} className="card flex flex-col p-6 no-underline transition hover:border-line-2">
+                <p className="eyebrow text-brass">{post.tag}</p>
+                <h3 className="serif mt-2 text-lg leading-snug text-ink">{post.title}</h3>
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">{post.description}</p>
+                <p className="eyebrow mt-4 text-muted">{post.readingMinutes} Min. Lesezeit</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="col-wide py-20">
+        <p className="eyebrow text-brass">Häufige Fragen</p>
+        <h2 className="serif mt-3 text-[clamp(24px,4vw,38px)] text-ink">Gut zu wissen.</h2>
+        <div className="mt-8 divide-y divide-line border-y border-line">
+          {FAQ.map((f) => (
+            <details key={f.q} className="group py-5">
+              <summary className="serif cursor-pointer list-none text-lg text-ink marker:content-none">
+                <span className="text-brass">+ </span>
+                {f.q}
+              </summary>
+              <p className="mt-3 max-w-prose text-sm leading-relaxed text-muted">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-ink text-paper">
+        <div className="col flex flex-col items-start justify-between gap-6 py-16 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="display text-[clamp(26px,4vw,40px)] text-paper">Rechnen Sie Ihre Brücke durch.</h2>
+            <p className="mt-2 text-sm text-paper/70">Kostenlos, in wenigen Minuten, ohne dass Daten Ihren Browser verlassen.</p>
+          </div>
+          <Link
+            href="/rechner"
+            className="shrink-0 bg-brass px-6 py-3 text-sm font-semibold text-[#1a1205] no-underline transition hover:bg-brass-soft"
+          >
+            Jetzt starten →
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }

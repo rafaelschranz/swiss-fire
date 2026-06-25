@@ -1,5 +1,32 @@
-import { AHV, DEFAULTS, PILLAR_2, PILLAR_3A } from "./constants";
-import type { CantonTaxData } from "./types";
+import { AHV, DEFAULTS, FEDERAL_INCOME_TAX, PILLAR_2, PILLAR_3A } from "./constants";
+import type { CantonTaxData, TaxCurvePoint } from "./types";
+
+/**
+ * Direct federal income tax (direkte Bundessteuer) on taxable income, using the
+ * exact 2026 ESTV tariff. Walks the cumulative bracket table: tax at the bracket
+ * threshold plus the marginal rate on the excess. The federal tax is national —
+ * there is no municipal multiplier.
+ */
+export function federalIncomeTax(taxableIncome: number, married: boolean): number {
+  if (taxableIncome <= 0) return 0;
+  const table = married ? FEDERAL_INCOME_TAX.married : FEDERAL_INCOME_TAX.single;
+  let bracket = table[0];
+  for (const row of table) {
+    if (row[0] <= taxableIncome) bracket = row;
+    else break;
+  }
+  const [threshold, baseTax, marginalPercent] = bracket;
+  return baseTax + (taxableIncome - threshold) * (marginalPercent / 100);
+}
+
+/**
+ * Federal tax on a one-off capital benefit (3a / Pillar 2 lump sum): one-fifth
+ * of the ordinary federal tariff applied to the amount (Art. 38 DBG).
+ */
+export function federalCapitalTax(amount: number, married: boolean): number {
+  if (amount <= 0) return 0;
+  return federalIncomeTax(amount, married) * FEDERAL_INCOME_TAX.capitalFraction;
+}
 
 /**
  * Coordinated salary = clamp(salary - coordinationDeduction, minCoordinatedSalary, maxCoordinatedSalary).
@@ -12,6 +39,23 @@ export function coordinatedSalary(annualSalary: number): number {
     Math.max(reduced, PILLAR_2.minCoordinatedSalary),
     PILLAR_2.maxCoordinatedSalary,
   );
+}
+
+/**
+ * Insured (coordinated) salary for an occupational pension, generalised to a
+ * configurable upper salary ceiling. With the mandatory BVG ceiling
+ * (`upperInsuredSalaryLimit`, 90'720) this reproduces `coordinatedSalary`;
+ * a higher ceiling models a fund that also insures the super-mandatory
+ * (überobligatorische) portion of higher incomes.
+ */
+export function insuredSalary(
+  annualSalary: number,
+  ceiling: number = PILLAR_2.upperInsuredSalaryLimit,
+): number {
+  if (annualSalary < PILLAR_2.entryThreshold) return 0;
+  const capped = Math.min(annualSalary, ceiling);
+  const reduced = capped - PILLAR_2.coordinationDeduction;
+  return Math.max(reduced, PILLAR_2.minCoordinatedSalary);
 }
 
 /** Statutory minimum BVG retirement credit rate (% of coordinated salary) for a given age. */
@@ -59,6 +103,9 @@ export function nonEmployedAhvContribution(
 
   const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold } =
     AHV.nonEmployed;
+  // The AHV/IV/EO contribution itself, CHF 530 to CHF 26,500 (the official cap).
+  // The compensation funds' administrative-cost surcharge (up to 5%) varies by
+  // fund and is not part of this headline figure, so it is not added.
   if (effectiveBasis <= firstBracketThreshold) return minAnnualContribution;
   if (effectiveBasis >= upperBracketThreshold) return maxAnnualContribution;
 
@@ -88,16 +135,13 @@ export function wealthTax(canton: CantonTaxData, netWealth: number): number {
 }
 
 /**
- * One-off lump-sum (capital withdrawal) pension tax, calibrated to a
- * canton's documented reference points via piecewise-linear interpolation
- * over (0,0) and the reference points, extrapolated beyond the last point
- * using its segment's marginal rate. This keeps the curve monotonic and,
- * as long as reference points are themselves progressive, convex.
+ * Piecewise-linear interpolation over (0,0) + the reference points, extrapolated
+ * beyond the last point using its segment's marginal rate. Shared by the
+ * capital, income and wealth tax curves (all ESTV reference points).
  */
-export function lumpSumTax(canton: CantonTaxData, amount: number): number {
+function interpolateTaxCurve(refPoints: ReadonlyArray<TaxCurvePoint>, amount: number): number {
   if (amount <= 0) return 0;
-  const points = [{ amount: 0, tax: 0 }, ...canton.lumpSumTax.referencePoints]
-    .sort((a, b) => a.amount - b.amount);
+  const points = [{ amount: 0, tax: 0 }, ...refPoints].sort((a, b) => a.amount - b.amount);
 
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i];
@@ -112,6 +156,25 @@ export function lumpSumTax(canton: CantonTaxData, amount: number): number {
   const prev = points[points.length - 2];
   const marginalRate = (last.tax - prev.tax) / (last.amount - prev.amount);
   return last.tax + (amount - last.amount) * marginalRate;
+}
+
+/** One-off lump-sum (capital withdrawal) cantonal+communal tax, from ESTV points. */
+export function lumpSumTax(canton: CantonTaxData, amount: number): number {
+  return interpolateTaxCurve(canton.lumpSumTax.referencePoints, amount);
+}
+
+/**
+ * Cantonal + communal ordinary income tax from the canton's real ESTV curve
+ * (pension income type, cantonal capital). The federal direct tax is added
+ * separately; the engine scales this by the Gemeinde factor.
+ */
+export function cantonalIncomeTax(canton: CantonTaxData, income: number, married: boolean): number {
+  return interpolateTaxCurve(married ? canton.incomeTaxCurve.married : canton.incomeTaxCurve.single, income);
+}
+
+/** Cantonal + communal wealth tax from the canton's real ESTV curve. */
+export function cantonalWealthTax(canton: CantonTaxData, wealth: number, married: boolean): number {
+  return interpolateTaxCurve(married ? canton.wealthTaxCurve.married : canton.wealthTaxCurve.single, wealth);
 }
 
 /**

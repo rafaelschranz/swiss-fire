@@ -1,9 +1,12 @@
-function Marker({ label, age, color }: { label: string; age: number; color: string }) {
+function Marker({ label, age, accent }: { label: string; age: number; accent?: "brass" | "petrol" }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <span className={`h-3 w-3 rounded-full ${color}`} />
-      <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">{age}</span>
-      <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+      <span
+        className={`h-2.5 w-2.5 ${accent === "brass" ? "bg-brass" : accent === "petrol" ? "bg-petrol" : "bg-stone"}`}
+        aria-hidden="true"
+      />
+      <span className="num text-xs font-medium text-ink">{age}</span>
+      <span className="eyebrow text-muted">{label}</span>
     </div>
   );
 }
@@ -15,6 +18,7 @@ export function Lifeline({
   earliestPkAge,
   ahvClaimAge,
   horizonAge,
+  title,
 }: {
   currentAge: number;
   fireAge: number;
@@ -22,36 +26,40 @@ export function Lifeline({
   earliestPkAge: number;
   ahvClaimAge: number;
   horizonAge: number;
+  /** Optional heading shown above the track (e.g. "Sie" / "Partner:in"). */
+  title?: string;
 }) {
   const firstUnlockAge = Math.min(pillar3aUnlockAge, earliestPkAge);
   const span = Math.max(1, horizonAge - currentAge);
   const pct = (age: number) => `${Math.min(100, Math.max(0, ((age - currentAge) / span) * 100))}%`;
 
   return (
-    <div className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-      <p className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Ihre Zeitlinie</p>
-      <div className="relative h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
+    <div className="card p-5">
+      {title && <p className="eyebrow mb-4 text-brass">{title}</p>}
+      <div className="relative h-2 bg-stone/40">
+        {/* Bridge phase — the caution stretch, in brass */}
         <div
-          className="absolute h-2 rounded-full bg-amber-400/70 dark:bg-amber-600/60"
+          className="absolute h-2 bg-brass"
           style={{ left: pct(fireAge), width: `calc(${pct(firstUnlockAge)} - ${pct(fireAge)})` }}
-          title="Brückenphase: kein Pillar-Zugriff"
+          title="Brückenphase: kein Vorsorge-Zugriff"
         />
+        {/* Post-unlock — petrol */}
         <div
-          className="absolute h-2 rounded-full bg-emerald-500/70 dark:bg-emerald-600/60"
+          className="absolute h-2 bg-petrol"
           style={{ left: pct(firstUnlockAge), width: `calc(100% - ${pct(firstUnlockAge)})` }}
         />
       </div>
-      <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
-        <Marker label="Heute" age={currentAge} color="bg-zinc-400" />
-        <Marker label="FIRE" age={fireAge} color="bg-blue-500" />
-        <Marker label="3a frei" age={pillar3aUnlockAge} color="bg-emerald-500" />
-        <Marker label="PK frei" age={earliestPkAge} color="bg-emerald-500" />
-        <Marker label="AHV-Bezug" age={ahvClaimAge} color="bg-emerald-500" />
-        <Marker label="Horizont" age={horizonAge} color="bg-zinc-400" />
+      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <Marker label="Heute" age={currentAge} />
+        <Marker label="FIRE" age={fireAge} accent="brass" />
+        <Marker label="3a frei" age={pillar3aUnlockAge} accent="petrol" />
+        <Marker label="PK frei" age={earliestPkAge} accent="petrol" />
+        <Marker label="AHV-Bezug" age={ahvClaimAge} accent="petrol" />
+        <Marker label="Horizont" age={horizonAge} />
       </div>
-      <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-        Orange = Brückenphase ({fireAge}–{firstUnlockAge}): Spending muss vollständig aus dem
-        steuerbaren Vermögen kommen, da Säule 3a/PK noch gesperrt sind.
+      <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-muted">
+        Brass markiert die Brückenphase ({fireAge}–{firstUnlockAge}): Die Ausgaben müssen vollständig
+        aus dem steuerbaren Vermögen gedeckt werden, da Säule 3a und Pensionskasse noch gesperrt sind.
       </p>
     </div>
   );

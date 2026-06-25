@@ -1,26 +1,170 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ------------------------------------------------------------------ */
+/* Private Dossier — design tokens                                     */
+/* Swiss private-bank dossier meets terminal precision.                */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-ink: #15212e; /* primary dark — mastheads, text, anchors */
+  --color-ink-2: #1e2e3e; /* secondary dark — footers */
+  --color-porcelain: #ecede7; /* page background */
+  --color-paper: #f6f6f2; /* cards / raised surfaces */
+  --color-brass: #a67c3d; /* the single accent */
+  --color-brass-soft: #c9a567; /* accent on dark backgrounds */
+  --color-muted: #5c6873; /* secondary text, captions */
+  --color-line: rgba(21, 33, 46, 0.13); /* hairline dividers */
+  --color-line-2: rgba(21, 33, 46, 0.22); /* stronger borders */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Data-visualisation palette */
+  --color-petrol: #1c4a5a; /* active / positive series */
+  --color-steel: #6e8a99; /* secondary series */
+  --color-stone: #b9b3a4; /* neutral / inactive */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-spectral), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-plex), ui-monospace, "SFMono-Regular", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-porcelain);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ------------------------------------------------------------------ */
+/* Reusable dossier primitives                                         */
+/* ------------------------------------------------------------------ */
+
+/* Centred document column */
+.col {
+  max-width: 760px;
+  margin-inline: auto;
+  padding-inline: 28px;
+  width: 100%;
+}
+.col-wide {
+  max-width: 980px;
+  margin-inline: auto;
+  padding-inline: 28px;
+  width: 100%;
+}
+@media (max-width: 560px) {
+  .col,
+  .col-wide {
+    padding-inline: 18px;
+  }
+}
+
+/* Eyebrow — mono, uppercase, widely tracked */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+/* Serif display headings */
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+}
+.serif {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Tabular monospaced figures */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The "instrument": primary tool card overlapping the masthead */
+.instrument {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+  box-shadow: 0 18px 50px -28px rgba(21, 33, 46, 0.42);
+}
+
+/* Standard paper card */
+.card {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 3px;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+}
+.skip-link:focus {
+  left: 16px;
+  top: 16px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 8px 16px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* Hairline ledger animation */
+.ledger-seg {
+  transition: width 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* 45° hatch for reserved / excluded segments */
+.hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(246, 246, 242, 0.28) 5px,
+    rgba(246, 246, 242, 0.28) 6px
+  );
+}
+
+/* Entrance motion — one orchestrated rise per screen */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-rise {
+  animation: rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .ledger-seg {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Number inputs: strip spinners for a cleaner ledger feel */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
