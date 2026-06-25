@@ -209,6 +209,12 @@ export interface DecumulationYearResult {
   pillar2Balance: number;
   spend: number;
   ahvNonEmployedContribution: number;
+  /**
+   * The non-employed "AHV on wealth" contribution that would apply BEFORE any
+   * employment (Barista-FIRE) half-rule exemption — i.e. what is owed with no
+   * side job. Equals `ahvNonEmployedContribution` when no exemption applies.
+   */
+  ahvNonEmployedGross: number;
   dividendTax: number;
   wealthTax: number;
   lumpSumTax: number;

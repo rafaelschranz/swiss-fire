@@ -1,5 +1,9 @@
+"use client";
+
 import { AHV, DEFAULTS, FEDERAL_INCOME_TAX, GENERAL_TAX, MARKET, PILLAR_2, PILLAR_3A } from "@/lib/engine/constants";
 import type { CantonTaxData } from "@/lib/engine/types";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
 
 function Row({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
@@ -31,113 +35,98 @@ export function AssumptionsPanel({
   gemeindeName?: string;
   gemeindeFactor?: number;
 }) {
+  const { t } = useI18n();
+  const a = t.assumptions;
+  const py = a.perYear;
+
   return (
     <div className="card space-y-6 p-5">
-      <Group title="Säule 3a">
-        <Row label="Max. Einzahlung (mit PK)" value={`CHF ${PILLAR_3A.maxContributionWithPK.toLocaleString("de-CH")}/Jahr`} />
+      <Group title={a.pillar3a.title}>
+        <Row label={a.pillar3a.maxContribution} value={`CHF ${PILLAR_3A.maxContributionWithPK.toLocaleString("de-CH")}${py}`} />
         <Row
-          label="Frühestmöglicher Bezug"
-          value={`Referenzalter − ${PILLAR_3A.earliestWithdrawalYearsBeforeReferenceAge} Jahre`}
+          label={a.pillar3a.earliest}
+          value={tpl(a.pillar3a.earliestValue, { years: PILLAR_3A.earliestWithdrawalYearsBeforeReferenceAge })}
         />
-        <Row
-          label="Gestaffelter Bezug"
-          value="je Konto ein Jahr"
-          note="Mehrere 3a-Konten in getrennten Kalenderjahren beziehen bricht die Progression der Kapitalauszahlungssteuer."
-        />
+        <Row label={a.pillar3a.staggered} value={a.pillar3a.staggeredValue} note={a.pillar3a.staggeredNote} />
       </Group>
 
-      <Group title="Pensionskasse (BVG-Minimum)">
-        <Row label="Koordinationsabzug" value={`CHF ${PILLAR_2.coordinationDeduction.toLocaleString("de-CH")}`} />
-        <Row label="Mindestzinssatz" value={`${(PILLAR_2.minInterestRate * 100).toFixed(2)}%`} />
-        <Row label="Mindestumwandlungssatz" value={`${(PILLAR_2.minConversionRate * 100).toFixed(1)}%`} />
-        <Row label="Frühestes Bezugsalter (Standard)" value={`${PILLAR_2.defaultEarliestPkAge}`} note="Reglementsabhängig, individuell konfigurierbar." />
-        <Row
-          label="Bezug"
-          value="Kapital / Rente / gemischt"
-          note="Die Säule 3a wird gesetzlich als Kapital bezogen; die PK wahlweise als Kapital, lebenslange Rente (Guthaben × Umwandlungssatz) oder Mischung. Rentenbezüge (AHV + PK) werden als Einkommen besteuert (siehe Einkommenssteuer)."
-        />
+      <Group title={a.pillar2.title}>
+        <Row label={a.pillar2.coordination} value={`CHF ${PILLAR_2.coordinationDeduction.toLocaleString("de-CH")}`} />
+        <Row label={a.pillar2.minInterest} value={`${(PILLAR_2.minInterestRate * 100).toFixed(2)}%`} />
+        <Row label={a.pillar2.minConversion} value={`${(PILLAR_2.minConversionRate * 100).toFixed(1)}%`} />
+        <Row label={a.pillar2.earliestAge} value={`${PILLAR_2.defaultEarliestPkAge}`} note={a.pillar2.earliestAgeNote} />
+        <Row label={a.pillar2.payout} value={a.pillar2.payoutValue} note={a.pillar2.payoutNote} />
       </Group>
 
-      <Group title="Einkommens- & Kapitalsteuer">
+      <Group title={a.incomeTax.title}>
         <Row
-          label="Direkte Bundessteuer"
-          value={`Tarif ${FEDERAL_INCOME_TAX.year}`}
-          note="Exakter eidgenössischer Tarif (ledig/verheiratet). Renten (AHV + PK) und Dividenden werden als Einkommen besteuert."
+          label={a.incomeTax.federal}
+          value={tpl(a.incomeTax.federalValue, { year: FEDERAL_INCOME_TAX.year })}
+          note={a.incomeTax.federalNote}
         />
-        <Row
-          label="Kantonale/kommunale Einkommens- & Vermögenssteuer"
-          value="ESTV 2026 (real)"
-          note="Echte ESTV-Werte (Kantonshauptort, ledig/verheiratet, Renteneinkommen inkl. Standardabzüge); zwischen Stützpunkten interpoliert."
-        />
+        <Row label={a.incomeTax.cantonal} value={a.incomeTax.cantonalValue} note={a.incomeTax.cantonalNote} />
         {gemeindeName && gemeindeFactor !== undefined && (
           <Row
-            label="Gemeinde"
+            label={a.incomeTax.gemeinde}
             value={`${gemeindeName} · ${Math.round(gemeindeFactor * 100)} %`}
-            note="Echter ESTV-Steuerfuss 2026 dieser Gemeinde, in % des Kantonshauptorts — skaliert die kantonalen/kommunalen Steuern exakt."
+            note={a.incomeTax.gemeindeNote}
           />
         )}
-        <Row
-          label="Kapitalauszahlungssteuer Bund"
-          value="⅕ des ordentlichen Tarifs"
-          note="Art. 38 DBG, auf 3a-/PK-Kapitalbezügen — zusätzlich zur kantonalen/kommunalen Kapitalsteuer."
-        />
+        <Row label={a.incomeTax.federalCapital} value={a.incomeTax.federalCapitalValue} note={a.incomeTax.federalCapitalNote} />
       </Group>
 
-      <Group title="Monte-Carlo — reale Marktdaten">
+      <Group title={a.market.title}>
         <Row
-          label="Aktien Schweiz (real)"
+          label={a.market.equityCh}
           value={`${(MARKET.equityRealReturn * 100).toFixed(1)}% · σ ${(MARKET.equityVolatility * 100).toFixed(0)}%`}
         />
         <Row
-          label="Aktien global (real)"
+          label={a.market.equityGlobal}
           value={`${(MARKET.globalEquityRealReturn * 100).toFixed(1)}% · σ ${(MARKET.globalEquityVolatility * 100).toFixed(0)}%`}
-          note="UBS/DMS Welt-Index. Der Aktienteil wird nach Ihrem Schweiz-/Global-Anteil gemischt; Welt-Kennzahlen im Berichtswährungs-Basis (CHF-Stärke nicht abgebildet)."
+          note={a.market.equityGlobalNote}
         />
         <Row
-          label="Obligationen Schweiz (real)"
+          label={a.market.bondsCh}
           value={`${(MARKET.bondRealReturn * 100).toFixed(1)}% · σ ${(MARKET.bondVolatility * 100).toFixed(1)}%`}
         />
         <Row
-          label="Korrelationen (Annahme)"
-          value={`Aktien/Obl. ${MARKET.equityBondCorrelation.toFixed(2)} · CH/Welt ${MARKET.swissGlobalEquityCorrelation.toFixed(2)}`}
-          note="Modellannahmen, keine publizierten Einzelwerte. Der historische Modus zieht Renditen aus diesen Verteilungen."
+          label={a.market.correlations}
+          value={tpl(a.market.correlationsValue, {
+            eb: MARKET.equityBondCorrelation.toFixed(2),
+            sw: MARKET.swissGlobalEquityCorrelation.toFixed(2),
+          })}
+          note={a.market.correlationsNote}
         />
-        <Row label="Quelle" value={MARKET.source} />
+        <Row label={a.market.source} value={MARKET.source} />
       </Group>
 
-      <Group title="AHV">
-        <Row label="Maximale Vollrente" value={`CHF ${AHV.maxAnnualPension.toLocaleString("de-CH")}/Jahr`} />
-        <Row label="Referenzalter (Standard)" value={`${AHV.referenceAgeDefault}`} />
-        <Row label="Bezugsfenster" value={`${AHV.earliestClaimAge}–${AHV.latestClaimAge}`} />
+      <Group title={a.ahv.title}>
+        <Row label={a.ahv.maxPension} value={`CHF ${AHV.maxAnnualPension.toLocaleString("de-CH")}${py}`} />
+        <Row label={a.ahv.referenceAge} value={`${AHV.referenceAgeDefault}`} />
+        <Row label={a.ahv.claimWindow} value={`${AHV.earliestClaimAge}–${AHV.latestClaimAge}`} />
         <Row
-          label="Kürzung/Zuschlag pro Vorbezugsjahr"
+          label={a.ahv.reduction}
           value={`${(AHV.approxEarlyReductionPerYear * 100).toFixed(1)}%`}
-          note="Vereinfachung — AHV21 kennt einkommensabhängige Kürzungssätze; offizieller AHV-Rechner für genaue Werte."
+          note={a.ahv.reductionNote}
         />
       </Group>
 
-      <Group title={`Steuern — ${canton.name}`}>
+      <Group title={tpl(a.cantonTax.title, { canton: canton.name })}>
         <Row
-          label="Dividendenrendite-Annahme"
-          value={`${(DEFAULTS.dividendYield * 100).toFixed(1)}%/Jahr`}
-          note="Annahme, nicht aus dem Projektbrief — typischer ETF-Mix."
+          label={a.cantonTax.dividendYield}
+          value={tpl(a.cantonTax.dividendYieldValue, { pct: (DEFAULTS.dividendYield * 100).toFixed(1) })}
+          note={a.cantonTax.dividendYieldNote}
         />
         <Row
-          label="Keine Kapitalgewinnsteuer"
-          value={GENERAL_TAX.capitalGainsTaxed ? "Ja" : "Nein"}
-          note="Für Privatanleger auf bewegliches Vermögen."
+          label={a.cantonTax.noCapGains}
+          value={GENERAL_TAX.capitalGainsTaxed ? a.cantonTax.yes : a.cantonTax.no}
+          note={a.cantonTax.noCapGainsNote}
         />
-        <Row
-          label="Kapitalauszahlungssteuer"
-          value="ESTV 2026 (real)"
-          note="Echte ESTV-Referenzwerte (kantonal + kommunal, Kantonshauptort, ledig, ohne Kirchensteuer); zwischen den Stützpunkten interpoliert und über den Gemeinde-Steuerfaktor skaliert."
-        />
-        <Row label="Quelle" value={canton.source} />
+        <Row label={a.cantonTax.capitalTax} value={a.cantonTax.capitalTaxValue} note={a.cantonTax.capitalTaxNote} />
+        <Row label={a.cantonTax.source} value={canton.source} />
         {!canton.verified && (
           <p className="mt-3 border-l-2 border-brass bg-brass/5 p-3 text-xs leading-relaxed text-ink">
-            Für {canton.name} ist die Kapitalauszahlungssteuer mit echten ESTV-Werten hinterlegt; die
-            Vermögens- und ordentliche Einkommenssteuer beruhen jedoch noch auf einer generischen Näherung.
-            Für exakte Werte den offiziellen ESTV-Steuerrechner nutzen.
+            {tpl(a.cantonTax.unverifiedNote, { canton: canton.name })}
           </p>
         )}
       </Group>

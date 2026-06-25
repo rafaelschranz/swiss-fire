@@ -14,6 +14,8 @@ import {
 } from "recharts";
 
 import { axisTick, CHART, DossierTooltip, tickFormatterChf } from "@/components/ui/ChartTokens";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
 
 export interface BalancePoint {
   age: number;
@@ -49,6 +51,9 @@ export function BalanceChart({
   baseAge: number;
   inflation: number;
 }) {
+  const { t } = useI18n();
+  const c = t.charts.balance;
+  const rn = t.charts.realNominal;
   const [nominal, setNominal] = useState(false);
   const rows = data.map((d) => {
     const f = nominal ? Math.pow(1 + inflation, d.age - baseAge) : 1;
@@ -76,10 +81,10 @@ export function BalanceChart({
     <div className="card p-5">
       <div className="mb-3 flex items-center justify-between gap-4">
         <p className="eyebrow text-muted">
-          Vermögen je Topf · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+          {c.caption} · {nominal ? tpl(rn.nominalCaption, { pct: Math.round(inflation * 100) }) : rn.realCaption}
         </p>
-        <div className="flex" role="group" aria-label="Darstellung real oder nominal">
-          {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+        <div className="flex" role="group" aria-label={rn.toggleAria}>
+          {([["real", rn.real], ["nominal", rn.nominal]] as const).map(([key, label]) => {
             const active = (key === "nominal") === nominal;
             return (
               <button
@@ -97,11 +102,7 @@ export function BalanceChart({
           })}
         </div>
       </div>
-      <div
-        className="h-72 w-full"
-        role="img"
-        aria-label="Liniendiagramm des Gesamtvermögens sowie des steuerbaren Vermögens, der Säule 3a und der Pensionskasse über die Zeit, mit Markierungen für FIRE, PK-, 3a- und AHV-Bezug."
-      >
+      <div className="h-72 w-full" role="img" aria-label={c.imgAlt}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
@@ -132,10 +133,10 @@ export function BalanceChart({
                 />
               );
             })}
-            <Line type="monotone" dataKey="total" name="Gesamt" stroke={CHART.ink} strokeWidth={2.5} dot={false} />
-            <Line type="monotone" dataKey="taxable" name="Steuerbar" stroke={CHART.petrol} strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="pillar3a" name="Säule 3a" stroke={CHART.brass} strokeWidth={1.5} dot={false} />
-            <Line type="monotone" dataKey="pillar2" name="Pensionskasse" stroke={CHART.steel} strokeWidth={1.5} dot={false} />
+            <Line type="monotone" dataKey="total" name={c.total} stroke={CHART.ink} strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="taxable" name={c.taxable} stroke={CHART.petrol} strokeWidth={1.5} dot={false} />
+            <Line type="monotone" dataKey="pillar3a" name={c.pillar3a} stroke={CHART.brass} strokeWidth={1.5} dot={false} />
+            <Line type="monotone" dataKey="pillar2" name={c.pillar2} stroke={CHART.steel} strokeWidth={1.5} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

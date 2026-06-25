@@ -34,6 +34,8 @@ export interface PartnerInputs {
   ahvClaimAge: number;
   ahvAnnualPension: number;
   healthInsuranceAnnualPremium: number;
+  /** Barista-FIRE side-job gross income (0 = none). Can waive the wealth-based AHV via the half rule. */
+  baristaFireIncome: number;
 }
 
 /**
@@ -89,6 +91,15 @@ export interface CalculatorInputs {
   postFireEmployment: boolean;
   postFireIncome: number;
   postFireWorkUntilAge: number;
+
+  /**
+   * Barista-FIRE: a small side job during the bridge. When `baristaFire` is on,
+   * `baristaFireIncome` is earned from FIRE until the AHV reference age and — if
+   * its AHV contributions reach half the would-be non-employed contribution
+   * (the statutory "half rule") — waives the wealth-based "AHV on wealth".
+   */
+  baristaFire: boolean;
+  baristaFireIncome: number;
 
   /** One-off inflows (e.g. inheritance) credited to the taxable account at a given age. */
   oneOffInflows: OneOffInflow[];
@@ -158,6 +169,9 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
   postFireIncome: 30_000,
   postFireWorkUntilAge: 60,
 
+  baristaFire: false,
+  baristaFireIncome: 0,
+
   oneOffInflows: [],
 
   expectedReturn: 0.04,
@@ -198,5 +212,6 @@ export const DEFAULT_INPUTS: CalculatorInputs = {
     ahvClaimAge: 65,
     ahvAnnualPension: 22_000,
     healthInsuranceAnnualPremium: 5_000,
+    baristaFireIncome: 0,
   },
 };

@@ -14,6 +14,8 @@ import {
 } from "recharts";
 
 import { axisTick, CHART, DossierTooltip, tickFormatterChf } from "@/components/ui/ChartTokens";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
 import type { DecumulationYearResult } from "@/lib/engine/types";
 
 export function AnnualOutflowChart({
@@ -28,6 +30,9 @@ export function AnnualOutflowChart({
   /** Annual inflation used to convert real → nominal for display. */
   inflation: number;
 }) {
+  const { t } = useI18n();
+  const c = t.charts.outflow;
+  const rn = t.charts.realNominal;
   // The engine is real-terms; default to real (consistent with the other views).
   // The user can switch to nominal francs to see the inflation effect.
   const [nominal, setNominal] = useState(false);
@@ -50,10 +55,10 @@ export function AnnualOutflowChart({
     <div className="card p-5">
       <div className="mb-3 flex items-center justify-between gap-4">
         <p className="eyebrow text-muted">
-          Mittelverwendung pro Jahr · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+          {c.caption} · {nominal ? tpl(rn.nominalCaption, { pct: Math.round(inflation * 100) }) : rn.realCaption}
         </p>
-        <div className="flex" role="group" aria-label="Darstellung real oder nominal">
-          {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+        <div className="flex" role="group" aria-label={rn.toggleAria}>
+          {([["real", rn.real], ["nominal", rn.nominal]] as const).map(([key, label]) => {
             const active = (key === "nominal") === nominal;
             return (
               <button
@@ -71,11 +76,7 @@ export function AnnualOutflowChart({
           })}
         </div>
       </div>
-      <div
-        className="h-72 w-full"
-        role="img"
-        aria-label="Gestapeltes Balkendiagramm der jährlichen Ausgaben (Lebenshaltung, AHV-Beiträge, Steuern), mit AHV-Rente und – falls verrentet – PK-Rente als Linien."
-      >
+      <div className="h-72 w-full" role="img" aria-label={c.imgAlt}>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
@@ -86,12 +87,12 @@ export function AnnualOutflowChart({
               iconType="square"
               wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em" }}
             />
-            <Bar dataKey="living" name="Lebenshaltung" stackId="out" fill={CHART.petrol} maxBarSize={18} />
-            <Bar dataKey="ahvContrib" name="AHV-Beiträge" stackId="out" fill={CHART.stone} maxBarSize={18} />
-            <Bar dataKey="taxes" name="Steuern" stackId="out" fill={CHART.brass} maxBarSize={18} />
-            <Line type="monotone" dataKey="ahvPension" name="AHV-Rente" stroke={CHART.ink} strokeWidth={2} dot={false} />
+            <Bar dataKey="living" name={c.living} stackId="out" fill={CHART.petrol} maxBarSize={18} />
+            <Bar dataKey="ahvContrib" name={c.ahvContrib} stackId="out" fill={CHART.stone} maxBarSize={18} />
+            <Bar dataKey="taxes" name={c.taxes} stackId="out" fill={CHART.brass} maxBarSize={18} />
+            <Line type="monotone" dataKey="ahvPension" name={c.ahvPension} stroke={CHART.ink} strokeWidth={2} dot={false} />
             {hasPkPension && (
-              <Line type="monotone" dataKey="pk2Pension" name="PK-Rente" stroke={CHART.steel} strokeWidth={2} strokeDasharray="4 3" dot={false} />
+              <Line type="monotone" dataKey="pk2Pension" name={c.pkPension} stroke={CHART.steel} strokeWidth={2} strokeDasharray="4 3" dot={false} />
             )}
           </ComposedChart>
         </ResponsiveContainer>

@@ -40,6 +40,8 @@ export interface HouseholdPerson {
   ahvClaimAge: number;
   ahvAnnualPension: number;
   healthInsuranceAnnualPremium: number;
+  /** Barista-FIRE side-job gross income while retired below the AHV reference age (0 = none). */
+  baristaFireIncome?: number;
 }
 
 export interface HouseholdParams {
@@ -236,16 +238,26 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     // partner is still working (and thus covers the household) — the statutory
     // spouse exemption.
     let nonEmployedContribution = 0;
+    let nonEmployedGross = 0;
+    let baristaIncomeTotal = 0;
     const someoneWorking = working.some(Boolean);
     const netWealth = Math.max(0, taxable) + (params.otherNetWealth ?? 0);
     if (!someoneWorking) {
       // Basis = net wealth (liquid + other) + 20× actual pension income
-      // (Renteneinkommen); portfolio withdrawals / spending do not count.
+      // (Renteneinkommen); portfolio withdrawals / spending do not count. Each
+      // retired person below their reference age owes it — unless their own
+      // Barista-FIRE side job clears the half rule (self-exemption only; we do
+      // not extend one person's side job to cover the other).
       for (const s of st) {
         const age = personAgeAt(s.p, primaryAge);
         const retired = age >= s.p.fireAge;
         if (retired && age < s.p.ahvReferenceAge) {
-          nonEmployedContribution += nonEmployedAhvContribution(netWealth, pensionIncome, "married");
+          const gross = nonEmployedAhvContribution(netWealth, pensionIncome, "married");
+          nonEmployedGross += gross;
+          const barista = s.p.baristaFireIncome ?? 0;
+          baristaIncomeTotal += barista;
+          const exempt = barista > 0 && AHV.employmentContributionRate * barista >= AHV.nonEmployedExemptionShare * gross;
+          nonEmployedContribution += exempt ? 0 : gross;
         }
       }
     }
@@ -261,7 +273,7 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     if (someoneWorking) {
       netCashNeed = -(workingSavings + pensionIncome);
     } else {
-      netCashNeed = spend + nonEmployedContribution - pensionIncome;
+      netCashNeed = spend + nonEmployedContribution - pensionIncome - baristaIncomeTotal;
       if (primaryAge < firstUnlockPrimaryAge) {
         const discountYears = Math.max(0, primaryAge - firstFirePrimaryAge);
         bridgeCapitalRequired += Math.max(0, netCashNeed) / Math.pow(1 + params.expectedReturn, discountYears);
@@ -278,7 +290,7 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
     // Recurring income tax on the household's ordinary income (AHV + PK Rente +
     // portfolio dividends): joint federal direct tax + cantonal/communal.
     const dividendIncome = Math.max(0, taxable) * DEFAULTS.dividendYield;
-    const ordinaryIncome = pensionIncome + dividendIncome;
+    const ordinaryIncome = pensionIncome + dividendIncome + baristaIncomeTotal;
     const divTax =
       federalIncomeTax(ordinaryIncome, true) + cantonalIncomeTax(params.canton, ordinaryIncome, true) * gemeinde * (1 + church);
     const wTax = cantonalWealthTax(params.canton, Math.max(0, taxable) + (params.otherNetWealth ?? 0), true) * gemeinde * (1 + church);
@@ -318,12 +330,13 @@ export function simulateHousehold(params: HouseholdParams): HouseholdResult {
       pillar2Balance: st[0].pillar2 + st[1].pillar2,
       spend,
       ahvNonEmployedContribution: nonEmployedContribution,
+      ahvNonEmployedGross: nonEmployedGross,
       dividendTax: divTax,
       wealthTax: wTax,
       lumpSumTax: lumpSumTaxPaid,
       ahvPension: ahvPensionTotal,
       pillar2Pension: pillar2PensionTotal,
-      employmentIncome: 0,
+      employmentIncome: baristaIncomeTotal,
       netWithdrawal: netCashNeed,
       depleted,
     });

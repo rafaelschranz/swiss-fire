@@ -3,24 +3,29 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/JsonLd";
-import { getPost, POSTS, POSTS_SORTED, type Block } from "@/lib/blog";
+import { allSlugs, getPost, postsSorted, type Block } from "@/lib/blog";
+import { HTML_LANG, isLocale, LOCALES } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { alternates } from "@/lib/i18n/metadata";
+import { localeHref } from "@/lib/i18n/routing";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
-  return POSTS.map((p) => ({ slug: p.slug }));
+  return LOCALES.flatMap((lang) => allSlugs().map((slug) => ({ lang, slug })));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const post = getPost(slug);
+export async function generateMetadata({ params }: { params: Promise<{ lang: string; slug: string }> }): Promise<Metadata> {
+  const { lang, slug } = await params;
+  if (!isLocale(lang)) return {};
+  const post = getPost(lang, slug);
   if (!post) return {};
   return {
     title: post.title,
     description: post.description,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: alternates(lang, `/blog/${post.slug}`),
     openGraph: {
       type: "article",
-      url: `${SITE_URL}/blog/${post.slug}`,
+      url: `${SITE_URL}${localeHref(lang, `/blog/${post.slug}`)}`,
       title: post.title,
       description: post.description,
       publishedTime: post.date,
@@ -28,8 +33,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("de-CH", { day: "2-digit", month: "long", year: "numeric" });
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" });
 }
 
 function renderBlock(block: Block, i: number) {
@@ -66,12 +71,17 @@ function renderBlock(block: Block, i: number) {
   );
 }
 
-export default async function BlogPost({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const post = getPost(slug);
+export default async function BlogPost({ params }: { params: Promise<{ lang: string; slug: string }> }) {
+  const { lang, slug } = await params;
+  const locale = isLocale(lang) ? lang : "de";
+  const post = getPost(locale, slug);
   if (!post) notFound();
 
-  const more = POSTS_SORTED.filter((p) => p.slug !== post.slug).slice(0, 2);
+  const t = getDictionary(locale);
+  const bp = t.blog.post;
+  const more = postsSorted(locale)
+    .filter((p) => p.slug !== post.slug)
+    .slice(0, 2);
 
   return (
     <main id="hauptinhalt">
@@ -82,10 +92,10 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           headline: post.title,
           description: post.description,
           datePublished: post.date,
-          inLanguage: "de-CH",
+          inLanguage: HTML_LANG[locale],
           author: { "@type": "Organization", name: SITE_NAME },
           publisher: { "@type": "Organization", name: SITE_NAME },
-          mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+          mainEntityOfPage: `${SITE_URL}${localeHref(locale, `/blog/${post.slug}`)}`,
         }}
       />
       <JsonLd
@@ -93,21 +103,21 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
           itemListElement: [
-            { "@type": "ListItem", position: 1, name: "Blog", item: `${SITE_URL}/blog` },
-            { "@type": "ListItem", position: 2, name: post.title, item: `${SITE_URL}/blog/${post.slug}` },
+            { "@type": "ListItem", position: 1, name: bp.breadcrumb, item: `${SITE_URL}${localeHref(locale, "/blog")}` },
+            { "@type": "ListItem", position: 2, name: post.title, item: `${SITE_URL}${localeHref(locale, `/blog/${post.slug}`)}` },
           ],
         }}
       />
 
       <section className="bg-ink text-paper">
         <div className="col pt-12 pb-14">
-          <Link href="/blog" className="eyebrow text-paper/60 no-underline transition hover:text-paper">
-            ← Blog
+          <Link href={localeHref(locale, "/blog")} className="eyebrow text-paper/60 no-underline transition hover:text-paper">
+            {bp.back}
           </Link>
           <p className="eyebrow mt-6 text-brass-soft">{post.tag}</p>
           <h1 className="display mt-3 max-w-3xl text-[clamp(28px,5vw,46px)] leading-tight text-paper">{post.title}</h1>
           <p className="num mt-5 text-xs text-paper/60">
-            {formatDate(post.date)} · {post.readingMinutes} Min. Lesezeit
+            {formatDate(post.date, HTML_LANG[locale])} · {post.readingMinutes} {bp.readingSuffix}
           </p>
         </div>
       </section>
@@ -118,14 +128,12 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           {post.body.map(renderBlock)}
 
           <div className="mt-12 border-t border-line pt-6">
-            <p className="text-xs leading-relaxed text-muted">
-              Bildungstool, keine Finanz- oder Steuerberatung. Figuren sind 2026-Schätzungen ohne Gewähr.
-            </p>
+            <p className="text-xs leading-relaxed text-muted">{bp.footnote}</p>
             <Link
-              href="/rechner"
+              href={localeHref(locale, "/rechner")}
               className="mt-5 inline-block bg-brass px-5 py-3 text-sm font-semibold text-[#1a1205] no-underline transition hover:bg-brass-soft"
             >
-              Eigene Frühpension durchrechnen →
+              {bp.cta}
             </Link>
           </div>
         </div>
@@ -134,10 +142,14 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       {more.length > 0 && (
         <section className="bg-porcelain">
           <div className="col-wide py-14">
-            <p className="eyebrow text-brass">Weiterlesen</p>
+            <p className="eyebrow text-brass">{bp.more}</p>
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
               {more.map((p) => (
-                <Link key={p.slug} href={`/blog/${p.slug}`} className="card p-6 no-underline transition hover:border-line-2">
+                <Link
+                  key={p.slug}
+                  href={localeHref(locale, `/blog/${p.slug}`)}
+                  className="card p-6 no-underline transition hover:border-line-2"
+                >
                   <p className="eyebrow text-brass">{p.tag}</p>
                   <h3 className="serif mt-2 text-lg leading-snug text-ink">{p.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{p.description}</p>

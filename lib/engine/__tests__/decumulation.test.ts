@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "../decumulation";
-import { lumpSumTax, nonEmployedAhvContribution } from "../tax";
+import { baristaBreakEvenIncome, lumpSumTax, nonEmployedAhvContribution } from "../tax";
 
 function baseParams(overrides: Partial<DecumulationParams> = {}): DecumulationParams {
   return {
@@ -247,6 +247,52 @@ describe("Post-FIRE residual employment", () => {
 
     const at55 = simulateDecumulation(params).years.find((y) => y.age === 55)!;
     expect(at55.ahvNonEmployedContribution).toBeGreaterThan(0);
+  });
+});
+
+describe("Barista-FIRE (half-rule side job)", () => {
+  it("always records the gross wealth-AHV, and waives the charged contribution only when the side job clears the half rule", () => {
+    const common = {
+      fireAge: 50,
+      ahvClaimAge: 65,
+      startingTaxable: 2_000_000, // large wealth → sizeable would-be contribution
+      startingPillar3a: 0,
+      startingPillar2: 0,
+    } as const;
+
+    // A small "Sackgeld-Job" — the popular myth says this is enough.
+    const tiny = simulateDecumulation(baseParams({ ...common, baristaFireIncome: 6_000 }));
+    const at55Tiny = tiny.years.find((y) => y.age === 55)!;
+    expect(at55Tiny.ahvNonEmployedGross).toBeGreaterThan(0); // the exposure is always surfaced
+    // 10.6% × 6000 = 636 < half of a five-figure contribution → NOT waived.
+    expect(at55Tiny.ahvNonEmployedContribution).toBe(at55Tiny.ahvNonEmployedGross);
+
+    // A clearly sufficient side job clears the half rule → contribution waived to 0.
+    // (10.6% × 60k = 6,360, comfortably above half the would-be contribution.)
+    const enough = simulateDecumulation(baseParams({ ...common, baristaFireIncome: 60_000 }));
+    const at55Enough = enough.years.find((y) => y.age === 55)!;
+    expect(at55Enough.ahvNonEmployedGross).toBeGreaterThan(0);
+    expect(at55Enough.ahvNonEmployedContribution).toBe(0);
+  });
+
+  it("only runs the side job until the AHV reference age", () => {
+    const params = baseParams({
+      fireAge: 50,
+      ahvReferenceAge: 65,
+      startingTaxable: 2_000_000,
+      startingPillar3a: 0,
+      startingPillar2: 0,
+      baristaFireIncome: 40_000,
+    });
+    const years = simulateDecumulation(params).years;
+    expect(years.find((y) => y.age === 60)!.employmentIncome).toBe(40_000);
+    expect(years.find((y) => y.age === 66)!.employmentIncome).toBe(0); // past reference age
+  });
+
+  it("baristaBreakEvenIncome inverts the half rule", () => {
+    // income such that 10.6% × income == 0.5 × contribution
+    expect(baristaBreakEvenIncome(20_000)).toBeCloseTo((0.5 * 20_000) / 0.106, 0);
+    expect(baristaBreakEvenIncome(0)).toBe(0);
   });
 });
 

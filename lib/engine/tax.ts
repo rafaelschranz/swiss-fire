@@ -114,6 +114,21 @@ export function nonEmployedAhvContribution(
   return minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
 }
 
+/**
+ * The minimum gross side-job (Barista-FIRE) income that waives a given
+ * non-employed "AHV on wealth" contribution under the statutory half rule: the
+ * employment AHV contributions (10.6%) must reach at least half of the
+ * would-be non-employed contribution. Returns 0 when nothing is owed.
+ *
+ * NOTE: this is the popular "Sackgeld-Job" lever stated correctly — it is the
+ * HALF-of-the-contribution threshold, not a flat minimum. A small job only
+ * clears it when the wealth-based contribution is itself small.
+ */
+export function baristaBreakEvenIncome(nonEmployedContribution: number): number {
+  if (nonEmployedContribution <= 0) return 0;
+  return (AHV.nonEmployedExemptionShare * nonEmployedContribution) / AHV.employmentContributionRate;
+}
+
 /** Dividend income, taxed as ordinary income at the canton's effective rate. */
 export function dividendIncomeTax(canton: CantonTaxData, dividendIncome: number): number {
   return Math.max(0, dividendIncome) * canton.incomeTaxEffectiveRate;

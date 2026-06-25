@@ -2,6 +2,9 @@
 
 import { useId, useState } from "react";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
+
 export interface FieldProps {
   label: string;
   value: number;
@@ -28,6 +31,7 @@ export interface FieldProps {
  * the user types "4" while the engine receives 0.04.
  */
 export function Field({ label, value, onChange, percent, prefix, suffix, step, min, max, hint, onToggleAuto, auto }: FieldProps) {
+  const { t } = useI18n();
   const id = useId();
   // Convert the numeric value to its display string (percent shows 0.04 -> "4").
   const toText = (v: number) => {
@@ -80,13 +84,13 @@ export function Field({ label, value, onChange, percent, prefix, suffix, step, m
             type="button"
             role="switch"
             aria-checked={!!auto}
-            aria-label={`${label} automatisch schätzen`}
+            aria-label={tpl(t.wizard.field.toggleAria, { label })}
             onClick={onToggleAuto}
             className={`eyebrow shrink-0 transition ${
               auto ? "text-brass" : "text-muted hover:text-ink"
             }`}
           >
-            {auto ? "Geschätzt ●" : "Schätzen ○"}
+            {auto ? t.wizard.field.estimatedOn : t.wizard.field.estimatedOff}
           </button>
         )}
       </div>

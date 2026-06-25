@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { chfShort } from "@/lib/format";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
 import type { DecumulationYearResult } from "@/lib/engine/types";
 
 interface Row {
@@ -43,9 +45,9 @@ function toRows(years: DecumulationYearResult[], baseAge: number, inflation: num
 }
 
 const CSV_HEADERS = [
-  "Alter", "Vermoegen_Total", "Steuerbar", "Saeule_3a", "Pensionskasse",
-  "AHV_Rente", "PK_Rente", "Erwerb", "Portfolio_Bezug", "Lebenshaltung",
-  "AHV_Beitraege", "Steuern",
+  "Age", "Total", "Taxable", "Pillar_3a", "Pensionskasse",
+  "AHV_Pension", "PK_Pension", "Employment", "Portfolio_Draw", "Living",
+  "AHV_Contributions", "Taxes",
 ] as const;
 
 function buildCsv(rows: Row[]): string {
@@ -81,6 +83,10 @@ export function YearTable({
   baseAge: number;
   inflation: number;
 }) {
+  const { t } = useI18n();
+  const yt = t.charts.yearTable;
+  const rn = t.charts.realNominal;
+  const h = yt.headers;
   const [nominal, setNominal] = useState(false);
   const rows = toRows(years, baseAge, inflation, nominal);
   const hasEmployment = rows.some((r) => r.employment > 0);
@@ -90,7 +96,7 @@ export function YearTable({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "swiss-fire-jahresverlauf.csv";
+    a.download = yt.csvFilename;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -99,11 +105,11 @@ export function YearTable({
     <div className="card p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="eyebrow text-muted">
-          Jahresverlauf · {nominal ? `nominal, inkl. ${Math.round(inflation * 100)} % Teuerung` : "in heutiger Kaufkraft (real)"}
+          {yt.caption} · {nominal ? tpl(rn.nominalCaption, { pct: Math.round(inflation * 100) }) : rn.realCaption}
         </p>
         <div className="flex items-center gap-2">
-          <div className="flex" role="group" aria-label="Darstellung real oder nominal">
-            {([["real", "Real"], ["nominal", "Nominal"]] as const).map(([key, label]) => {
+          <div className="flex" role="group" aria-label={rn.toggleAria}>
+            {([["real", rn.real], ["nominal", rn.nominal]] as const).map(([key, label]) => {
               const active = (key === "nominal") === nominal;
               return (
                 <button
@@ -125,7 +131,7 @@ export function YearTable({
             onClick={downloadCsv}
             className="eyebrow border border-line-2 px-3 py-1.5 text-muted transition hover:border-ink hover:text-ink"
           >
-            CSV
+            {yt.csv}
           </button>
         </div>
       </div>
@@ -133,17 +139,17 @@ export function YearTable({
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-paper">
             <tr className="border-b border-line-2">
-              <Th>Alter</Th>
-              <Th right>Total</Th>
-              <Th right>Steuerbar</Th>
-              <Th right>3a</Th>
-              <Th right>PK</Th>
-              <Th right>AHV-Rente</Th>
-              <Th right>PK-Rente</Th>
-              {hasEmployment && <Th right>Erwerb</Th>}
-              <Th right>Portfolio-Bezug</Th>
-              <Th right>AHV-Beitr.</Th>
-              <Th right>Steuern</Th>
+              <Th>{h.age}</Th>
+              <Th right>{h.total}</Th>
+              <Th right>{h.taxable}</Th>
+              <Th right>{h.pillar3a}</Th>
+              <Th right>{h.pillar2}</Th>
+              <Th right>{h.ahvPension}</Th>
+              <Th right>{h.pkPension}</Th>
+              {hasEmployment && <Th right>{h.employment}</Th>}
+              <Th right>{h.withdrawal}</Th>
+              <Th right>{h.ahvContrib}</Th>
+              <Th right>{h.taxes}</Th>
             </tr>
           </thead>
           <tbody>
@@ -166,10 +172,9 @@ export function YearTable({
         </table>
       </div>
       <p className="mt-3 text-xs leading-relaxed text-muted">
-        Mittelherkunft pro Jahr: die Lebenshaltung wird aus <span className="text-petrol">Portfolio-Bezug</span>
-        {" "}(Bezug aus dem investierten Vermögen), AHV-Rente, PK-Rente und ggf. Erwerb gedeckt. „Steuern“ umfasst
-        Einkommens-, Vermögens- und Kapitalauszahlungssteuer (Bund + Kanton/Gemeinde). Beträge gerundet; die
-        CSV-Datei enthält die vollen Werte.
+        {yt.footnotePrefix}
+        <span className="text-petrol">{yt.footnoteWithdrawal}</span>
+        {yt.footnoteSuffix}
       </p>
     </div>
   );

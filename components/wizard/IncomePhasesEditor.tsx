@@ -1,6 +1,8 @@
 "use client";
 
 import { Field } from "@/components/ui/Field";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import { tpl } from "@/lib/i18n/tpl";
 import type { IncomePhase } from "@/lib/engine/types";
 
 /**
@@ -19,6 +21,8 @@ export function IncomePhasesEditor({
   fireAge: number;
   onChange: (next: IncomePhase[]) => void;
 }) {
+  const { t } = useI18n();
+  const ip = t.wizard.incomePhases;
   const update = (i: number, patch: Partial<IncomePhase>) =>
     onChange(phases.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
 
@@ -42,7 +46,7 @@ export function IncomePhasesEditor({
   // else FIRE. Independent of array order.
   const endLabel = (p: IncomePhase): string => {
     const higher = phases.map((x) => x.fromAge).filter((a) => a > p.fromAge);
-    return higher.length ? `${Math.min(...higher) - 1}` : `FIRE (${fireAge})`;
+    return higher.length ? `${Math.min(...higher) - 1}` : tpl(ip.fireEnd, { age: fireAge });
   };
 
   const lowestFromAge = Math.min(...phases.map((p) => p.fromAge));
@@ -56,7 +60,7 @@ export function IncomePhasesEditor({
           <div key={i} className="card p-4">
             <div className="flex items-center justify-between border-b border-line pb-2">
               <p className="eyebrow text-muted">
-                Phase {i + 1} · Alter {startLabel}–{endLabel(p)}
+                {tpl(ip.phaseLabel, { n: i + 1, start: startLabel, end: endLabel(p) })}
               </p>
               {phases.length > 1 && (
                 <button
@@ -64,15 +68,15 @@ export function IncomePhasesEditor({
                   onClick={() => remove(i)}
                   className="eyebrow text-muted transition hover:text-brass"
                 >
-                  Entfernen
+                  {ip.remove}
                 </button>
               )}
             </div>
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Ab Alter" value={p.fromAge} onChange={(v) => update(i, { fromAge: v })} suffix="Jahre" min={15} max={fireAge - 1} />
-              <Field label="Bruttosalär" value={p.salary} onChange={(v) => update(i, { salary: v })} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-              <Field label="Sparbetrag (steuerbar)" value={p.annualTaxableSavings} onChange={(v) => update(i, { annualTaxableSavings: v })} prefix="CHF" suffix="/Jahr" step={1000} min={0} />
-              <Field label="3a-Einzahlung" value={p.annualPillar3aContribution} onChange={(v) => update(i, { annualPillar3aContribution: v })} prefix="CHF" suffix="/Jahr" step={100} min={0} />
+              <Field label={ip.fromAge} value={p.fromAge} onChange={(v) => update(i, { fromAge: v })} suffix={t.wizard.units.years} min={15} max={fireAge - 1} />
+              <Field label={ip.grossSalary} value={p.salary} onChange={(v) => update(i, { salary: v })} prefix="CHF" suffix={t.wizard.units.perYear} step={1000} min={0} />
+              <Field label={ip.taxableSavings} value={p.annualTaxableSavings} onChange={(v) => update(i, { annualTaxableSavings: v })} prefix="CHF" suffix={t.wizard.units.perYear} step={1000} min={0} />
+              <Field label={ip.contribution3a} value={p.annualPillar3aContribution} onChange={(v) => update(i, { annualPillar3aContribution: v })} prefix="CHF" suffix={t.wizard.units.perYear} step={100} min={0} />
             </div>
           </div>
         );
@@ -83,7 +87,7 @@ export function IncomePhasesEditor({
         onClick={add}
         className="eyebrow border border-line-2 px-4 py-2.5 text-ink transition hover:border-ink"
       >
-        + Phase hinzufügen
+        {ip.add}
       </button>
     </div>
   );

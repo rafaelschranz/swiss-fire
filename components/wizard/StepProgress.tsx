@@ -6,13 +6,15 @@ export function StepProgress({
   steps,
   current,
   onJump,
+  progressAria,
 }: {
   steps: StepDef[];
   current: number;
   onJump: (index: number) => void;
+  progressAria: string;
 }) {
   return (
-    <ol className="flex items-center" aria-label="Fortschritt">
+    <ol className="flex items-center" aria-label={progressAria}>
       {steps.map((step, i) => {
         const state = i === current ? "current" : i < current ? "done" : "upcoming";
         const reachable = i <= current;

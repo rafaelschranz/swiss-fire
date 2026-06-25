@@ -87,6 +87,14 @@ export interface DecumulationParams {
   postFireIncome?: number;
   postFireWorkUntilAge?: number;
   /**
+   * Barista-FIRE side-job gross income (0 = none). Earned from FIRE until the
+   * AHV reference age (the only window where the non-employed "AHV on wealth"
+   * applies). Counted as employment income — it offsets the portfolio draw, is
+   * taxed as ordinary income, and triggers the same half-rule exemption as
+   * `postFireIncome`.
+   */
+  baristaFireIncome?: number;
+  /**
    * Other net wealth (e.g. real estate minus mortgage) that is NOT liquid: it
    * counts towards the wealth tax and the non-employed AHV ("AHV on wealth")
    * basis, but cannot be drawn on for spending. Real CHF, held constant.
@@ -124,33 +132,33 @@ function annualCashNeed(
   age: number,
   taxableEstimate: number,
   ahvPension: number,
-): { nonEmployedContribution: number; netCashNeed: number; employmentIncome: number } {
-  // Residual post-FIRE employment income for this year, if any.
-  const employmentIncome =
-    params.postFireIncome && age < (params.postFireWorkUntilAge ?? 0) ? params.postFireIncome : 0;
+): { nonEmployedContribution: number; nonEmployedGross: number; netCashNeed: number; employmentIncome: number } {
+  // Residual post-FIRE employment income + a Barista-FIRE side job. The side
+  // job runs from FIRE until the AHV reference age (the wealth-AHV window).
+  const postFire = params.postFireIncome && age < (params.postFireWorkUntilAge ?? 0) ? params.postFireIncome : 0;
+  const barista = params.baristaFireIncome && age < params.ahvReferenceAge ? params.baristaFireIncome : 0;
+  const employmentIncome = postFire + barista;
 
   // Non-employed AHV basis = net wealth (liquid + other, e.g. real estate) +
   // 20× actual pension income (Renteneinkommen). A wealth-funded early retiree
   // has no Renteneinkommen, so the basis is wealth only — portfolio withdrawals
   // / spending do NOT count.
   const netWealth = taxableEstimate + (params.otherNetWealth ?? 0);
-  let nonEmployedContribution =
+  const nonEmployedGross =
     age < params.ahvReferenceAge
       ? nonEmployedAhvContribution(netWealth, ahvPension, params.maritalStatus)
       : 0;
 
   // A gainfully employed person is exempt from the non-employed contribution
   // when their employment AHV contributions reach at least half of it.
-  if (
+  const exempt =
     employmentIncome > 0 &&
-    AHV.employmentContributionRate * employmentIncome >= AHV.nonEmployedExemptionShare * nonEmployedContribution
-  ) {
-    nonEmployedContribution = 0;
-  }
+    AHV.employmentContributionRate * employmentIncome >= AHV.nonEmployedExemptionShare * nonEmployedGross;
+  const nonEmployedContribution = exempt ? 0 : nonEmployedGross;
 
   const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
   const netCashNeed = spend + nonEmployedContribution - ahvPension - employmentIncome;
-  return { nonEmployedContribution, netCashNeed, employmentIncome };
+  return { nonEmployedContribution, nonEmployedGross, netCashNeed, employmentIncome };
 }
 
 /**
@@ -237,7 +245,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
 
     // --- Spending, funded from the taxable account -------------------------
     const pensionIncome = ahvPension + pillar2Pension;
-    const { nonEmployedContribution, netCashNeed, employmentIncome } = annualCashNeed(params, age, taxable, pensionIncome);
+    const { nonEmployedContribution, nonEmployedGross, netCashNeed, employmentIncome } = annualCashNeed(params, age, taxable, pensionIncome);
     const spend = params.annualRealSpending + params.healthInsuranceAnnualPremium;
 
     taxable -= netCashNeed;
@@ -285,6 +293,7 @@ export function simulateDecumulation(params: DecumulationParams): DecumulationRe
       pillar2Balance: pillar2,
       spend,
       ahvNonEmployedContribution: nonEmployedContribution,
+      ahvNonEmployedGross: nonEmployedGross,
       dividendTax: divTax,
       wealthTax: wTax,
       lumpSumTax: lumpSumTaxPaid,

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AffiliateSlot } from "@/components/AffiliateSlot";
 import { AnnualOutflowChart } from "@/components/AnnualOutflowChart";
 import { AssumptionsPanel } from "@/components/AssumptionsPanel";
+import { BaristaFireCard } from "@/components/BaristaFireCard";
 import { BalanceChart, type BalanceMilestone, type BalancePoint } from "@/components/BalanceChart";
 import { Disclaimer } from "@/components/Disclaimer";
 import { Lifeline } from "@/components/Lifeline";
@@ -14,7 +15,8 @@ import { YearTable } from "@/components/YearTable";
 import { LedgerBar } from "@/components/ui/LedgerBar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StepProgress } from "@/components/wizard/StepProgress";
-import { STEPS } from "@/components/wizard/steps";
+import { getSteps } from "@/components/wizard/steps";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { AFFILIATE_SLOTS } from "@/lib/affiliates";
 import { simulateAccumulation } from "@/lib/engine/accumulation";
 import { getCanton } from "@/lib/engine/cantons";
@@ -66,6 +68,7 @@ function buildDecumulationParams(
     gemeindeSteuerfuss: inputs.gemeindeSteuerfuss,
     postFireIncome: inputs.postFireEmployment ? inputs.postFireIncome : 0,
     postFireWorkUntilAge: inputs.postFireWorkUntilAge,
+    baristaFireIncome: inputs.baristaFire ? inputs.baristaFireIncome : 0,
     otherNetWealth: inputs.otherNetWealth,
     churchTaxMultiplier: churchMultiplier(inputs),
   };
@@ -100,6 +103,7 @@ function primaryPerson(inputs: CalculatorInputs): HouseholdPerson {
     ahvClaimAge: inputs.ahvClaimAge,
     ahvAnnualPension: inputs.ahvAnnualPension,
     healthInsuranceAnnualPremium: inputs.healthInsuranceAnnualPremium,
+    baristaFireIncome: inputs.baristaFireIncome,
   };
 }
 
@@ -132,6 +136,7 @@ function partnerPerson(p: PartnerInputs, sharedPillar2Interest: number): Househo
     ahvClaimAge: p.ahvClaimAge,
     ahvAnnualPension: p.ahvAnnualPension,
     healthInsuranceAnnualPremium: p.healthInsuranceAnnualPremium,
+    baristaFireIncome: p.baristaFireIncome,
   };
 }
 
@@ -153,6 +158,9 @@ function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
 }
 
 export default function Calculator() {
+  const { t } = useI18n();
+  const tc = t.calculator;
+  const steps = getSteps(t);
   const [inputs, setInputs] = useState<CalculatorInputs>(DEFAULT_INPUTS);
   // Fields that are auto-estimated rather than user-entered. Estimable
   // fields start estimated so the form is usable without lookups.
@@ -313,8 +321,8 @@ export default function Calculator() {
     }));
   }, [monteCarlo, eff.fireAge, eff.currentAge, eff.hasPartner]);
 
-  const isLastStep = step === STEPS.length - 1;
-  const activeStep = STEPS[step];
+  const isLastStep = step === steps.length - 1;
+  const activeStep = steps[step];
 
   const next = () => {
     if (isLastStep) {
@@ -366,14 +374,9 @@ export default function Calculator() {
         {/* Ink hero band */}
         <section className="bg-ink text-paper">
           <div className="col pt-12 pb-24 sm:pt-16">
-            <p className="eyebrow text-brass-soft">Schweizer Frühpensionierung · Brückenrechnung</p>
-            <h1 className="display mt-4 text-[clamp(34px,6vw,60px)] text-paper">
-              Reicht Ihr Kapital bis zur Pension?
-            </h1>
-            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-paper/70">
-              In vier Schritten zur Brückenrechnung zwischen Frühpensionierung und dem Zugriff auf
-              Säule 3a, Pensionskasse und AHV — inklusive Steuerschätzung pro Kanton.
-            </p>
+            <p className="eyebrow text-brass-soft">{tc.formHero.kicker}</p>
+            <h1 className="display mt-4 text-[clamp(34px,6vw,60px)] text-paper">{tc.formHero.h1}</h1>
+            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-paper/70">{tc.formHero.body}</p>
           </div>
         </section>
 
@@ -381,7 +384,7 @@ export default function Calculator() {
             two-column household layout so both partners sit side by side. */}
         <div className={`${eff.hasPartner ? "col-wide" : "col"} -mt-16 pb-20`}>
           <div className="instrument p-6 sm:p-8">
-            <StepProgress steps={STEPS} current={step} onJump={setStep} />
+            <StepProgress steps={steps} current={step} onJump={setStep} progressAria={t.wizard.progressAria} />
 
             <div key={activeStep.id} className="animate-rise mt-8">
               <div className="mb-6 flex items-baseline gap-3 border-b border-line pb-4">
@@ -402,30 +405,28 @@ export default function Calculator() {
                 disabled={step === 0}
                 className="eyebrow text-muted transition hover:text-ink disabled:invisible"
               >
-                ← Zurück
+                {tc.nav.back}
               </button>
               <button
                 type="button"
                 onClick={next}
                 className="bg-brass px-6 py-3 text-sm font-semibold text-[#1a1205] transition hover:bg-brass-soft"
               >
-                {isLastStep ? "Ergebnis berechnen →" : "Weiter →"}
+                {isLastStep ? tc.nav.compute : tc.nav.next}
               </button>
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-muted">
-            Bildungstool, keine Finanzberatung. Alle Berechnungen laufen lokal in Ihrem Browser.
-          </p>
+          <p className="mt-6 text-center text-xs text-muted">{tc.formFootnote}</p>
         </div>
       </main>
     );
   }
 
   const capitalSegments = [
-    { label: "Steuerbar", value: taxableAtFire, color: "bg-petrol" },
-    { label: "Säule 3a", value: pillar3aAtFire, color: "bg-brass" },
-    { label: "Pensionskasse", value: pillar2AtFire, color: "bg-steel" },
+    { label: tc.capital.segTaxable, value: taxableAtFire, color: "bg-petrol" },
+    { label: tc.capital.seg3a, value: pillar3aAtFire, color: "bg-brass" },
+    { label: tc.capital.segPk, value: pillar2AtFire, color: "bg-steel" },
   ];
 
   // Balance-chart milestones on the primary person's age axis. For couples, the
@@ -452,8 +453,8 @@ export default function Calculator() {
       <section className="bg-ink text-paper">
         <div className="col flex flex-wrap items-end justify-between gap-4 pt-12 pb-20 sm:pt-14">
           <div>
-            <p className="eyebrow text-brass-soft">Dossier · Ergebnis</p>
-            <h1 className="display mt-3 text-[clamp(30px,5vw,48px)] text-paper">Ihre Brückenrechnung</h1>
+            <p className="eyebrow text-brass-soft">{tc.results.kicker}</p>
+            <h1 className="display mt-3 text-[clamp(30px,5vw,48px)] text-paper">{tc.results.h1}</h1>
           </div>
           <div className="flex gap-2">
             <button
@@ -461,14 +462,14 @@ export default function Calculator() {
               onClick={shareScenario}
               className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
             >
-              {shared ? "Link kopiert ✓" : "Szenario teilen"}
+              {shared ? tc.results.shareDone : tc.results.share}
             </button>
             <button
               type="button"
               onClick={editInputs}
               className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
             >
-              Eingaben anpassen
+              {tc.results.edit}
             </button>
           </div>
         </div>
@@ -483,21 +484,31 @@ export default function Calculator() {
           monteCarloSuccessRate={monteCarlo?.successRate}
         />
 
+        <BaristaFireCard
+          years={resultYears}
+          active={eff.hasPartner ? eff.baristaFireIncome > 0 || eff.partner.baristaFireIncome > 0 : eff.baristaFire}
+          income={
+            eff.hasPartner
+              ? eff.baristaFireIncome + eff.partner.baristaFireIncome
+              : eff.baristaFire
+                ? eff.baristaFireIncome
+                : 0
+          }
+          hasPartner={eff.hasPartner}
+        />
+
         <section className="space-y-5">
-          <SectionHeader index="02" title="Vermögen bei FIRE" />
-          <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Zusammensetzung des projizierten Vermögens zum Ausstieg. In der Brückenphase steht nur das
-            steuerbare Vermögen zur Verfügung — Säule 3a und Pensionskasse sind bis zum Bezugsalter gesperrt.
-          </p>
+          <SectionHeader index="02" title={tc.sections.capital} />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">{tc.capital.body}</p>
           <LedgerBar segments={capitalSegments} />
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="03" title="Zeitlinie" />
+          <SectionHeader index="03" title={tc.sections.timeline} />
           {eff.hasPartner ? (
             <div className="space-y-4">
               <Lifeline
-                title="Sie"
+                title={t.common.you}
                 currentAge={eff.currentAge}
                 fireAge={eff.fireAge}
                 pillar3aUnlockAge={eff.pillar3aUnlockAge}
@@ -506,7 +517,7 @@ export default function Calculator() {
                 horizonAge={eff.horizonAge}
               />
               <Lifeline
-                title="Partner:in"
+                title={t.common.partner}
                 currentAge={ptr.currentAge}
                 fireAge={ptr.fireAge}
                 pillar3aUnlockAge={ptr.pillar3aUnlockAge}
@@ -528,60 +539,50 @@ export default function Calculator() {
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="04" title="Vermögensverlauf" />
+          <SectionHeader index="04" title={tc.sections.balance} />
           {eff.hasPartner && (
-            <p className="max-w-prose text-sm leading-relaxed text-muted">
-              Gezeigt wird das gemeinsame Haushaltsvermögen auf Ihrer Alters-Achse. Mit „·P“ markierte
-              Meilensteine gehören zur Partner:in (in Steel), Ihre eigenen in Brass/Grau.
-            </p>
+            <p className="max-w-prose text-sm leading-relaxed text-muted">{tc.balance.partnerNote}</p>
           )}
           <BalanceChart data={balanceData} markers={balanceMarkers} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="05" title="Mittelverwendung pro Jahr" />
-          <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Wie viel Geld wird im Ruhestand jährlich verbraucht und woraus es gedeckt wird. Standardmässig in
-            heutiger Kaufkraft (real) — alle Berechnungen laufen real, daher beeinflusst die Teuerung nur die
-            optionale nominale Darstellung. Die AHV-Rente reduziert ab Bezug den Eigenbedarf.
-          </p>
+          <SectionHeader index="05" title={tc.sections.outflow} />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">{tc.outflow.body}</p>
           <AnnualOutflowChart years={resultYears} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
           <SectionHeader
             index="06"
-            title="Monte-Carlo"
+            title={tc.sections.monteCarlo}
             action={
-              <div className="flex" role="group" aria-label="Monte-Carlo-Modus">
-                {mcButton("off", "Aus")}
-                {mcButton("parametric", "Parametrisch")}
-                {mcButton("historical", "Historisch")}
+              <div className="flex" role="group" aria-label={tc.monteCarlo.groupAria}>
+                {mcButton("off", tc.monteCarlo.off)}
+                {mcButton("parametric", tc.monteCarlo.parametric)}
+                {mcButton("historical", tc.monteCarlo.historical)}
               </div>
             }
           />
           <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Wie robust ist der Plan gegenüber schwankenden Renditen?
+            {tc.monteCarlo.intro}
             {mcMode === "historical"
-              ? " Der historische Modus zieht Renditen aus realen Langfristkennzahlen — Schweizer Aktien & Obligationen (Pictet) und globale Aktien (UBS/DMS) — gemischt nach Aktienquote und Ihrem Schweiz-/Global-Anteil."
+              ? tc.monteCarlo.introHistorical
               : mcMode === "parametric"
-                ? " Der parametrische Modus verwendet Ihre erwartete Rendite und Volatilität (lognormal)."
+                ? tc.monteCarlo.introParametric
                 : ""}
           </p>
           {monteCarlo && <MonteCarloFan data={fanData} />}
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="07" title="Jahresverlauf" />
-          <p className="max-w-prose text-sm leading-relaxed text-muted">
-            Jedes Jahr im Detail — Vermögen je Topf, Renten, AHV-Beiträge und Steuern. Als CSV exportierbar
-            zur Weiterverarbeitung in einer Tabellenkalkulation.
-          </p>
+          <SectionHeader index="07" title={tc.sections.yearTable} />
+          <p className="max-w-prose text-sm leading-relaxed text-muted">{tc.yearTable.body}</p>
           <YearTable years={resultYears} baseAge={eff.currentAge} inflation={eff.inflation} />
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="08" title="Annahmen & Quellen" />
+          <SectionHeader index="08" title={tc.sections.assumptions} />
           <AssumptionsPanel
             canton={getCanton(eff.canton)}
             gemeindeName={municipalityByBfs(eff.gemeindeBfs)?.name}
@@ -590,7 +591,7 @@ export default function Calculator() {
         </section>
 
         <section className="space-y-5">
-          <SectionHeader index="09" title="Anbieter" />
+          <SectionHeader index="09" title={tc.sections.providers} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <AffiliateSlot slot={AFFILIATE_SLOTS.broker} />
             <AffiliateSlot slot={AFFILIATE_SLOTS.pillar3a} />
