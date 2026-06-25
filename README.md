@@ -1,12 +1,24 @@
-# Swiss FIRE Bridge Calculator
+# Vorzeit — Swiss FIRE Bridge Calculator
 
-A free, public web calculator for the Swiss market answering: *if you stop
-working before your pension pillars unlock, how much liquid capital do you
-need to bridge the gap?*
+**Vorzeit** is a free, public website + calculator for the Swiss market
+answering: *if you stop working before your pension pillars unlock, how much
+liquid capital do you need to bridge the gap?*
 
 This is an **educational tool, not financial advice** (see FINSA/FIDLEG
 notes below). All computation runs client-side — no financial inputs are
 ever sent to a server.
+
+## Site structure
+
+- `/` — marketing homepage (problem, features, how it works, FAQ).
+- `/rechner` — the calculator (the product). `Calculator.tsx` is the client
+  component; `page.tsx` is a server wrapper with metadata + JSON-LD.
+- `/blog` + `/blog/[slug]` — articles (`lib/blog.ts`), statically generated.
+- `/ratgeber` — long-form educational guide.
+- `/ueber-uns`, `/impressum`, `/datenschutz` — about + legal.
+- Global `SiteHeader`/`SiteFooter` (`components/site/`), brand + nav in
+  `lib/site.ts`. SEO: Organization/WebSite/FAQ/BlogPosting JSON-LD, sitemap,
+  canonical URLs, and a generated OG image (`app/opengraph-image.tsx`).
 
 ## Stack
 
