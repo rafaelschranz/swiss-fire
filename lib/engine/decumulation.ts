@@ -1,6 +1,6 @@
 import { inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
-import { cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "./tax";
+import { adjustedAhvPension, cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "./tax";
 import type { CantonTaxData, DecumulationResult, DecumulationYearResult, OneOffInflow } from "./types";
 
 /** How the occupational pension (Pillar 2) is taken at retirement. */
@@ -106,18 +106,6 @@ export interface DecumulationParams {
    * 0 = confessionless. Defaults to 0.
    */
   churchTaxMultiplier?: number;
-}
-
-/**
- * Approximate actuarial adjustment to AHV for claiming before/after the
- * reference age. Uses the single documented rate from the brief
- * symmetrically for early and deferred claims — flagged approximate,
- * since AHV21 introduced income-dependent reduced rates for early
- * claiming that this simplification does not model.
- */
-function adjustedAhvPension(basePension: number, claimAge: number, referenceAge: number): number {
-  const yearsOffset = claimAge - referenceAge;
-  return basePension * (1 + yearsOffset * AHV.approxEarlyReductionPerYear);
 }
 
 /**

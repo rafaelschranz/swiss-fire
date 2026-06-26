@@ -82,28 +82,50 @@ export const AHV = {
   earliestClaimAge: 63,
   latestClaimAge: 70,
   /**
-   * Default approximate actuarial reduction per year claimed early.
-   * NOTE: AHV21 introduced income-dependent reduced rates for early claiming;
-   * this flat default is a simplification — flagged as approximate in the UI,
-   * link to the official AHV calculator for precise figures.
+   * Standard actuarial reduction per whole year the pension is claimed early,
+   * official 2026 rate (6.8% for 1 year, 13.6% for 2 — see
+   * `earlyWithdrawalReductionByYear`). Kept for display.
    */
   approxEarlyReductionPerYear: 0.068,
-  /** Non-employed (Nichterwerbstätige) AHV contribution brackets. */
+  /**
+   * AHV21 flexible-draw adjustments, official 2026 rates (Merkblatt 3.04),
+   * indexed by whole years before/after the reference age. Early withdrawal
+   * (Vorbezug) reduces the lifelong pension; deferral (Aufschub) increases it —
+   * and the two are NOT symmetric. Income-dependent favourable reduction rates
+   * exist only for the transitional-generation women (born 1961–1969) and are
+   * not modelled here. Source: ahv-iv.ch Merkblatt 3.04, Stand 1.1.2026.
+   */
+  earlyWithdrawalReductionByYear: [0, 0.068, 0.136],
+  deferralIncreaseByYear: [0, 0.052, 0.108, 0.171, 0.240, 0.315],
+  /**
+   * Non-employed (Nichterwerbstätige) AHV/IV/EO contributions, official 2026
+   * Beitragstabelle (Merkblatt 2.03). A two-segment, piecewise-linear function
+   * of the determinant basis (net wealth + 20× annual pension income; halved
+   * for married couples): CHF 530 below 350,000; CHF 636 at 350,000 rising
+   * CHF 106 per 50,000 up to 1,750,000; then CHF 159 per 50,000 up to the
+   * CHF 26,500 maximum at 8,950,000. We interpolate continuously between the
+   * official 50,000 grid points (exact at every grid point).
+   * Source: ahv-iv.ch Merkblatt 2.03, Stand 1.1.2026.
+   */
   nonEmployed: {
     minAnnualContribution: 530,
     maxAnnualContribution: 26_500,
-    /** Admin surcharge, up to this fraction of the contribution. */
+    /** At/below this basis only the minimum is due. */
+    minThreshold: 350_000,
+    /** Contribution at `minThreshold` (the first step above the minimum). */
+    contributionAtMinThreshold: 636,
+    /** Basis where the per-50k slope steepens. */
+    kinkThreshold: 1_750_000,
+    /** At/above this basis the maximum is due. */
+    maxThreshold: 8_950_000,
+    /** Contribution increase per 50,000 of basis on the lower segment (350k–1.75M). */
+    lowerIncreasePer50k: 106,
+    /** Contribution increase per 50,000 of basis on the upper segment (1.75M–8.95M). */
+    upperIncreasePer50k: 159,
+    /** Official grid step. */
+    bracketStep: 50_000,
+    /** Verwaltungskostenbeitrag, up to this fraction — excluded from the headline figure. */
     maxAdminSurchargeRate: 0.05,
-    /** Wealth (+ 20x annual pension/replacement income) bracket where contributions start scaling up from the minimum. */
-    firstBracketThreshold: 350_000,
-    /**
-     * Wealth (+ 20x annual pension/replacement income) bracket at and
-     * above which the contribution reaches the maximum (CHF 26,500).
-     * The real official table is a stepwise schedule of ~50,000 CHF
-     * brackets between these two anchors; this engine linearly
-     * interpolates between them as a documented smoothing approximation.
-     */
-    upperBracketThreshold: 8_800_000,
     /** Multiplier applied to annual pension/replacement income when computing the contribution basis. */
     pensionIncomeMultiplier: 20,
     /** A non-employed spouse is exempt if the working spouse pays at least this multiple of the minimum. */

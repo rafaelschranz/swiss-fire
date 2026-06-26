@@ -12,6 +12,7 @@ export const en: Dictionary = {
     brandKicker: "Swiss FIRE",
     tagline: "Early retirement in Switzerland, fully worked out.",
     ctaCalc: "Run the numbers",
+    menu: "Menu",
     you: "You",
     partner: "Partner",
     nav: {
@@ -601,9 +602,9 @@ export const en: Dictionary = {
       maxPension: "Maximum full pension",
       referenceAge: "Reference age (default)",
       claimWindow: "Withdrawal window",
-      reduction: "Reduction/supplement per year of early draw",
+      reduction: "Reduction for early draw",
       reductionNote:
-        "A simplification — AHV21 has income-dependent reduction rates; use the official AHV calculator for exact values.",
+        "Official 2026 rates: 6.8% per year of early draw (13.6% for 2 years). Deferral follows the official Aufschub table (5.2–31.5%, not symmetric). Income-dependent rates apply only to transitional-generation women (1961–1969).",
     },
     cantonTax: {
       title: "Taxes — {canton}",

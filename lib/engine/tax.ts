@@ -97,21 +97,41 @@ export function nonEmployedAhvContribution(
   annualPensionOrReplacementIncome: number,
   maritalStatus: "single" | "married",
 ): number {
-  const basis =
-    netWealth + annualPensionOrReplacementIncome * AHV.nonEmployed.pensionIncomeMultiplier;
+  const ne = AHV.nonEmployed;
+  const basis = netWealth + annualPensionOrReplacementIncome * ne.pensionIncomeMultiplier;
   const effectiveBasis = maritalStatus === "married" ? basis / 2 : basis;
 
-  const { minAnnualContribution, maxAnnualContribution, firstBracketThreshold, upperBracketThreshold } =
-    AHV.nonEmployed;
-  // The AHV/IV/EO contribution itself, CHF 530 to CHF 26,500 (the official cap).
-  // The compensation funds' administrative-cost surcharge (up to 5%) varies by
-  // fund and is not part of this headline figure, so it is not added.
-  if (effectiveBasis <= firstBracketThreshold) return minAnnualContribution;
-  if (effectiveBasis >= upperBracketThreshold) return maxAnnualContribution;
+  // Two-segment piecewise-linear schedule (official 2026 Beitragstabelle). The
+  // CHF 530 minimum / CHF 26,500 maximum bound it; between 350k and 1.75M the
+  // contribution rises 106 per 50k, above 1.75M it rises 159 per 50k. The
+  // administrative-cost surcharge (up to 5%) varies by fund and is excluded
+  // from this headline figure.
+  if (effectiveBasis <= ne.minThreshold) return ne.minAnnualContribution;
+  if (effectiveBasis >= ne.maxThreshold) return ne.maxAnnualContribution;
+  if (effectiveBasis <= ne.kinkThreshold) {
+    return ne.contributionAtMinThreshold + ((effectiveBasis - ne.minThreshold) / ne.bracketStep) * ne.lowerIncreasePer50k;
+  }
+  const atKink =
+    ne.contributionAtMinThreshold + ((ne.kinkThreshold - ne.minThreshold) / ne.bracketStep) * ne.lowerIncreasePer50k;
+  return atKink + ((effectiveBasis - ne.kinkThreshold) / ne.bracketStep) * ne.upperIncreasePer50k;
+}
 
-  const fraction =
-    (effectiveBasis - firstBracketThreshold) / (upperBracketThreshold - firstBracketThreshold);
-  return minAnnualContribution + fraction * (maxAnnualContribution - minAnnualContribution);
+/**
+ * AHV old-age pension adjusted for the flexible draw under AHV21 (official 2026
+ * rates): reduced for early withdrawal, increased for deferral, indexed by
+ * whole years from the reference age. The two directions are not symmetric.
+ * Income-dependent favourable reduction rates (transitional-generation women
+ * born 1961–1969) are not modelled.
+ */
+export function adjustedAhvPension(basePension: number, claimAge: number, referenceAge: number): number {
+  const offset = Math.round(claimAge - referenceAge);
+  if (offset === 0) return basePension;
+  if (offset < 0) {
+    const table = AHV.earlyWithdrawalReductionByYear;
+    return basePension * (1 - table[Math.min(-offset, table.length - 1)]);
+  }
+  const table = AHV.deferralIncreaseByYear;
+  return basePension * (1 + table[Math.min(offset, table.length - 1)]);
 }
 
 /**

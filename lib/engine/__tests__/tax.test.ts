@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CANTONS } from "../cantons";
 import { PILLAR_2, PILLAR_3A } from "../constants";
-import { cantonalIncomeTax, cantonalWealthTax, cappedPillar3aContribution, coordinatedSalary, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "../tax";
+import { adjustedAhvPension, cantonalIncomeTax, cantonalWealthTax, cappedPillar3aContribution, coordinatedSalary, federalCapitalTax, federalIncomeTax, lumpSumTax, nonEmployedAhvContribution } from "../tax";
 
 describe("Cantonal income & wealth tax (real ESTV 2026 curves)", () => {
   it("matches the embedded ESTV reference points (Zürich)", () => {
@@ -79,27 +79,39 @@ describe("Coordinated salary", () => {
   });
 });
 
-describe("Non-employed AHV contribution", () => {
-  it("is at the minimum bracket (CHF 530) at wealth 350k", () => {
-    const contribution = nonEmployedAhvContribution(350_000, 0, "single");
-    expect(contribution).toBeCloseTo(530, 0);
+describe("Non-employed AHV contribution (official 2026 Beitragstabelle)", () => {
+  it("matches the official table at its grid points", () => {
+    // Source: ahv-iv.ch Merkblatt 2.03, Stand 1.1.2026.
+    expect(nonEmployedAhvContribution(300_000, 0, "single")).toBe(530); // below threshold → minimum
+    expect(nonEmployedAhvContribution(400_000, 0, "single")).toBeCloseTo(742, 0);
+    expect(nonEmployedAhvContribution(1_000_000, 0, "single")).toBeCloseTo(2_014, 0);
+    expect(nonEmployedAhvContribution(1_750_000, 0, "single")).toBeCloseTo(3_604, 0); // kink
+    expect(nonEmployedAhvContribution(2_000_000, 0, "single")).toBeCloseTo(4_399, 0); // steeper segment
+    expect(nonEmployedAhvContribution(8_950_000, 0, "single")).toBe(26_500); // maximum
   });
 
-  it("hits the CHF 26,500 cap at wealth >= ~8.8M", () => {
-    const contribution = nonEmployedAhvContribution(8_800_000, 0, "single");
-    expect(contribution).toBe(26_500);
-  });
-
-  it("is monotonically increasing with wealth between the anchors", () => {
-    const low = nonEmployedAhvContribution(1_000_000, 0, "single");
-    const high = nonEmployedAhvContribution(5_000_000, 0, "single");
-    expect(high).toBeGreaterThan(low);
+  it("caps at CHF 26,500 above 8.95M and stays below it just under", () => {
+    expect(nonEmployedAhvContribution(12_000_000, 0, "single")).toBe(26_500);
+    expect(nonEmployedAhvContribution(8_800_000, 0, "single")).toBeLessThan(26_500);
   });
 
   it("halves the basis for married couples", () => {
     const single = nonEmployedAhvContribution(2_000_000, 0, "single");
     const married = nonEmployedAhvContribution(4_000_000, 0, "married");
     expect(married).toBeCloseTo(single, 0);
+  });
+});
+
+describe("AHV flexible-draw adjustment (official 2026 rates)", () => {
+  it("reduces the pension for early withdrawal (6.8%/yr, not symmetric to deferral)", () => {
+    expect(adjustedAhvPension(1000, 64, 65)).toBeCloseTo(932, 0); // 1 year early
+    expect(adjustedAhvPension(1000, 63, 65)).toBeCloseTo(864, 0); // 2 years early
+  });
+
+  it("increases the pension for deferral per the Aufschub table", () => {
+    expect(adjustedAhvPension(1000, 65, 65)).toBe(1000);
+    expect(adjustedAhvPension(1000, 66, 65)).toBeCloseTo(1052, 0); // +1 yr → +5.2%
+    expect(adjustedAhvPension(1000, 70, 65)).toBeCloseTo(1315, 0); // +5 yr → +31.5%
   });
 });
 

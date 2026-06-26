@@ -11,6 +11,7 @@ export const de = {
     brandKicker: "Schweizer FIRE",
     tagline: "Frühpensionierung in der Schweiz, durchgerechnet.",
     ctaCalc: "Jetzt rechnen",
+    menu: "Menü",
     you: "Sie",
     partner: "Partner:in",
     nav: {
@@ -600,9 +601,9 @@ export const de = {
       maxPension: "Maximale Vollrente",
       referenceAge: "Referenzalter (Standard)",
       claimWindow: "Bezugsfenster",
-      reduction: "Kürzung/Zuschlag pro Vorbezugsjahr",
+      reduction: "Kürzung bei Vorbezug",
       reductionNote:
-        "Vereinfachung — AHV21 kennt einkommensabhängige Kürzungssätze; offizieller AHV-Rechner für genaue Werte.",
+        "Offizielle Sätze 2026: 6,8 % pro Vorbezugsjahr (13,6 % bei 2 Jahren). Der Aufschub folgt der amtlichen Aufschubstabelle (5,2–31,5 %, nicht symmetrisch). Einkommensabhängige Sätze gelten nur für Frauen der Übergangsgeneration (1961–1969).",
     },
     cantonTax: {
       title: "Steuern — {canton}",

@@ -1,7 +1,7 @@
 import { activeIncomePhase, inflowAt } from "./accumulation";
 import { AHV, DEFAULTS, PILLAR_2 } from "./constants";
 import type { Pillar2PayoutMode } from "./decumulation";
-import { cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate } from "./tax";
+import { adjustedAhvPension, cantonalIncomeTax, cantonalWealthTax, federalCapitalTax, federalIncomeTax, insuredSalary, lumpSumTax, nonEmployedAhvContribution, retirementCreditRate } from "./tax";
 import type { CantonTaxData, DecumulationYearResult, IncomePhase, OneOffInflow, Pillar2Plan } from "./types";
 
 /**
@@ -76,11 +76,6 @@ export interface HouseholdResult {
   bridgeCapitalRequired: number;
   failed: boolean;
   failedDuringBridge: boolean;
-}
-
-/** See decumulation.ts — symmetric early/deferred AHV adjustment (approximate). */
-function adjustedAhvPension(basePension: number, claimAge: number, referenceAge: number): number {
-  return basePension * (1 + (claimAge - referenceAge) * AHV.approxEarlyReductionPerYear);
 }
 
 interface PersonState {
