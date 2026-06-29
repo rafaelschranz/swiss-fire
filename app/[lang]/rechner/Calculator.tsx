@@ -11,6 +11,7 @@ import { Disclaimer } from "@/components/Disclaimer";
 import { Lifeline } from "@/components/Lifeline";
 import { MonteCarloFan, type FanPoint } from "@/components/MonteCarloFan";
 import { ResultsHeadline } from "@/components/ResultsHeadline";
+import { ScenarioCompare } from "@/components/ScenarioCompare";
 import { YearTable } from "@/components/YearTable";
 import { LedgerBar } from "@/components/ui/LedgerBar";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -23,6 +24,7 @@ import { getCanton } from "@/lib/engine/cantons";
 import { computeBridgeCapitalRequired, simulateDecumulation, type DecumulationParams } from "@/lib/engine/decumulation";
 import { simulateHousehold, type HouseholdParams, type HouseholdPerson } from "@/lib/engine/household";
 import { simulateHouseholdMonteCarlo, simulateMonteCarlo, type MonteCarloMode } from "@/lib/engine/montecarlo";
+import type { DecumulationYearResult } from "@/lib/engine/types";
 import { applyEstimates, ESTIMABLE_ORDER, estimatedValue, withManualSeed, type EstimableKey } from "@/lib/estimates";
 import { DEFAULT_INPUTS, type CalculatorInputs, type PartnerInputs } from "@/lib/inputs";
 import { municipalityByBfs } from "@/lib/municipalities";
@@ -157,6 +159,96 @@ function buildHouseholdParams(inputs: CalculatorInputs): HouseholdParams {
   };
 }
 
+/** Everything derived from one (estimate-resolved) input set — the unit a scenario comparison runs on. */
+interface ScenarioResult {
+  taxableAtFire: number;
+  pillar3aAtFire: number;
+  pillar2AtFire: number;
+  bridgeCapital: number;
+  failed: boolean;
+  failedDuringBridge: boolean;
+  years: DecumulationYearResult[];
+  balancePoints: BalancePoint[];
+  decumulationParams: DecumulationParams;
+  householdParams: HouseholdParams | null;
+}
+
+/**
+ * Pure single→scenario computation: accumulation + decumulation (or the
+ * household calendar timeline), plus the balance series. No hooks, so it can be
+ * run for both the live inputs and a pinned comparison scenario.
+ */
+function computeScenario(eff: CalculatorInputs): ScenarioResult {
+  const accumulation = simulateAccumulation(eff.currentAge, eff.fireAge, {
+    currentSalary: eff.currentSalary,
+    salaryGrowth: eff.salaryGrowth,
+    currentTaxableBalance: eff.currentTaxableBalance,
+    annualTaxableSavings: eff.annualTaxableSavings,
+    currentPillar3aBalance: eff.currentPillar3aBalance,
+    annualPillar3aContribution: eff.annualPillar3aContribution,
+    pillar3aReturn: eff.pillar3aReturn,
+    currentPillar2Balance: eff.currentPillar2Balance,
+    expectedReturn: eff.expectedReturn,
+    incomePhases: eff.useIncomePhases ? eff.incomePhases : undefined,
+    pillar2Plan: {
+      model: eff.pillar2Model,
+      savingsRate: eff.pillar2SavingsRate,
+      insuredCeiling: eff.pillar2InsuredCeiling,
+      interestRate: eff.pillar2InterestRate,
+    },
+    oneOffInflows: eff.oneOffInflows,
+    taxContext: {
+      canton: getCanton(eff.canton),
+      married: eff.maritalStatus === "married",
+      gemeindeSteuerfuss: eff.gemeindeSteuerfuss,
+      otherNetWealth: eff.otherNetWealth,
+      churchTaxMultiplier: churchMultiplier(eff),
+    },
+  });
+
+  const decumulationParams = buildDecumulationParams(eff, accumulation.taxableAtFire, accumulation.pillar3aAtFire, accumulation.pillar2AtFire);
+  const decumulation = simulateDecumulation(decumulationParams);
+  const singleBridge = computeBridgeCapitalRequired(decumulationParams);
+  const householdParams = eff.hasPartner ? buildHouseholdParams(eff) : null;
+  const household = householdParams ? simulateHousehold(householdParams) : null;
+
+  const toPoint = (y: { age: number; taxableBalance: number; pillar3aBalance: number; pillar2Balance: number }) => ({
+    age: y.age,
+    taxable: y.taxableBalance,
+    pillar3a: y.pillar3aBalance,
+    pillar2: y.pillar2Balance,
+  });
+  const balancePoints: BalancePoint[] = household
+    ? household.years.map(toPoint)
+    : [
+        ...accumulation.years.map(toPoint),
+        // Accumulation ends at fireAge and decumulation begins at fireAge; drop the
+        // duplicate fireAge point so there is one row per age.
+        ...decumulation.years.filter((y) => y.age > eff.fireAge).map(toPoint),
+      ];
+
+  return {
+    taxableAtFire: household ? household.taxableAtFire : accumulation.taxableAtFire,
+    pillar3aAtFire: household ? household.pillar3aAtFire : accumulation.pillar3aAtFire,
+    pillar2AtFire: household ? household.pillar2AtFire : accumulation.pillar2AtFire,
+    bridgeCapital: household ? household.bridgeCapitalRequired : singleBridge,
+    failed: household ? household.failed : decumulation.failed,
+    failedDuringBridge: household ? household.failedDuringBridge : decumulation.failedDuringBridge,
+    years: household ? household.years : decumulation.years,
+    balancePoints,
+    decumulationParams,
+    householdParams,
+  };
+}
+
+/** Monte-Carlo for a scenario (single-person or household), reusing its built params. */
+function computeScenarioMonteCarlo(eff: CalculatorInputs, scenario: ScenarioResult, mode: MonteCarloMode) {
+  const common = { volatility: eff.volatility, equityShare: eff.equityShare, swissEquityShare: eff.swissEquityShare, mode, paths: 500 };
+  return scenario.householdParams
+    ? simulateHouseholdMonteCarlo({ householdParams: scenario.householdParams, ...common })
+    : simulateMonteCarlo({ decumulationParams: scenario.decumulationParams, ...common });
+}
+
 export default function Calculator() {
   const { t } = useI18n();
   const tc = t.calculator;
@@ -169,6 +261,8 @@ export default function Calculator() {
   const [showResults, setShowResults] = useState(false);
   const [mcMode, setMcMode] = useState<MonteCarloMode | "off">("off");
   const [shared, setShared] = useState(false);
+  // Pinned comparison scenario (A); the live inputs are scenario B.
+  const [comparison, setComparison] = useState<{ inputs: CalculatorInputs; autoKeys: EstimableKey[] } | null>(null);
 
   // Load a shared scenario from the URL hash on first mount (client-only, so no
   // hydration mismatch — the initial render uses DEFAULT_INPUTS, then this
@@ -206,108 +300,26 @@ export default function Calculator() {
     });
   };
 
-  const accumulation = useMemo(
-    () =>
-      simulateAccumulation(eff.currentAge, eff.fireAge, {
-        currentSalary: eff.currentSalary,
-        salaryGrowth: eff.salaryGrowth,
-        currentTaxableBalance: eff.currentTaxableBalance,
-        annualTaxableSavings: eff.annualTaxableSavings,
-        currentPillar3aBalance: eff.currentPillar3aBalance,
-        annualPillar3aContribution: eff.annualPillar3aContribution,
-        pillar3aReturn: eff.pillar3aReturn,
-        currentPillar2Balance: eff.currentPillar2Balance,
-        expectedReturn: eff.expectedReturn,
-        incomePhases: eff.useIncomePhases ? eff.incomePhases : undefined,
-        pillar2Plan: {
-          model: eff.pillar2Model,
-          savingsRate: eff.pillar2SavingsRate,
-          insuredCeiling: eff.pillar2InsuredCeiling,
-          interestRate: eff.pillar2InterestRate,
-        },
-        oneOffInflows: eff.oneOffInflows,
-        taxContext: {
-          canton: getCanton(eff.canton),
-          married: eff.maritalStatus === "married",
-          gemeindeSteuerfuss: eff.gemeindeSteuerfuss,
-          otherNetWealth: eff.otherNetWealth,
-          churchTaxMultiplier: churchMultiplier(eff),
-        },
-      }),
-    [eff],
+  const live = useMemo(() => computeScenario(eff), [eff]);
+  const { taxableAtFire, pillar3aAtFire, pillar2AtFire, bridgeCapital, failed, failedDuringBridge, years: resultYears, balancePoints: balanceData } = live;
+
+  const monteCarlo = useMemo(
+    () => (mcMode === "off" ? null : computeScenarioMonteCarlo(eff, live, mcMode)),
+    [mcMode, live, eff],
   );
 
-  const decumulationParams = useMemo(
-    () => buildDecumulationParams(eff, accumulation.taxableAtFire, accumulation.pillar3aAtFire, accumulation.pillar2AtFire),
-    [eff, accumulation],
+  // Scenario comparison: a pinned snapshot of inputs the user can hold fixed (A)
+  // while they edit the live plan (B). Recomputed (not stored) so it always
+  // reflects the same well-grounded engine.
+  const compareEff = useMemo(
+    () => (comparison ? applyEstimates(comparison.inputs, new Set(comparison.autoKeys)) : null),
+    [comparison],
   );
-
-  const decumulation = useMemo(() => simulateDecumulation(decumulationParams), [decumulationParams]);
-  const singleBridge = useMemo(() => computeBridgeCapitalRequired(decumulationParams), [decumulationParams]);
-
-  // Household path: a two-person calendar-timeline simulation when a partner
-  // is added. Replaces the single-person accumulation + decumulation outputs.
-  const householdParams = useMemo(() => (eff.hasPartner ? buildHouseholdParams(eff) : null), [eff]);
-  const household = useMemo(() => (householdParams ? simulateHousehold(householdParams) : null), [householdParams]);
-
-  // Household-aware result values (fall back to the single-person engine).
-  const taxableAtFire = household ? household.taxableAtFire : accumulation.taxableAtFire;
-  const pillar3aAtFire = household ? household.pillar3aAtFire : accumulation.pillar3aAtFire;
-  const pillar2AtFire = household ? household.pillar2AtFire : accumulation.pillar2AtFire;
-  const bridgeCapital = household ? household.bridgeCapitalRequired : singleBridge;
-  const failed = household ? household.failed : decumulation.failed;
-  const failedDuringBridge = household ? household.failedDuringBridge : decumulation.failedDuringBridge;
-  const resultYears = household ? household.years : decumulation.years;
-
-  const monteCarlo = useMemo(() => {
-    if (mcMode === "off") return null;
-    if (householdParams) {
-      return simulateHouseholdMonteCarlo({
-        householdParams,
-        volatility: eff.volatility,
-        equityShare: eff.equityShare,
-        swissEquityShare: eff.swissEquityShare,
-        mode: mcMode,
-        paths: 500,
-      });
-    }
-    return simulateMonteCarlo({
-      decumulationParams,
-      volatility: eff.volatility,
-      equityShare: eff.equityShare,
-      swissEquityShare: eff.swissEquityShare,
-      mode: mcMode,
-      paths: 500,
-    });
-  }, [mcMode, decumulationParams, householdParams, eff.volatility, eff.equityShare, eff.swissEquityShare]);
-
-  const balanceData: BalancePoint[] = useMemo(() => {
-    if (household) {
-      return household.years.map((y) => ({
-        age: y.age,
-        taxable: y.taxableBalance,
-        pillar3a: y.pillar3aBalance,
-        pillar2: y.pillar2Balance,
-      }));
-    }
-    const accPoints = accumulation.years.map((y) => ({
-      age: y.age,
-      taxable: y.taxableBalance,
-      pillar3a: y.pillar3aBalance,
-      pillar2: y.pillar2Balance,
-    }));
-    // Accumulation ends at fireAge and decumulation begins at fireAge, so
-    // drop the duplicate fireAge point from decumulation to keep one row per age.
-    const decPoints = decumulation.years
-      .filter((y) => y.age > eff.fireAge)
-      .map((y) => ({
-        age: y.age,
-        taxable: y.taxableBalance,
-        pillar3a: y.pillar3aBalance,
-        pillar2: y.pillar2Balance,
-      }));
-    return [...accPoints, ...decPoints];
-  }, [household, accumulation, decumulation, eff.fireAge]);
+  const compareScenario = useMemo(() => (compareEff ? computeScenario(compareEff) : null), [compareEff]);
+  const compareMonteCarlo = useMemo(
+    () => (compareEff && compareScenario && mcMode !== "off" ? computeScenarioMonteCarlo(compareEff, compareScenario, mcMode) : null),
+    [compareEff, compareScenario, mcMode],
+  );
 
   const fanData: FanPoint[] = useMemo(() => {
     if (!monteCarlo) return [];
@@ -466,10 +478,17 @@ export default function Calculator() {
             </button>
             <button
               type="button"
+              onClick={() => setComparison(comparison ? null : { inputs, autoKeys: [...autoKeys] })}
+              className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
+            >
+              {comparison ? tc.compare.exit : tc.compare.pin}
+            </button>
+            <button
+              type="button"
               onClick={editInputs}
               className="eyebrow border border-paper/30 px-4 py-2.5 text-paper transition hover:bg-paper hover:text-ink"
             >
-              {tc.results.edit}
+              {comparison ? tc.compare.editB : tc.results.edit}
             </button>
           </div>
         </div>
@@ -483,6 +502,16 @@ export default function Calculator() {
           failedDuringBridge={failedDuringBridge}
           monteCarloSuccessRate={monteCarlo?.successRate}
         />
+
+        {comparison && compareScenario && (
+          <ScenarioCompare
+            a={compareScenario}
+            b={live}
+            mcSuccessA={compareMonteCarlo?.successRate}
+            mcSuccessB={monteCarlo?.successRate}
+            onClear={() => setComparison(null)}
+          />
+        )}
 
         <BaristaFireCard
           years={resultYears}

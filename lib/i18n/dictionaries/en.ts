@@ -259,6 +259,36 @@ export const en: Dictionary = {
       householdNote:
         "In a household, each person's side job waives only their own wealth contribution (no mutual cover). Shown is the combined wealth-based AHV across the bridge.",
     },
+    compare: {
+      pin: "Compare",
+      exit: "End comparison",
+      editB: "Edit scenario B",
+      kicker: "Scenarios A/B",
+      heading: "Scenario comparison",
+      subtitle:
+        "A is pinned. Use “Edit inputs” to change your plan (e.g. FIRE age, canton, PK withdrawal, Barista-FIRE) — B updates while A stays for comparison.",
+      identical:
+        "A and B are identical. Use “Edit inputs” to change a value (e.g. FIRE age or withdrawal type) to see the difference.",
+      clear: "Remove comparison",
+      metric: "Metric",
+      colA: "A (pinned)",
+      colB: "B (current)",
+      colDelta: "Δ (B − A)",
+      verdict: "Verdict",
+      ok: "✓ Sufficient",
+      notOk: "✗ Insufficient",
+      never: "—",
+      years: "yrs",
+      bridge: "Bridge capital needed",
+      liquid: "Liquid funds at FIRE",
+      buffer: "Buffer / gap",
+      mc: "Monte Carlo success",
+      depletion: "Wealth depleted at",
+      finalWealth: "Wealth at horizon",
+      lifetimeTax: "Taxes (cumulative)",
+      lifetimeAhv: "AHV on wealth (cumulative)",
+      chartLabel: "Total wealth over time",
+    },
   },
 
   wizard: {

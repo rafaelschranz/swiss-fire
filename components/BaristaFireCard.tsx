@@ -54,6 +54,16 @@ export function BaristaFireCard({
     tone = "petrol";
   }
 
+  // Tiles vary so there are no empty/redundant cells: exposure + break-even
+  // always; the "saved" tile only once a side job actually waives something.
+  const tiles: { label: string; value: string; note?: string; accent?: boolean }[] = [
+    { label: b.tileExposure, value: formatChf(grossSum), note: tpl(b.tileExposureNote, { peak: formatChf(peakGross) }) },
+    { label: b.tileBreakEven, value: formatChf(breakEven), note: b.tileBreakEvenNote },
+  ];
+  if (active && savings > 0) {
+    tiles.push({ label: b.tileSaved, value: formatChf(savings), accent: true });
+  }
+
   return (
     <div className={`card border-l-4 p-6 sm:p-7 ${tone === "petrol" ? "border-l-petrol" : "border-l-brass"}`}>
       <div className="flex items-center justify-between gap-4">
@@ -63,25 +73,14 @@ export function BaristaFireCard({
       <h3 className="serif mt-2 text-xl leading-tight text-ink">{b.heading}</h3>
       <p className="mt-3 max-w-prose text-sm leading-relaxed text-muted">{b.intro}</p>
 
-      <div className="mt-5 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-3">
-        <div className="bg-paper p-4">
-          <p className="eyebrow text-muted">{b.tileExposure}</p>
-          <p className="num mt-1 text-lg font-semibold text-ink">{formatChf(grossSum)}</p>
-          <p className="mt-0.5 text-xs text-muted">{tpl(b.tileExposureNote, { peak: formatChf(peakGross) })}</p>
-        </div>
-        {!hasPartner && (
-          <div className="bg-paper p-4">
-            <p className="eyebrow text-muted">{b.tileBreakEven}</p>
-            <p className="num mt-1 text-lg font-semibold text-ink">{formatChf(breakEven)}</p>
-            <p className="mt-0.5 text-xs text-muted">{b.tileBreakEvenNote}</p>
+      <div className={`mt-5 grid grid-cols-1 gap-px border border-line bg-line ${tiles.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+        {tiles.map((tile) => (
+          <div key={tile.label} className="bg-paper p-4">
+            <p className="eyebrow text-muted">{tile.label}</p>
+            <p className={`num mt-1 text-lg font-semibold ${tile.accent ? "text-petrol" : "text-ink"}`}>{tile.value}</p>
+            {tile.note && <p className="mt-0.5 text-xs text-muted">{tile.note}</p>}
           </div>
-        )}
-        <div className="bg-paper p-4">
-          <p className="eyebrow text-muted">{active ? b.tileSaved : b.tileAtStake}</p>
-          <p className={`num mt-1 text-lg font-semibold ${active && savings > 0 ? "text-petrol" : "text-ink"}`}>
-            {formatChf(active ? savings : grossSum)}
-          </p>
-        </div>
+        ))}
       </div>
 
       <p className={`mt-4 text-sm leading-relaxed ${tone === "petrol" ? "text-petrol" : "text-brass"}`}>{verdict}</p>

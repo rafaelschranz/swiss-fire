@@ -258,6 +258,36 @@ export const de = {
       householdNote:
         "Im Haushalt befreit der Nebenjob jeder Person nur deren eigenen Vermögensbeitrag (keine gegenseitige Deckung). Gezeigt ist die gemeinsame Vermögens-AHV über die Brücke.",
     },
+    compare: {
+      pin: "Vergleichen",
+      exit: "Vergleich beenden",
+      editB: "Szenario B anpassen",
+      kicker: "Szenarien A/B",
+      heading: "Szenarienvergleich",
+      subtitle:
+        "A ist fixiert. Passen Sie über «Eingaben anpassen» Ihren Plan an (z. B. FIRE-Alter, Kanton, PK-Bezug, Barista-FIRE) — B aktualisiert sich, A bleibt zum Vergleich stehen.",
+      identical:
+        "A und B sind identisch. Passen Sie über «Eingaben anpassen» einen Wert an (z. B. FIRE-Alter oder Bezugsart), um den Unterschied zu sehen.",
+      clear: "Vergleich entfernen",
+      metric: "Kennzahl",
+      colA: "A (fixiert)",
+      colB: "B (aktuell)",
+      colDelta: "Δ (B − A)",
+      verdict: "Beurteilung",
+      ok: "✓ Reicht",
+      notOk: "✗ Reicht nicht",
+      never: "—",
+      years: "Jahre",
+      bridge: "Brücken-Kapitalbedarf",
+      liquid: "Liquide Mittel bei FIRE",
+      buffer: "Polster / Lücke",
+      mc: "Monte-Carlo Erfolg",
+      depletion: "Vermögen erschöpft mit",
+      finalWealth: "Vermögen am Horizont",
+      lifetimeTax: "Steuern (kumuliert)",
+      lifetimeAhv: "AHV aufs Vermögen (kumuliert)",
+      chartLabel: "Gesamtvermögen über die Zeit",
+    },
   },
 
   wizard: {
