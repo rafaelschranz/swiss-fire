@@ -43,10 +43,10 @@ export const en: Dictionary = {
   },
 
   meta: {
-    titleDefault: "Vorzeit | Early retirement & Swiss pensions",
-    titleTemplate: "%s | Vorzeit",
+    titleDefault: "Pillar Zero | Early retirement & Swiss pensions",
+    titleTemplate: "%s | Pillar Zero",
     description:
-      "Vorzeit is the free Swiss calculator for early retirement: the bridge phase, Säule 3a, Pensionskasse, AHV and real ESTV taxes per municipality. An educational tool, not financial advice — every calculation runs locally in your browser.",
+      "Pillar Zero is the free Swiss calculator for early retirement: the bridge phase, Säule 3a, Pensionskasse, AHV and real ESTV taxes per municipality. An educational tool, not financial advice — every calculation runs locally in your browser.",
     keywords: [
       "FIRE Switzerland",
       "early retirement",
@@ -64,16 +64,16 @@ export const en: Dictionary = {
     meta: {
       title: "Calculate early retirement in Switzerland",
       description:
-        "In four steps, Vorzeit shows whether your capital is enough for early retirement — the bridge phase, Säule 3a, Pensionskasse, AHV and real ESTV taxes per municipality. Free and private.",
+        "In four steps, Pillar Zero shows whether your capital is enough for early retirement — the bridge phase, Säule 3a, Pensionskasse, AHV and real ESTV taxes per municipality. Free and private.",
     },
     hero: {
-      kicker: "Vorzeit · Swiss FIRE",
+      kicker: "Pillar Zero · Swiss FIRE",
       h1: "Is your capital enough for early retirement?",
       body:
-        "Vorzeit works out the bridge between your exit and the moment you can draw on Säule 3a, Pensionskasse and AHV — including real ESTV taxes for your municipality. In four steps, free and entirely private.",
+        "Pillar Zero works out the bridge between your exit and the moment you can draw on Säule 3a, Pensionskasse and AHV — including real ESTV taxes for your municipality. In four steps, free and entirely private.",
       ctaPrimary: "Run the numbers, free →",
       ctaSecondary: "Read the guide",
-      note: "Educational tool, not financial advice · no sign-up · no data leaves your browser",
+      note: "Educational tool, not financial advice · no sign-up · your inputs never leave your browser",
     },
     problem: {
       kicker: "The problem",
@@ -99,7 +99,7 @@ export const en: Dictionary = {
       ],
     },
     features: {
-      kicker: "What Vorzeit calculates",
+      kicker: "What Pillar Zero calculates",
       h2: "Everything that defines Swiss early retirement.",
       items: [
         {
@@ -150,7 +150,7 @@ export const en: Dictionary = {
       h2: "Good to know.",
       items: [
         {
-          q: "What does Vorzeit cost?",
+          q: "What does Pillar Zero cost?",
           a: "Nothing. The calculator is free and needs no sign-up. There is no paid version.",
         },
         {
@@ -163,13 +163,13 @@ export const en: Dictionary = {
         },
         {
           q: "Is this financial advice?",
-          a: "No. Vorzeit is an educational tool. It does not replace personal financial, tax or pension advice.",
+          a: "No. Pillar Zero is an educational tool. It does not replace personal financial, tax or pension advice.",
         },
       ],
     },
     finalCta: {
       h2: "Work out your own bridge.",
-      body: "Free, in a few minutes, without any data leaving your browser.",
+      body: "Free, in a few minutes, without your inputs leaving your browser.",
       cta: "Get started →",
     },
   },
@@ -181,7 +181,7 @@ export const en: Dictionary = {
         "In four steps, work out whether your capital is enough for early retirement: the bridge phase, Säule 3a, Pensionskasse, AHV and real ESTV taxes per municipality. Free, locally in your browser.",
       ogTitle: "Bridge calculator — work out early retirement",
     },
-    jsonLdName: "Vorzeit bridge calculator",
+    jsonLdName: "Pillar Zero bridge calculator",
     formHero: {
       kicker: "Swiss early retirement · bridge calculation",
       h1: "Is your capital enough to reach your pension?",
@@ -518,7 +518,7 @@ export const en: Dictionary = {
     yearTable: {
       caption: "Year by year",
       csv: "CSV",
-      csvFilename: "vorzeit-year-by-year.csv",
+      csvFilename: "pillar-zero-year-by-year.csv",
       headers: {
         age: "Age",
         total: "Total",
@@ -745,11 +745,11 @@ export const en: Dictionary = {
     meta: {
       title: "About",
       description:
-        "Why Vorzeit exists and how the calculator works: independent, transparent and entirely in the browser.",
+        "Why Pillar Zero exists and how the calculator works: independent, transparent and entirely in the browser.",
     },
     kicker: "About",
     h1: "Early retirement, honestly worked out.",
-    p1: "Vorzeit grew out of a simple observation: most FIRE calculators ignore what makes Switzerland special — pension capital is locked away for the longest time, and the taxes on capital withdrawals, income and wealth differ massively from one municipality to the next.",
+    p1: "Pillar Zero grew out of a simple observation: most FIRE calculators ignore what makes Switzerland special — pension capital is locked away for the longest time, and the taxes on capital withdrawals, income and wealth differ massively from one municipality to the next.",
     p2: "We wanted a tool that reflects this reality: the bridge phase between exit and pension withdrawal, the staggered Säule 3a withdrawal, the choice between Pensionskasse capital and pension, the AHV contributions of the non-employed — and real taxes for your municipality.",
     h2numbers: "Where the numbers come from",
     numbers1:
@@ -761,22 +761,22 @@ export const en: Dictionary = {
       "All calculations run locally in your browser. No financial data is transmitted to or stored on a server. Shared scenario links encode the inputs in the URL — they too do not leave your browser.",
     h2independent: "Independent & ad-funded",
     independent:
-      "Vorzeit is free and independent. Any partner pointers are clearly marked as advertising and kept separate from the calculation results.",
+      "Pillar Zero is free and independent. Any partner pointers are clearly marked as advertising and kept separate from the calculation results.",
     cta: "To the calculator →",
   },
 
   impressum: {
-    meta: { title: "Legal notice", description: "Legal notice and provider details for Vorzeit." },
+    meta: { title: "Legal notice", description: "Legal notice and provider details for Pillar Zero." },
     kicker: "Legal",
     h1: "Legal notice",
-    placeholder: "Placeholder — replace with the real provider details before going live.",
+    placeholder: "Note — add the provider's name and address before going public.",
     providerHeading: "Provider",
-    providerLines: ["Vorzeit", "[Name / Company]", "[Street No.]", "[Postcode City], Switzerland"],
+    providerLines: ["Pillar Zero", "[Name / Company]", "[Street No.]", "[Postcode City], Switzerland"],
     contactHeading: "Contact",
-    contact: "Email: [contact@example.ch]",
+    contact: "Email: contact@pillarzero.ch",
     liabilityHeading: "Disclaimer of liability",
     liability1:
-      "Vorzeit is an educational tool and does not constitute financial, tax or investment advice. All calculations and tax figures are estimates without warranty. No liability is accepted for decisions based on the results; the official bodies (ESTV, compensation office, Pensionskasse) and personal advice are decisive.",
+      "Pillar Zero is an educational tool and does not constitute financial, tax or investment advice. All calculations and tax figures are estimates without warranty. No liability is accepted for decisions based on the results; the official bodies (ESTV, compensation office, Pensionskasse) and personal advice are decisive.",
     liability2:
       "No liability is accepted for the content of external links; their operators are solely responsible.",
   },
@@ -785,25 +785,27 @@ export const en: Dictionary = {
     meta: {
       title: "Privacy",
       description:
-        "Vorzeit's privacy statement: all calculations run locally in the browser, no financial data is transmitted.",
+        "Pillar Zero's privacy statement: all calculations run locally in the browser, no financial data is transmitted.",
     },
     kicker: "Legal",
     h1: "Privacy",
     h2principle: "Principle: no server processing of your inputs",
     principle:
-      "Vorzeit is built so that your financial data does not leave your browser. All calculations (wealth, pensions, taxes) run entirely locally on your device. No input values are transmitted to, stored on or evaluated by a server.",
+      "Pillar Zero is built so that your financial data does not leave your browser. All calculations (wealth, pensions, taxes) run entirely locally on your device. No input values are transmitted to, stored on or evaluated by a server.",
     h2shared: "Shared scenarios",
     shared:
       "When you share a scenario, the inputs are encoded into the link (URL fragment). Browsers usually do not send this fragment to the server. Only share such a link with people you are happy to entrust the contained details to.",
     h2logs: "Server logs & hosting",
     logs:
       "When pages are requested, technically necessary server logs may arise at the hosting provider (e.g. IP address, time, page requested). These serve operation and security and contain none of the financial data you enter.",
+    h2analytics: "Anonymous usage statistics",
+    analytics:
+      "To improve the site we collect anonymous, cookieless usage statistics with a self-hosted Umami instance. This records aggregated information such as the page visited, the referrer and the approximate region — no cookies, no cross-device tracking, and nothing that identifies you personally. The financial data you enter in the calculator is not affected and does not leave your browser.",
     h2external: "External content",
     external:
       "Fonts are delivered via the build. Clearly marked partner links lead to external providers with their own privacy policies.",
     h2contact: "Contact",
-    contact:
-      "Privacy questions: [contact@example.ch]. This statement is a placeholder and must be adapted to the actual circumstances before going live.",
+    contact: "Privacy questions: contact@pillarzero.ch.",
   },
 
   og: {

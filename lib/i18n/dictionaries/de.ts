@@ -42,10 +42,10 @@ export const de = {
   },
 
   meta: {
-    titleDefault: "Vorzeit | Frühpensionierung & Pensionskasse",
-    titleTemplate: "%s | Vorzeit",
+    titleDefault: "Pillar Zero | Frühpensionierung & Pensionskasse",
+    titleTemplate: "%s | Pillar Zero",
     description:
-      "Vorzeit ist der kostenlose Schweizer Rechner für die Frühpensionierung: Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Bildungstool, keine Finanzberatung — alle Berechnungen laufen lokal im Browser.",
+      "Pillar Zero ist der kostenlose Schweizer Rechner für die Frühpensionierung: Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Bildungstool, keine Finanzberatung — alle Berechnungen laufen lokal im Browser.",
     keywords: [
       "FIRE Schweiz",
       "Frühpensionierung",
@@ -63,16 +63,16 @@ export const de = {
     meta: {
       title: "Frühpensionierung in der Schweiz berechnen",
       description:
-        "Vorzeit zeigt Ihnen in vier Schritten, ob Ihr Kapital für die Frühpensionierung reicht — Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Kostenlos und privat.",
+        "Pillar Zero zeigt Ihnen in vier Schritten, ob Ihr Kapital für die Frühpensionierung reicht — Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Kostenlos und privat.",
     },
     hero: {
-      kicker: "Vorzeit · Schweizer FIRE",
+      kicker: "Pillar Zero · Schweizer FIRE",
       h1: "Reicht Ihr Kapital für die Frühpensionierung?",
       body:
-        "Vorzeit rechnet die Brücke zwischen Ihrem Ausstieg und dem Zugriff auf Säule 3a, Pensionskasse und AHV — inklusive echter ESTV-Steuern für Ihre Gemeinde. In vier Schritten, kostenlos und vollständig privat.",
+        "Pillar Zero rechnet die Brücke zwischen Ihrem Ausstieg und dem Zugriff auf Säule 3a, Pensionskasse und AHV — inklusive echter ESTV-Steuern für Ihre Gemeinde. In vier Schritten, kostenlos und vollständig privat.",
       ctaPrimary: "Jetzt kostenlos rechnen →",
       ctaSecondary: "Zum Ratgeber",
-      note: "Bildungstool, keine Finanzberatung · keine Anmeldung · keine Daten verlassen den Browser",
+      note: "Bildungstool, keine Finanzberatung · keine Anmeldung · Ihre Eingaben verlassen den Browser nicht",
     },
     problem: {
       kicker: "Das Problem",
@@ -98,7 +98,7 @@ export const de = {
       ],
     },
     features: {
-      kicker: "Was Vorzeit rechnet",
+      kicker: "Was Pillar Zero rechnet",
       h2: "Alles, was die Schweizer Frühpension ausmacht.",
       items: [
         {
@@ -149,7 +149,7 @@ export const de = {
       h2: "Gut zu wissen.",
       items: [
         {
-          q: "Was kostet Vorzeit?",
+          q: "Was kostet Pillar Zero?",
           a: "Nichts. Der Rechner ist kostenlos und ohne Anmeldung nutzbar. Es gibt keine kostenpflichtige Version.",
         },
         {
@@ -162,13 +162,13 @@ export const de = {
         },
         {
           q: "Ist das eine Finanzberatung?",
-          a: "Nein. Vorzeit ist ein Bildungstool. Es ersetzt keine persönliche Finanz-, Steuer- oder Vorsorgeberatung.",
+          a: "Nein. Pillar Zero ist ein Bildungstool. Es ersetzt keine persönliche Finanz-, Steuer- oder Vorsorgeberatung.",
         },
       ],
     },
     finalCta: {
       h2: "Rechnen Sie Ihre Brücke durch.",
-      body: "Kostenlos, in wenigen Minuten, ohne dass Daten Ihren Browser verlassen.",
+      body: "Kostenlos, in wenigen Minuten, ohne dass Ihre Eingaben den Browser verlassen.",
       cta: "Jetzt starten →",
     },
   },
@@ -180,7 +180,7 @@ export const de = {
         "Berechnen Sie in vier Schritten, ob Ihr Kapital für die Frühpensionierung reicht: Brückenphase, Säule 3a, Pensionskasse, AHV und echte ESTV-Steuern pro Gemeinde. Kostenlos, lokal im Browser.",
       ogTitle: "Brückenrechner — Frühpensionierung berechnen",
     },
-    jsonLdName: "Vorzeit Brückenrechner",
+    jsonLdName: "Pillar Zero Brückenrechner",
     formHero: {
       kicker: "Schweizer Frühpensionierung · Brückenrechnung",
       h1: "Reicht Ihr Kapital bis zur Pension?",
@@ -517,7 +517,7 @@ export const de = {
     yearTable: {
       caption: "Jahresverlauf",
       csv: "CSV",
-      csvFilename: "vorzeit-jahresverlauf.csv",
+      csvFilename: "pillar-zero-jahresverlauf.csv",
       headers: {
         age: "Alter",
         total: "Total",
@@ -744,11 +744,11 @@ export const de = {
     meta: {
       title: "Über uns",
       description:
-        "Warum es Vorzeit gibt und wie der Rechner funktioniert: unabhängig, transparent und vollständig im Browser.",
+        "Warum es Pillar Zero gibt und wie der Rechner funktioniert: unabhängig, transparent und vollständig im Browser.",
     },
     kicker: "Über uns",
     h1: "Frühpensionierung, ehrlich durchgerechnet.",
-    p1: "Vorzeit ist aus einer einfachen Beobachtung entstanden: Die meisten FIRE-Rechner ignorieren, was die Schweiz besonders macht — das Vorsorgevermögen ist die längste Zeit gesperrt, und die Steuern auf Kapitalbezüge, Einkommen und Vermögen unterscheiden sich von Gemeinde zu Gemeinde massiv.",
+    p1: "Pillar Zero ist aus einer einfachen Beobachtung entstanden: Die meisten FIRE-Rechner ignorieren, was die Schweiz besonders macht — das Vorsorgevermögen ist die längste Zeit gesperrt, und die Steuern auf Kapitalbezüge, Einkommen und Vermögen unterscheiden sich von Gemeinde zu Gemeinde massiv.",
     p2: "Wir wollten ein Werkzeug, das diese Realität abbildet: die Brückenphase zwischen Ausstieg und Vorsorge-Bezug, den gestaffelten Säule-3a-Bezug, die Wahl zwischen Pensionskassen-Kapital und -Rente, die AHV-Beiträge der Nichterwerbstätigen — und echte Steuern für Ihre Gemeinde.",
     h2numbers: "Woher die Zahlen kommen",
     numbers1:
@@ -760,22 +760,22 @@ export const de = {
       "Sämtliche Berechnungen laufen lokal in Ihrem Browser. Es werden keine Finanzdaten an einen Server übertragen oder gespeichert. Geteilte Szenario-Links kodieren die Eingaben in der URL — auch sie verlassen Ihren Browser nicht.",
     h2independent: "Unabhängig & werbefinanziert",
     independent:
-      "Vorzeit ist kostenlos und unabhängig. Allfällige Partner-Hinweise sind klar als Werbung gekennzeichnet und von den Berechnungsergebnissen getrennt.",
+      "Pillar Zero ist kostenlos und unabhängig. Allfällige Partner-Hinweise sind klar als Werbung gekennzeichnet und von den Berechnungsergebnissen getrennt.",
     cta: "Zum Rechner →",
   },
 
   impressum: {
-    meta: { title: "Impressum", description: "Impressum und Anbieterkennzeichnung von Vorzeit." },
+    meta: { title: "Impressum", description: "Impressum und Anbieterkennzeichnung von Pillar Zero." },
     kicker: "Rechtliches",
     h1: "Impressum",
-    placeholder: "Platzhalter — vor der Veröffentlichung mit den realen Anbieterangaben ersetzen.",
+    placeholder: "Hinweis — Name und Adresse des Anbieters vor der Veröffentlichung ergänzen.",
     providerHeading: "Anbieter",
-    providerLines: ["Vorzeit", "[Name / Firma]", "[Strasse Nr.]", "[PLZ Ort], Schweiz"],
+    providerLines: ["Pillar Zero", "[Name / Firma]", "[Strasse Nr.]", "[PLZ Ort], Schweiz"],
     contactHeading: "Kontakt",
-    contact: "E-Mail: [kontakt@example.ch]",
+    contact: "E-Mail: contact@pillarzero.ch",
     liabilityHeading: "Haftungsausschluss",
     liability1:
-      "Vorzeit ist ein Bildungstool und stellt keine Finanz-, Steuer- oder Anlageberatung dar. Alle Berechnungen und Steuerangaben sind Schätzungen ohne Gewähr. Für Entscheidungen auf Basis der Ergebnisse wird keine Haftung übernommen; massgebend sind die offiziellen Stellen (ESTV, Ausgleichskasse, Pensionskasse) und eine persönliche Beratung.",
+      "Pillar Zero ist ein Bildungstool und stellt keine Finanz-, Steuer- oder Anlageberatung dar. Alle Berechnungen und Steuerangaben sind Schätzungen ohne Gewähr. Für Entscheidungen auf Basis der Ergebnisse wird keine Haftung übernommen; massgebend sind die offiziellen Stellen (ESTV, Ausgleichskasse, Pensionskasse) und eine persönliche Beratung.",
     liability2:
       "Für Inhalte externer Links wird keine Haftung übernommen; verantwortlich sind ausschliesslich deren Betreiber.",
   },
@@ -784,25 +784,27 @@ export const de = {
     meta: {
       title: "Datenschutz",
       description:
-        "Datenschutzerklärung von Vorzeit: Alle Berechnungen laufen lokal im Browser, es werden keine Finanzdaten übertragen.",
+        "Datenschutzerklärung von Pillar Zero: Alle Berechnungen laufen lokal im Browser, es werden keine Finanzdaten übertragen.",
     },
     kicker: "Rechtliches",
     h1: "Datenschutz",
     h2principle: "Grundsatz: keine Server-Verarbeitung Ihrer Eingaben",
     principle:
-      "Vorzeit ist so gebaut, dass Ihre Finanzdaten Ihren Browser nicht verlassen. Alle Berechnungen (Vermögen, Vorsorge, Steuern) laufen vollständig lokal auf Ihrem Gerät. Es werden keine Eingabewerte an einen Server übertragen, gespeichert oder ausgewertet.",
+      "Pillar Zero ist so gebaut, dass Ihre Finanzdaten Ihren Browser nicht verlassen. Alle Berechnungen (Vermögen, Vorsorge, Steuern) laufen vollständig lokal auf Ihrem Gerät. Es werden keine Eingabewerte an einen Server übertragen, gespeichert oder ausgewertet.",
     h2shared: "Geteilte Szenarien",
     shared:
       "Wenn Sie ein Szenario teilen, werden die Eingaben in den Link (URL-Fragment) kodiert. Dieses Fragment wird von Browsern üblicherweise nicht an den Server gesendet. Teilen Sie einen solchen Link nur mit Personen, denen Sie die enthaltenen Angaben anvertrauen möchten.",
     h2logs: "Server-Logs & Hosting",
     logs:
       "Beim Abruf der Seiten können beim Hosting-Anbieter technisch notwendige Server-Logs anfallen (z. B. IP-Adresse, Zeitpunkt, abgerufene Seite). Diese dienen dem Betrieb und der Sicherheit und enthalten keine von Ihnen eingegebenen Finanzdaten.",
+    h2analytics: "Anonyme Nutzungsstatistik",
+    analytics:
+      "Zur Verbesserung der Seite erfassen wir anonyme, cookielose Nutzungsstatistiken mit einer selbst gehosteten Umami-Instanz. Erfasst werden aggregierte Angaben wie die aufgerufene Seite, der Referrer und die ungefähre Region — ohne Cookies, ohne geräteübergreifendes Tracking und ohne dass sich daraus Ihre Person bestimmen lässt. Ihre im Rechner eingegebenen Finanzdaten sind davon nicht betroffen und verlassen Ihren Browser nicht.",
     h2external: "Externe Inhalte",
     external:
       "Schriftarten werden über den Build ausgeliefert. Klar gekennzeichnete Partner-Links führen zu externen Anbietern mit eigenen Datenschutzbestimmungen.",
     h2contact: "Kontakt",
-    contact:
-      "Fragen zum Datenschutz: [kontakt@example.ch]. Diese Erklärung ist ein Platzhalter und vor der Veröffentlichung an die tatsächlichen Verhältnisse anzupassen.",
+    contact: "Fragen zum Datenschutz: contact@pillarzero.ch.",
   },
 
   og: {

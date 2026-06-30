@@ -1,6 +1,6 @@
-# Vorzeit — Swiss FIRE Bridge Calculator
+# Pillar Zero — Swiss FIRE Bridge Calculator
 
-**Vorzeit** is a free, public website + calculator for the Swiss market
+**Pillar Zero** is a free, public website + calculator for the Swiss market
 answering: *if you stop working before your pension pillars unlock, how much
 liquid capital do you need to bridge the gap?*
 

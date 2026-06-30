@@ -42,6 +42,9 @@ export default async function Datenschutz({ params }: { params: Promise<{ lang: 
           <h2 className="serif pt-2 text-2xl text-ink">{d.h2logs}</h2>
           <p>{d.logs}</p>
 
+          <h2 className="serif pt-2 text-2xl text-ink">{d.h2analytics}</h2>
+          <p>{d.analytics}</p>
+
           <h2 className="serif pt-2 text-2xl text-ink">{d.h2external}</h2>
           <p>{d.external}</p>
 

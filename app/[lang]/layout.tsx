@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Inter, Spectral } from "next/font/google";
 import { notFound } from "next/navigation";
 
@@ -10,7 +10,7 @@ import { HTML_LANG, isLocale, LOCALES, OG_LOCALE, type Locale } from "@/lib/i18n
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { localeHref } from "@/lib/i18n/routing";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { ANALYTICS, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const spectral = Spectral({
   weight: ["400", "500", "600"],
@@ -31,6 +31,11 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-plex",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  themeColor: "#15212E",
+  colorScheme: "light",
+};
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -120,6 +125,11 @@ export default async function LocaleLayout({
           {children}
           <SiteFooter lang={locale} dict={t} />
         </I18nProvider>
+
+        {/* Self-hosted Umami — cookieless, production only. Plain defer tag (as provided). */}
+        {process.env.NODE_ENV === "production" && (
+          <script defer src={ANALYTICS.src} data-website-id={ANALYTICS.websiteId} />
+        )}
       </body>
     </html>
   );

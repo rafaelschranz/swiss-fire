@@ -49,7 +49,7 @@ const POSTS_DE: Post[] = [
       { p: "Wer mit 50 aufhört, hat also bis zu zehn Jahre, in denen kein einziger dieser Töpfe etwas abwirft. Diese Zeit ist die Brückenphase — und sie muss vollständig aus dem frei verfügbaren, steuerbaren Vermögen finanziert werden." },
       { h2: "Was die Brücke kostet" },
       { p: "In der Brückenphase laufen die Kosten weiter: Lebenshaltung, Krankenkassenprämien und — oft übersehen — die AHV-Beiträge für Nichterwerbstätige. Letztere bemessen sich nach dem Vermögen und können mehrere tausend Franken pro Jahr betragen." },
-      { p: "Das «Brückenkapital» ist der Betrag, den Sie zum Ausstieg liquide brauchen, um diese Jahre bis zum ersten Vorsorge-Bezug zu decken. Genau diese Zahl rechnet der Vorzeit-Rechner als Erstes aus." },
+      { p: "Das «Brückenkapital» ist der Betrag, den Sie zum Ausstieg liquide brauchen, um diese Jahre bis zum ersten Vorsorge-Bezug zu decken. Genau diese Zahl rechnet der Pillar-Zero-Rechner als Erstes aus." },
       { callout: "Faustregel: Je früher der Ausstieg, desto länger die Brücke — und desto mehr liquides (nicht gesperrtes) Vermögen brauchen Sie zusätzlich zum Vorsorgekapital." },
       { h2: "Warum «genug Vermögen» nicht reicht" },
       { p: "Zwei Personen mit identischem Gesamtvermögen können völlig unterschiedlich dastehen: Wer den Grossteil in der Pensionskasse hat, kommt in der Brückenphase nicht daran — wer dasselbe Geld im Wertschriftendepot hält, schon. Die Aufteilung zwischen liquidem und gesperrtem Vermögen entscheidet, ob Ihre Frühpension trägt." },
@@ -74,7 +74,7 @@ const POSTS_DE: Post[] = [
       { p: "Der Effekt funktioniert nur, wenn die Bezüge in verschiedene Jahre fallen. Wer 3a und einen Pensionskassen-Kapitalbezug im gleichen Kalenderjahr tätigt, wird auf der Summe besteuert — und landet wieder in der hohen Progression. Auch Ehepaare werden in vielen Kantonen gemeinsam veranlagt." },
       { h2: "Der Bund will es ändern" },
       { p: "Es gibt politische Bestrebungen, die Bundessteuer auf Kapitalbezüge zu vereinheitlichen und die Staffelung weniger attraktiv zu machen. Bis dahin bleibt sie eines der wirksamsten und legalen Steuerinstrumente der Frühpensionierung." },
-      { p: "Im Vorzeit-Rechner können Sie die Anzahl 3a-Konten einstellen und sehen direkt, wie sich die Staffelung auf die Steuerrechnung auswirkt — mit echten ESTV-Werten für Ihre Gemeinde." },
+      { p: "Im Pillar-Zero-Rechner können Sie die Anzahl 3a-Konten einstellen und sehen direkt, wie sich die Staffelung auf die Steuerrechnung auswirkt — mit echten ESTV-Werten für Ihre Gemeinde." },
     ],
   },
   {
@@ -101,7 +101,7 @@ const POSTS_DE: Post[] = [
       { p: "Es gibt einen wichtigen Hebel: Wer weiterhin erwerbstätig ist und dabei AHV-Beiträge von mindestens der Hälfte des sonst fälligen Nichterwerbstätigen-Beitrags leistet, ist von diesem befreit. Schon ein Teilzeitpensum oder regelmässige Mandate können also die «AHV aufs Vermögen» vermeiden." },
       { p: "Bei Paaren genügt es, wenn ein Partner genügend erwerbstätig ist — das befreit auch den nichterwerbstätigen Partner." },
       { h2: "Nicht vergessen — und gut nutzen" },
-      { p: "Die Beiträge sichern weiterhin Beitragsjahre und damit die spätere AHV-Rente; Lücken würden die Rente kürzen. Es ist also kein verlorenes Geld — aber ein Kostenfaktor, den die Brückenrechnung berücksichtigen muss. Der Vorzeit-Rechner modelliert die Nichterwerbstätigen-Beiträge inklusive der Erwerbstätigen-Ausnahme." },
+      { p: "Die Beiträge sichern weiterhin Beitragsjahre und damit die spätere AHV-Rente; Lücken würden die Rente kürzen. Es ist also kein verlorenes Geld — aber ein Kostenfaktor, den die Brückenrechnung berücksichtigen muss. Der Pillar-Zero-Rechner modelliert die Nichterwerbstätigen-Beiträge inklusive der Erwerbstätigen-Ausnahme." },
     ],
   },
   {
@@ -128,7 +128,7 @@ const POSTS_DE: Post[] = [
       { callout: "Es gibt keine allgemein richtige Antwort. Gesundheit, übriges Vermögen, Familiensituation und Risikobereitschaft entscheiden — eine persönliche Beratung lohnt sich." },
       { h2: "Was die Frühpension besonders macht" },
       { p: "Bei einem frühen Bezug ist der Umwandlungssatz tiefer (die Rente muss länger reichen), und das Guthaben hatte weniger Zeit zu wachsen. Gleichzeitig kann ein Kapitalbezug die liquide Brücke füllen, die Sie ohnehin brauchen. Beide Effekte sprechen oft für einen (Teil-)Kapitalbezug — aber eben nicht immer." },
-      { p: "Im Vorzeit-Rechner stellen Sie Bezugsart und Umwandlungssatz ein und sehen sofort die Auswirkung auf Steuern, Liquidität und Reichweite Ihres Vermögens." },
+      { p: "Im Pillar-Zero-Rechner stellen Sie Bezugsart und Umwandlungssatz ein und sehen sofort die Auswirkung auf Steuern, Liquidität und Reichweite Ihres Vermögens." },
     ],
   },
 ];
@@ -156,7 +156,7 @@ const POSTS_EN: Post[] = [
       { p: "Retire at 50 and you face up to ten years in which not a single one of these pots pays out. That stretch is the bridge phase — and it has to be financed entirely from your freely available, taxable wealth." },
       { h2: "What the bridge costs" },
       { p: "During the bridge phase, costs carry on: living expenses, health insurance premiums and — often overlooked — the AHV contributions for the non-employed. The latter are based on wealth and can run to several thousand francs a year." },
-      { p: "“Bridge capital” is the amount you need liquid at exit to cover those years until the first pension withdrawal. That is exactly the figure the Vorzeit calculator works out first." },
+      { p: "“Bridge capital” is the amount you need liquid at exit to cover those years until the first pension withdrawal. That is exactly the figure the Pillar Zero calculator works out first." },
       { callout: "Rule of thumb: the earlier you exit, the longer the bridge — and the more liquid (unlocked) wealth you need on top of your pension capital." },
       { h2: "Why “enough wealth” isn't enough" },
       { p: "Two people with identical total wealth can be in completely different positions: whoever holds the bulk in the Pensionskasse cannot touch it during the bridge phase — whoever holds the same money in a securities account can. The split between liquid and locked wealth decides whether your early retirement holds up." },
@@ -181,7 +181,7 @@ const POSTS_EN: Post[] = [
       { p: "The effect only works if the withdrawals fall in different years. Draw your 3a and a Pensionskasse capital payout in the same calendar year and you are taxed on the sum — landing back in the high progression. Married couples are also assessed jointly in many cantons." },
       { h2: "The federal government wants to change it" },
       { p: "There are political efforts to harmonise the federal tax on capital withdrawals and make staggering less attractive. Until then it remains one of the most effective and entirely legal tax tools of early retirement." },
-      { p: "In the Vorzeit calculator you can set the number of 3a accounts and see directly how staggering affects the tax bill — with real ESTV figures for your municipality." },
+      { p: "In the Pillar Zero calculator you can set the number of 3a accounts and see directly how staggering affects the tax bill — with real ESTV figures for your municipality." },
     ],
   },
   {
@@ -208,7 +208,7 @@ const POSTS_EN: Post[] = [
       { p: "There is an important lever: anyone who remains employed and thereby pays AHV contributions of at least half the otherwise-due non-employed contribution is exempt from it. Even a part-time role or regular mandates can therefore avoid the “AHV on wealth”." },
       { p: "For couples it is enough if one partner is sufficiently employed — that also exempts the non-employed partner." },
       { h2: "Don't forget it — and use it well" },
-      { p: "The contributions continue to secure contribution years and thus your later AHV pension; gaps would reduce it. So it is not lost money — but a cost factor that the bridge calculation has to account for. The Vorzeit calculator models the non-employed contributions including the employment exception." },
+      { p: "The contributions continue to secure contribution years and thus your later AHV pension; gaps would reduce it. So it is not lost money — but a cost factor that the bridge calculation has to account for. The Pillar Zero calculator models the non-employed contributions including the employment exception." },
     ],
   },
   {
@@ -235,7 +235,7 @@ const POSTS_EN: Post[] = [
       { callout: "There is no universally right answer. Health, other wealth, family situation and risk appetite decide — personal advice is worth it." },
       { h2: "What makes early retirement special" },
       { p: "With an early withdrawal the conversion rate is lower (the pension has to last longer), and the balance had less time to grow. At the same time, a capital withdrawal can fill the liquid bridge you need anyway. Both effects often argue for a (partial) capital withdrawal — but not always." },
-      { p: "In the Vorzeit calculator you set the withdrawal type and conversion rate and see the effect on taxes, liquidity and the reach of your wealth straight away." },
+      { p: "In the Pillar Zero calculator you set the withdrawal type and conversion rate and see the effect on taxes, liquidity and the reach of your wealth straight away." },
     ],
   },
 ];
