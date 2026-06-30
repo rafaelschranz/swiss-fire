@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="7" fill="#15212E"/>
+  <!-- Classical column: capital, fluted shaft, base — brass on ink -->
+  <rect x="8" y="7.5" width="16" height="3.1" rx="1.4" fill="#C9A567"/>
+  <rect x="11.6" y="10.6" width="8.8" height="10.9" fill="#C9A567"/>
+  <rect x="6.8" y="21.4" width="18.4" height="3.3" rx="1.5" fill="#C9A567"/>
+  <!-- Flutes -->
+  <rect x="14.15" y="11.3" width="0.9" height="9.5" rx="0.45" fill="#15212E" opacity="0.9"/>
+  <rect x="16.95" y="11.3" width="0.9" height="9.5" rx="0.45" fill="#15212E" opacity="0.9"/>
+</svg>
