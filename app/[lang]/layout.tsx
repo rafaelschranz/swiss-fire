@@ -126,8 +126,10 @@ export default async function LocaleLayout({
           <SiteFooter lang={locale} dict={t} />
         </I18nProvider>
 
-        {/* Self-hosted Umami — cookieless, production only. Plain defer tag (as provided). */}
-        {process.env.NODE_ENV === "production" && (
+        {/* Self-hosted Umami — cookieless. Only on the real production deployment:
+            on Vercel that's VERCEL_ENV=production (so previews don't pollute
+            stats); elsewhere fall back to NODE_ENV. */}
+        {(process.env.VERCEL_ENV ? process.env.VERCEL_ENV === "production" : process.env.NODE_ENV === "production") && (
           <script defer src={ANALYTICS.src} data-website-id={ANALYTICS.websiteId} />
         )}
       </body>
