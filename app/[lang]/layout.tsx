@@ -53,6 +53,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     },
     description: t.meta.description,
     applicationName: SITE_NAME,
+    authors: [{ name: SITE_NAME }],
+    creator: SITE_NAME,
+    publisher: SITE_NAME,
+    category: "finance",
     keywords: t.meta.keywords,
     alternates: {
       canonical: localeHref(lang, "/"),
@@ -65,6 +69,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     openGraph: {
       type: "website",
       locale: OG_LOCALE[lang],
+      alternateLocale: LOCALES.filter((l) => l !== lang).map((l) => OG_LOCALE[l]),
       url: `${SITE_URL}${localeHref(lang, "/")}`,
       siteName: SITE_NAME,
       title: t.meta.titleDefault,
@@ -75,7 +80,11 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       title: t.meta.titleDefault,
       description: t.meta.description,
     },
-    robots: { index: true, follow: true },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+    },
   };
 }
 
@@ -105,6 +114,12 @@ export default async function LocaleLayout({
             url: SITE_URL,
             description: t.meta.description,
             logo: `${SITE_URL}/opengraph-image`,
+            contactPoint: {
+              "@type": "ContactPoint",
+              email: "contact@pillarzero.ch",
+              contactType: "customer support",
+              availableLanguage: ["de", "en"],
+            },
           }}
         />
         <JsonLd

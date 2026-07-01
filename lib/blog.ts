@@ -28,7 +28,7 @@ export interface Post {
 
 const POSTS_DE: Post[] = [
   {
-    slug: "brueckenphase-frühpensionierung",
+    slug: "brueckenphase-fruehpensionierung",
     title: "Die Brückenphase: das Loch zwischen Frühpension und Vorsorge",
     description:
       "Wer vor 58–65 aufhört zu arbeiten, muss eine Lücke überbrücken, bevor Säule 3a, Pensionskasse und AHV greifen. Was diese Brückenphase kostet — und wie viel Kapital sie wirklich braucht.",
@@ -135,7 +135,7 @@ const POSTS_DE: Post[] = [
 
 const POSTS_EN: Post[] = [
   {
-    slug: "brueckenphase-frühpensionierung",
+    slug: "brueckenphase-fruehpensionierung",
     title: "The bridge phase: the gap between early retirement and your pension",
     description:
       "Stop working before 58–65 and you have to bridge a gap before Säule 3a, Pensionskasse and AHV kick in. What this bridge phase costs — and how much capital it really takes.",
